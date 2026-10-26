@@ -1,0 +1,25 @@
+const { chromium, devices } = require('playwright');
+const SITE = process.argv[2] || 'file:///mnt/user-data/outputs/site-acessivel/index.html';
+const OUT = process.argv[3] || '/tmp/claude-0/-home-claude/1706e07e-e36f-536b-ae08-8cf3d3b7c6be/scratchpad/mob/antes-';
+(async () => {
+  const b = await chromium.launch();
+  const ctx = await b.newContext({ viewport: { width: 375, height: 740 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+  const p = await ctx.newPage(); const errs = [];
+  p.on('pageerror', e => errs.push(e.message));
+  await p.goto(SITE); await p.waitForTimeout(400);
+  await p.screenshot({ path: OUT + '0-voz.png' });
+  await p.click('#voz-nao');
+  await p.screenshot({ path: OUT + '1-perfil.png', fullPage: true });
+  await p.click('[data-perfil="mobilidade"]'); await p.waitForTimeout(300);
+  await p.screenshot({ path: OUT + '2-plano.png' });
+  await p.screenshot({ path: OUT + '2b-plano-full.png', fullPage: true });
+  await p.click('[data-origem]'); await p.waitForTimeout(200);
+  await p.click('[data-abrir="destino"]'); await p.waitForTimeout(200);
+  await p.fill('#termo', 'renner'); await p.waitForTimeout(100);
+  await p.screenshot({ path: OUT + '3-busca.png' });
+  await p.click('.resultado'); await p.waitForTimeout(400);
+  await p.screenshot({ path: OUT + '4-rota.png' });
+  await p.screenshot({ path: OUT + '4b-rota-full.png', fullPage: true });
+  console.log('erros', errs, 'altura', await p.evaluate(() => document.documentElement.scrollHeight));
+  await b.close();
+})();

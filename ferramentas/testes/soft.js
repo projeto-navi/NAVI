@@ -1,0 +1,47 @@
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  const out = '/tmp/claude-0/s/';
+  const errs = [];
+  async function page(w, h) {
+    const p = await b.newPage({ viewport: { width: w, height: h } });
+    p.on('pageerror', e => errs.push('PAGEERR ' + e.message));
+    p.on('console', m => m.type() === 'error' && !/TUNNEL|vlibras|fonts/i.test(m.text()) && errs.push(m.text()));
+    await p.emulateMedia({ reducedMotion: 'reduce' });
+    await p.goto('file:///mnt/user-data/outputs/site-acessivel/index.html');
+    return p;
+  }
+  let p = await page(1366, 860);
+  await p.waitForTimeout(400);
+  await p.screenshot({ path: out + 's0-popup.png' });
+  await p.click('#voz-nao');
+  await p.screenshot({ path: out + 's1-home.png', fullPage: true });
+  await p.click('[data-perfil="mobilidade"]');
+  await p.click('[data-origem]:nth-of-type(2)');
+  await p.click('[data-abrir="destino"]'); await p.fill('#termo', 'bo');
+  await p.screenshot({ path: out + 's2-busca.png' });
+  await p.click('.resultado:has-text("Boralê")');
+  await p.waitForTimeout(300);
+  await p.screenshot({ path: out + 's3-rota.png' });
+  await p.click('[data-vista="3d"]'); await p.waitForTimeout(2500);
+  await p.screenshot({ path: out + 's4-3d.png' });
+  await p.click('#primeira-pessoa'); await p.waitForTimeout(2000);
+  for (let i = 0; i < 5; i++) await p.click('.fp-controles [data-fp="frente"]');
+  await p.waitForTimeout(400);
+  await p.screenshot({ path: out + 's5-fp.png' });
+  await p.click('.fp-sair'); await p.click('[data-vista="2d"]');
+  await p.click('#abrir-aviso'); await p.waitForTimeout(200);
+  await p.screenshot({ path: out + 's6-aviso.png' });
+  p = await page(390, 844);
+  await p.click('#voz-nao');
+  await p.screenshot({ path: out + 's7-home-mob.png', fullPage: true });
+  await p.click('[data-perfil="auditiva"]');
+  await p.click('[data-origem]');
+  await p.click('[data-proximo="sanitario"]'); await p.waitForTimeout(300);
+  await p.screenshot({ path: out + 's8-mob-rota.png', fullPage: true });
+  p = await page(1366, 860);
+  await p.click('#voz-nao'); await p.click('[data-perfil="visual"]'); await p.waitForTimeout(300);
+  await p.screenshot({ path: out + 's9-visual.png' });
+  console.log('erros:', errs);
+  await b.close();
+})();

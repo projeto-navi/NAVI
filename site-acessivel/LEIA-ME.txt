@@ -1,0 +1,118 @@
+NAVI — SITE ACESSÍVEL DO SHOPPING ESTAÇÃO (nova versão)
+
+COMO PUBLICAR NA INTERNET (grátis, Netlify)
+1. Acesse https://app.netlify.com/drop e crie uma conta grátis (pode entrar com Google).
+2. Arraste a pasta site-acessivel (ou o arquivo site-acessivel.zip) para a página.
+3. Em segundos o site fica no ar num endereço como algo.netlify.app.
+4. Em "Site configuration" > "Change site name", troque para um nome fácil,
+   ex.: navi-estacao  ->  https://navi-estacao.netlify.app
+5. Para atualizar: na aba "Deploys" do site, arraste a pasta de novo. O link não muda.
+O index.html já aponta a prévia do WhatsApp (og:image) para https://navi-map.netlify.app/img/compartilhar.png.
+Se mudar o nome do site no Netlify, troque esse endereço nas linhas og:image e og:url.
+
+COMO ABRIR
+- Dê dois cliques em index.html. Não precisa de servidor nem instalação.
+- A fonte (Google Fonts) e o tradutor VLibras precisam de internet.
+
+COMO FUNCIONA
+1. A pessoa escolhe o perfil: deficiência visual, mobilidade reduzida ou deficiência auditiva.
+2. Escolhe onde está (atalhos para os acessos Vermelho, Azul e Verde) e para onde vai.
+3. O site mostra a rota no mapa e as instruções passo a passo, com lojas como referência.
+
+AO ABRIR O SITE
+- Aparece a pergunta "Você deseja ativar o comando de voz do site?" com Sim e Não.
+- Sim: a voz fica ligada no site todo. Na tela de perfis, o 1º toque lê a opção e o
+  2º toque na mesma opção escolhe. Tocar fora dos botões do pop-up lê a pergunta.
+- Não: segue normalmente, sem voz (pode ligar depois no painel).
+- Alguns navegadores só liberam a voz depois do primeiro toque na tela.
+
+PERFIS
+- Visual: abre direto no campo "Para onde você quer ir?" para digitar ou falar o destino;
+  depois pergunta onde a pessoa está (com atalhos para os acessos). Alto contraste,
+  botões grandes e instruções lidas passo a passo.
+- Mobilidade: a rota nunca usa escada rolante; para trocar de piso usa o elevador.
+- Auditiva: tradutor de Libras VLibras (Governo Federal), avisos visuais e vibração,
+  cartão de comunicação para mostrar ao atendente.
+
+MAPA 3D
+- Botões 2D / 3D no canto do mapa. A escolha fica salva no navegador.
+- O 3D é construído com as MESMAS coordenadas do 2D (contornos das lojas, quiosques,
+  acessos e corredores), então lojas, rotas e marcadores ficam no mesmo lugar.
+- Arraste para girar, role ou use + e − para aproximar. "Vista de cima" mostra o piso
+  igual ao mapa 2D. "Ver os dois pisos" empilha o Piso 2 sobre o Piso 1 e mostra a
+  subida pelo elevador ou pela escada rolante.
+- Tocar numa loja no 3D funciona igual ao 2D (vira partida ou destino).
+- Alturas, cores e materiais são ilustrativos. O antigo prédio da estação, onde fica
+  o Museu Ferroviário, aparece com cor e telhado próprios. Isso é uma referência
+  visual às fotos e descrições públicas, não uma medição.
+- Funciona offline: Three.js (licença MIT, js/THREE-LICENSE.txt) vai junto em
+  js/three-navi.min.js e só é carregado quando a pessoa escolhe 3D.
+- Se o aparelho não tiver WebGL, o site avisa e continua no 2D.
+
+PRIMEIRA PESSOA (estilo Street View)
+- Depois de traçar uma rota, toque em "Ver em primeira pessoa" (no painel ou no 3D).
+- A câmera fica na altura dos olhos e anda sobre a rota calculada. Setas no chão
+  mostram o caminho.
+- Avançar/Recuar (ou tocar no chão, ou setas do teclado), arrastar para olhar em volta,
+  roda do mouse para zoom, "Percorrer sozinho" para andar automaticamente.
+- No elevador ou na escada rolante aparece "Subir para o Piso 2".
+- Destino em amarelo com um feixe de luz; ao chegar aparece "Você chegou!" com o lado
+  em que o local fica. Minimapa mostra onde você está e para onde olha.
+- "Tela cheia" ajuda no celular. Esc ou "Voltar ao mapa" sai.
+
+ROTAS PELO MEIO DOS CORREDORES
+- js/malha.js guarda, para cada ponto do piso, a distância até a parede ou quiosque
+  mais próximo. As rotas seguem o centro dos corredores e desviam dos quiosques,
+  no 2D, no 3D e na primeira pessoa. Gerada da mesma planta (não editar à mão).
+
+AVISOS DE LOCAL INTERDITADO OU DANIFICADO
+- Botão "Avisar sobre um local" no painel. A pessoa escolhe o local, o tipo
+  (interditado, danificado, obstáculo) e detalhes.
+- O aviso aparece no mapa daquele aparelho (2D e 3D) e as rotas desviam quando
+  possível (ex.: elevador quebrado sai das rotas; sanitário interditado não é
+  sugerido como "mais próximo").
+- Em seguida o site oferece: enviar ao shopping pelo WhatsApp oficial (mensagem
+  pronta), ligar para o shopping, copiar o texto e abrir o Fale Conosco.
+- E-mail da equipe: preencha emailEquipe em js/config.js para aparecer o botão
+  "Enviar à equipe do mapa por e-mail".
+- Para o aviso valer para TODOS: confirme e adicione em js/avisos.js, depois
+  publique o site de novo. O site não tem servidor, então os avisos não são
+  compartilhados automaticamente.
+
+VISUAL (Soft UI / neumorfismo)
+- css/soft-ui.css aplica o design: fundo cinza frio #E0E5EC, sombras duplas, cantos
+  bem arredondados, violeta #6C63FF para ações e teal #38B2AC para sucesso.
+  Fontes: Plus Jakarta Sans (títulos) e DM Sans (texto).
+- O modo alto contraste (padrão do perfil visual e botão no topo) NÃO usa o Soft UI:
+  continua com azul-marinho, amarelo e a fonte Atkinson Hyperlegible, para garantir
+  leitura para pessoas com baixa visão.
+
+CELULAR (css/mobile.css, até 860 px de largura; o desktop não muda)
+- Depois do perfil, abre direto "Para onde você vai?". Ao escolher o destino,
+  pergunta "Por qual acesso você entrou?" com três botões grandes. 3 toques até a rota.
+- "Sanitário mais próximo", "SAC", "Saída" etc. já aparecem na tela do destino;
+  se a partida ainda não foi escolhida, o site pergunta a entrada e calcula sozinho.
+- Mapa em cima, painel embaixo, tudo na altura da tela. Com rota, o passo atual vem
+  logo abaixo do trajeto, com "Passo anterior" e "Próximo passo" presos embaixo.
+- Celular deitado: painel à esquerda e mapa à direita.
+
+MAQUETE 3D + QR CODE
+- Fica em um site separado (pasta maquete-qr, arquivo maquete-qr.zip), para a apresentação.
+  O QR Code da maquete abre este site: https://navi-map.netlify.app/
+
+LINK DIRETO (ex.: QR Code em uma entrada)
+  index.html?perfil=mobilidade&origem=1-1401928
+  (1-1401928 = Acesso Azul; os ids estão em js/dados.js)
+
+ARQUIVOS
+- index.html, css/estilo.css, css/soft-ui.css, css/mobile.css
+- js/dados.js  -> lojas, plantas e malha de corredores (gerado a partir de dist/data.js
+                  e dist/assets/footprints.json do projeto original)
+- js/rotas.js  -> cálculo de rotas e instruções
+- js/app.js    -> interface, mapa, voz e Libras
+- js/mapa3d.js, js/dados3d.js, js/three-navi.min.js -> vista 3D
+
+LIMITES
+- Planta e posições vêm do mapa oficial do shopping (Mapa Mall). A posição do elevador
+  no Piso 1 foi estimada a partir do Piso 2. Confirme com o SAC antes de uso real.
+- Distâncias são aproximadas (trecho curto/médio/longo).

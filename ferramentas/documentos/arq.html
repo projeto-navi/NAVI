@@ -1,0 +1,72 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;font-family:Inter,"DejaVu Sans",sans-serif;color:#2F3A44;background:#fff;width:1500px}
+.w{padding:28px 32px}
+h1{font-size:26px;margin:0 0 4px} .sub{color:#5E6873;font-size:16px;margin-bottom:22px}
+.row{display:flex;gap:18px;align-items:stretch}
+.box{border:2px solid #C9CFDA;border-radius:14px;padding:12px 14px;background:#fff}
+.box h3{margin:0 0 6px;font-size:17px}
+.box p{margin:2px 0;font-size:14px;color:#4A5562;line-height:1.35}
+.zona{border-radius:18px;padding:14px;margin-bottom:16px}
+.z1{background:#F1F0FF;border:2px solid #6C63FF}
+.z2{background:#F2F4F7;border:2px dashed #9AA3B1}
+.z3{background:#EAF7F6;border:2px solid #38B2AC}
+.zt{font-weight:700;font-size:15px;margin:0 0 10px;letter-spacing:.02em;text-transform:uppercase;color:#4A5562}
+.seta{text-align:center;font-size:15px;color:#5E6873;margin:-6px 0 10px}
+.f1{flex:1}.f2{flex:2}
+code{font-family:"DejaVu Sans Mono",monospace;font-size:13px;background:#EEF0F4;padding:1px 4px;border-radius:4px}
+</style></head><body><div class="w">
+<h1>Arquitetura atual do Navi</h1>
+<div class="sub">Site estático, sem servidor: tudo roda no navegador da pessoa. Dados do local são gerados antes, a partir da planta.</div>
+
+<div class="row" style="margin-bottom:10px">
+ <div class="box f1" style="border-color:#2F3A44"><h3>Pessoa usuária</h3><p>Navegador do celular ou computador. Leitor de tela (TalkBack, NVDA), voz, teclado ou toque.</p></div>
+ <div class="box f1"><h3>QR Code / link direto</h3><p><code>?perfil=…&amp;origem=…&amp;destino=…</code> — abre o mapa já com o trajeto.</p></div>
+</div>
+<div class="seta">▼ acessa por HTTPS</div>
+
+<div class="zona z1"><div class="zt">Site navi-map.netlify.app (Netlify, plano gratuito)</div>
+ <div class="row">
+  <div class="box f2"><h3>1. Interface</h3>
+   <p><code>index.html</code> — estrutura, diálogos, ícones SVG</p>
+   <p><code>css/estilo.css</code> — base e modo alto contraste</p>
+   <p><code>css/soft-ui.css</code> — design Soft UI (neumorfismo)</p>
+   <p><code>css/mobile.css</code> — layout de celular (até 860 px)</p>
+   <p><code>js/app.js</code> — perfis, painel, mapa 2D (SVG), voz, Libras, avisos</p></div>
+  <div class="box f2"><h3>2. Motor de rotas</h3>
+   <p><code>js/rotas.js</code> — grafo, Dijkstra, refino A*, instruções</p>
+   <p><code>js/dados.js</code> — lugares, plantas, grafo dos corredores</p>
+   <p><code>js/malha.js</code> — grade fina de distância às paredes</p>
+   <p><code>js/avisos.js</code> — interdições confirmadas pela equipe</p>
+   <p><code>js/config.js</code> — endereço do site e contatos do local</p></div>
+  <div class="box f1"><h3>3. Vista 3D (sob demanda)</h3>
+   <p><code>js/mapa3d.js</code> — 3D e primeira pessoa</p>
+   <p><code>js/dados3d.js</code> — lajes dos pisos</p>
+   <p><code>js/three-navi.min.js</code> — Three.js r186</p>
+   <p>Só baixa quando a pessoa toca em 3D.</p></div>
+ </div>
+</div>
+
+<div class="row" style="margin-bottom:16px">
+ <div class="zona z3 f1" style="margin:0"><div class="zt">No aparelho da pessoa</div>
+  <div class="box"><h3>localStorage</h3><p>Perfil, voz, contraste, tamanho do texto, vista 2D/3D e avisos feitos no aparelho. Nenhum dado pessoal sai do aparelho.</p></div></div>
+ <div class="zona z2 f2" style="margin:0"><div class="zt">Serviços externos</div>
+  <div class="row">
+   <div class="box f1"><h3>VLibras</h3><p>Tradutor de Libras do Governo Federal (vlibras.gov.br)</p></div>
+   <div class="box f1"><h3>Web Speech API</h3><p>Voz (speechSynthesis) e busca falando (SpeechRecognition), do próprio navegador</p></div>
+   <div class="box f1"><h3>Canais do local</h3><p>WhatsApp, telefone e Fale Conosco, para enviar avisos</p></div>
+   <div class="box f1"><h3>Google Fonts</h3><p>Plus Jakarta Sans, DM Sans, Atkinson Hyperlegible</p></div>
+  </div></div>
+</div>
+
+<div class="row">
+ <div class="zona z2 f2" style="margin:0"><div class="zt">Preparação dos dados (feita uma vez por local, no computador da equipe)</div>
+  <div class="row">
+   <div class="box f1"><h3>Planta oficial</h3><p>Mapa do local (no shopping: Mapa Mall)</p></div>
+   <div class="box f1"><h3>Scripts</h3><p><code>gen-data.js</code> → dados.js</p><p><code>malha.py</code> (OpenCV) → malha.js</p><p><code>lajes.py</code> (OpenCV) → dados3d.js</p></div>
+   <div class="box f1"><h3>Build visual</h3><p><code>escopo.py</code> → soft-ui.css</p><p><code>esbuild</code> → three-navi.min.js</p></div>
+   <div class="box f1"><h3>Testes</h3><p>Playwright: capturas de celular e desktop, fluxo completo, primeira pessoa</p></div>
+  </div></div>
+ <div class="zona z1 f1" style="margin:0"><div class="zt">Site navi-qrcode.netlify.app</div>
+  <div class="box"><h3>Maquete que vira QR Code</h3><p><code>js/maquete.js</code> + <code>js/qrcodigo.js</code> (codificador ISO/IEC 18004 próprio). Girada para cima, a maquete vira o QR que abre o navi-map.</p></div></div>
+</div>
+</div></body></html>

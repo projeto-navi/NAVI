@@ -1,0 +1,24 @@
+NAVI - MAQUETE 3D + QR CODE (site separado, para a apresentação)
+
+O QUE É
+- Maquete 3D do Shopping Estação (mesma planta do mapa Navi). Ao girar para olhar de
+  cima, o shopping afunda e a base vira o QR Code que abre o mapa:
+  https://navi-map.netlify.app/
+- Botões: Ver de cima, Voltar à maquete, Girar sozinho, Tela cheia (ou tecla F),
+  Baixar QR Code. "Abrir o mapa" leva ao site principal.
+
+COMO PUBLICAR (projeto separado no Netlify)
+1. app.netlify.com > Add new project > Deploy manually (área "Upload your project files").
+2. Arraste o arquivo maquete-qr.zip.
+3. Troque o nome do projeto, ex.: navi-maquete -> https://navi-maquete.netlify.app
+
+NA APRESENTAÇÃO
+- Abra o link da maquete no computador do projetor, clique em Tela cheia e use
+  "Girar sozinho". Na hora certa, clique em "Ver de cima": o público escaneia o QR
+  com o celular e cai direto no mapa.
+- Projetores muito claros ou telas com reflexo podem dificultar a leitura; teste antes.
+- Para imprimir: img/qr-navi.png ou img/qr-navi.svg.
+
+SE O LINK DO MAPA MUDAR
+- Troque urlSite em js/config.js (o QR da maquete muda sozinho) e gere de novo
+  os arquivos de impressão.

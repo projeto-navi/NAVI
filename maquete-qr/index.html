@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Navi | Maquete e QR Code</title>
+<meta name="description" content="Maquete 3D do Shopping Estação que vira o QR Code do mapa acessível Navi quando vista de cima.">
+<meta name="theme-color" content="#E0E5EC">
+<link rel="icon" type="image/svg+xml" href="img/icone-navi.svg">
+<link rel="apple-touch-icon" href="img/icone-180.png">
+<meta property="og:title" content="Navi | Maquete e QR Code">
+<meta property="og:image" content="https://navi-map.netlify.app/img/compartilhar.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #E0E5EC; --fg: #3D4852; --muted: #6B7280; --accent: #6C63FF; --accent-2: #8B84FF; --azul: #1A5FD6;
+    --ext: 9px 9px 16px rgb(163 177 198 / .6), -9px -9px 16px rgb(255 255 255 / .5);
+    --ext-hover: 12px 12px 20px rgb(163 177 198 / .7), -12px -12px 20px rgb(255 255 255 / .6);
+    --ext-sm: 5px 5px 10px rgb(163 177 198 / .6), -5px -5px 10px rgb(255 255 255 / .5);
+    --in: inset 6px 6px 10px rgb(163 177 198 / .6), inset -6px -6px 10px rgb(255 255 255 / .5);
+    --in-sm: inset 3px 3px 6px rgb(163 177 198 / .6), inset -3px -3px 6px rgb(255 255 255 / .5);
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--fg); font-family: "DM Sans", "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 12px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  #cena { position: fixed; inset: 0; }
+  #cena canvas { display: block; touch-action: none; cursor: grab; }
+  #cena canvas:active { cursor: grabbing; }
+  .topo { position: fixed; top: 16px; left: 16px; right: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; pointer-events: none; z-index: 2; }
+  .topo > * { pointer-events: auto; }
+  .topo-acoes { display: flex; gap: 12px; }
+  @media (max-width: 760px) { #tela-cheia { display: none; } }
+  .marca { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--fg); background: color-mix(in srgb, var(--bg) 88%, transparent); padding: 8px 18px 8px 8px; border-radius: 20px; box-shadow: var(--ext-sm); }
+  .marca img { width: 44px; height: 44px; border-radius: 12px; }
+  .marca strong { display: block; font-family: "Plus Jakarta Sans", sans-serif; color: #2C7BEA; letter-spacing: .1em; font-size: 1.25rem; line-height: 1.1; }
+  .marca span { font-size: .8125rem; color: var(--muted); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px; border: 0; border-radius: 16px;
+    background: var(--bg); color: var(--fg); font: 700 1rem "DM Sans", sans-serif; text-decoration: none; cursor: pointer; box-shadow: var(--ext); transition: transform .3s ease-out, box-shadow .3s ease-out; }
+  .btn:hover { transform: translateY(-1px); box-shadow: var(--ext-hover); }
+  .btn:active { transform: translateY(.5px); box-shadow: var(--in-sm); }
+  .btn[aria-pressed="true"] { color: var(--accent); box-shadow: var(--in); }
+  .btn-principal { background: var(--accent); color: #fff; }
+  .btn-principal:hover { background: var(--accent-2); }
+  .painel { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); width: min(560px, calc(100% - 32px)); z-index: 2;
+    background: color-mix(in srgb, var(--bg) 92%, transparent); border-radius: 28px; box-shadow: var(--ext); padding: 18px 20px 20px; text-align: center; }
+  .painel h1 { font: 800 1.375rem/1.2 "Plus Jakarta Sans", sans-serif; letter-spacing: -.02em; margin: 0 0 4px; }
+  .painel p { margin: 0 0 14px; color: var(--muted); }
+  .trilho { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font-size: .8125rem; font-weight: 700; color: var(--muted); margin-bottom: 14px; }
+  .barra { height: 12px; border-radius: 999px; box-shadow: var(--in-sm); position: relative; overflow: hidden; }
+  .barra::after { content: ""; position: absolute; inset: 2px auto 2px 2px; width: calc(var(--p, 0%) - 4px); min-width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--azul)); transition: width .15s; }
+  .acoes { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .pronto { position: fixed; right: 20px; top: 50%; transform: translateY(-50%); width: min(300px, calc(100% - 32px)); z-index: 3; background: var(--bg); border-radius: 28px; box-shadow: var(--ext-hover); padding: 22px; }
+  .pronto strong { display: block; font: 800 1.25rem "Plus Jakarta Sans", sans-serif; margin-bottom: 6px; }
+  .pronto p { margin: 0 0 12px; color: var(--muted); }
+  .pronto a.url { display: block; font-weight: 700; color: var(--azul); word-break: break-all; margin-bottom: 16px; }
+  .pronto .btn { width: 100%; margin-top: 10px; }
+  .estado { font-weight: 700; color: var(--fg); margin: 0 0 12px !important; }
+  @media (max-width: 760px) {
+    .marca span { display: none; }
+.pronto { top: 80px; bottom: auto; right: 16px; left: 16px; width: auto; transform: none; padding: 12px 14px; border-radius: 20px;
+      display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+    .pronto strong { font-size: 1rem; margin: 0; }
+    .pronto p, .pronto a.btn { display: none; }
+    .pronto a.url { margin: 0; grid-column: 1; font-size: .875rem; }
+    .pronto #baixar-qr { grid-column: 2; grid-row: 1 / span 2; width: auto; margin: 0; min-height: 44px; padding: 0 14px; font-size: .875rem; }
+    .painel h1 { font-size: 1.125rem; }
+    .painel p.apoio { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .btn, .barra::after { transition: none; } }
+  .sem-webgl { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; }
+</style>
+</head>
+<body>
+<div id="cena"></div>
+<header class="topo">
+  <a class="marca" href="https://navi-map.netlify.app/" aria-label="Navi, ir para o mapa">
+    <img src="img/icone-navi.svg" alt="" width="44" height="44">
+    <span><strong>NAVI</strong><span>Navegador Acessível de Vias Internas</span></span>
+  </a>
+  <div class="topo-acoes"><button type="button" class="btn" id="tela-cheia" aria-pressed="false">Tela cheia</button>
+  <a class="btn btn-principal" id="abrir-mapa" href="https://navi-map.netlify.app/">Abrir o mapa</a></div>
+</header>
+
+<section class="painel" aria-labelledby="titulo">
+  <h1 id="titulo">Maquete do Shopping Estação</h1>
+  <p class="apoio">Gire a maquete e olhe de cima: ela vira o QR Code que abre o mapa acessível.</p>
+  <p class="estado" id="estado-qr" aria-live="polite">Gire a maquete para olhar de cima.</p>
+  <div class="trilho"><span>Maquete</span>
+    <div class="barra" id="progresso-qr" role="progressbar" aria-label="Transformação em QR Code" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+    <span>QR Code</span></div>
+  <div class="acoes">
+    <button type="button" class="btn btn-principal" id="btn-cima">Ver de cima</button>
+    <button type="button" class="btn" id="btn-maquete" hidden>Voltar à maquete</button>
+    <button type="button" class="btn" id="btn-girar" aria-pressed="false">Girar sozinho</button>
+  </div>
+</section>
+
+<aside class="pronto" id="qr-pronto" hidden aria-labelledby="pronto-titulo">
+  <strong id="pronto-titulo">QR Code pronto</strong>
+  <p>Aponte a câmera do celular para a tela. O QR Code abre:</p>
+  <a class="url" id="url-qr" href="https://navi-map.netlify.app/"></a>
+  <button type="button" class="btn btn-principal" id="baixar-qr">Baixar QR Code<span class="sr"> para imprimir</span></button>
+  <a class="btn" href="img/qr-navi.svg" download>Baixar em SVG</a>
+</aside>
+<div id="anuncio" class="sr" role="status" aria-live="polite"></div>
+
+<script src="js/config.js"></script>
+<script src="js/dados.js"></script>
+<script src="js/dados3d.js"></script>
+<script src="js/qrcodigo.js"></script>
+<script src="js/three-navi.min.js"></script>
+<script>
+  (function () {
+    var ok = false;
+    try { var c = document.createElement('canvas'); ok = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) {}
+    if (ok) { var s = document.createElement('script'); s.src = 'js/maquete.js'; document.body.appendChild(s); }
+    else document.getElementById('cena').innerHTML = '<div class="sem-webgl"><div><p>Este aparelho não mostra 3D.</p><img src="img/qr-navi.svg" alt="QR Code que abre o mapa Navi" width="260" height="260"></div></div>';
+  })();
+</script>
+<script>
+  // tela cheia para projetar na apresentação (tecla F também funciona)
+  (function () {
+    var b = document.getElementById('tela-cheia');
+    function alternar() { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }
+    b.onclick = alternar;
+    document.addEventListener('keydown', function (e) { if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey) alternar(); });
+    document.addEventListener('fullscreenchange', function () { var on = !!document.fullscreenElement; b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Sair da tela cheia' : 'Tela cheia'; });
+  })();
+</script>
+</body>
+</html>

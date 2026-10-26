@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Navi — Plano de melhorias</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  :root{
+    --fg:#2F3A44; --muted:#5E6873; --accent:#5A52E0; --teal:#2C8F8A;
+    --p0:#C0392B; --p1:#C27A12; --p2:#2C8F8A; --line:#D9DEE6; --soft:#F1F3F7;
+  }
+  *{box-sizing:border-box}
+  body{font-family:Inter, "DejaVu Sans", sans-serif; color:var(--fg); font-size:10.3pt; line-height:1.48; margin:0}
+  h1,h2,h3{font-family:"Inter Display", Inter, sans-serif; margin:0; letter-spacing:-.01em}
+  .capa{display:flex; gap:14px; align-items:center; border-bottom:2px solid var(--accent); padding-bottom:12px; margin-bottom:14px}
+  .capa img{width:54px;height:54px}
+  .capa h1{font-size:21pt; font-weight:800}
+  .capa .sub{color:var(--muted); font-size:10pt}
+  .meta{display:grid; grid-template-columns:1fr 1fr; gap:6px 18px; font-size:9.2pt; color:var(--muted); margin-bottom:14px}
+  .meta b{color:var(--fg)}
+  h2{font-size:13.5pt; font-weight:750; margin:18px 0 8px; color:var(--accent)}
+  p{margin:0 0 7px}
+  .intro{background:var(--soft); border-radius:8px; padding:10px 13px; margin-bottom:6px}
+  table{width:100%; border-collapse:collapse; font-size:9.2pt}
+  th{text-align:left; font-weight:650; color:var(--muted); border-bottom:1.5px solid var(--fg); padding:5px 6px}
+  td{border-bottom:1px solid var(--line); padding:5px 6px; vertical-align:top}
+  td.n{font-weight:700; width:22px}
+  .tag{display:inline-block; font-size:7.8pt; font-weight:700; padding:1px 7px; border-radius:10px; color:#fff; white-space:nowrap}
+  .P0{background:var(--p0)} .P1{background:var(--p1)} .P2{background:var(--p2)}
+  .esf{font-size:8.4pt; color:var(--muted); white-space:nowrap}
+  .item{border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:6px; padding:10px 13px 8px; margin:0 0 11px; break-inside:avoid}
+  .item.P0b{border-left-color:var(--p0)} .item.P1b{border-left-color:var(--p1)} .item.P2b{border-left-color:var(--p2)}
+  .item h3{font-size:11.6pt; font-weight:750; display:flex; align-items:center; gap:8px; margin-bottom:3px}
+  .item h3 .num{color:var(--muted); font-weight:600}
+  .ref{font-size:8.6pt; color:var(--muted); margin-bottom:6px}
+  .bloco{margin-top:5px}
+  .rot{font-size:8.2pt; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); display:block; margin-bottom:1px}
+  ul{margin:2px 0 4px; padding-left:17px} li{margin:1px 0}
+  .aceite{background:var(--soft); border-radius:5px; padding:5px 9px; margin-top:6px; font-size:9.4pt}
+  .ja{color:var(--teal); font-weight:600}
+  .quebra{break-before:page}
+  .rodada{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin:4px 0 8px}
+  .rodada div{border:1px solid var(--line); border-radius:6px; padding:8px 10px; font-size:9.2pt}
+  .rodada b{display:block; font-size:10pt; margin-bottom:2px}
+  .nota{font-size:8.6pt; color:var(--muted); margin-top:10px}
+</style>
+</head>
+<body>
+
+<div class="capa">
+  <img src="file:///mnt/user-data/outputs/site-acessivel/img/icone-navi.svg" alt="">
+  <div>
+    <h1>Navi — Plano de melhorias</h1>
+    <div class="sub">Navegador Acessível de Vias Internas · Shopping Estação (Curitiba)</div>
+  </div>
+</div>
+
+<div class="meta">
+  <div><b>Site avaliado:</b> https://navi-map.netlify.app/</div>
+  <div><b>Data:</b> 21/10/2026</div>
+  <div><b>Base:</b> Relatório de Auditoria UX e Acessibilidade (20/10/2026) e o retorno de um colega que testou o site</div>
+  <div><b>Referências:</b> WCAG 2.2, WAI-ARIA APG, ABNT NBR 17225:2025</div>
+</div>
+
+<div class="intro">
+  <p><b>Objetivo deste documento:</b> reunir as melhorias propostas para o Navi, cada uma com o problema que resolve, o que o site já faz hoje, como aplicar e como saber que ficou pronta. Serve para a equipe analisar, decidir a ordem e dividir o trabalho.</p>
+  <p style="margin:0"><b>Ideia central:</b> qualquer pessoa precisa conseguir ir do início ao destino <b>sem depender do mapa visual</b>, com as adaptações que ela escolher combinar. Os fluxos principais vêm antes do 3D.</p>
+</div>
+
+<h2>Resumo das melhorias</h2>
+<table>
+  <thead><tr><th>#</th><th>Melhoria</th><th>Auditoria</th><th>Prioridade</th><th>Esforço</th></tr></thead>
+  <tbody>
+    <tr><td class="n">1</td><td>Rota completa só por texto (passo a passo)</td><td>A01</td><td><span class="tag P0">Máxima</span></td><td class="esf">Médio</td></tr>
+    <tr><td class="n">2</td><td>Teclado, foco e leitor de tela</td><td>A03, A08</td><td><span class="tag P0">Máxima</span></td><td class="esf">Médio</td></tr>
+    <tr><td class="n">3</td><td>Rotas confiáveis e avisos claros</td><td>A02, A04</td><td><span class="tag P0">Máxima</span></td><td class="esf">Pequeno</td></tr>
+    <tr><td class="n">4</td><td>Preferências de acessibilidade combináveis</td><td>A05</td><td><span class="tag P1">Alta</span></td><td class="esf">Médio</td></tr>
+    <tr><td class="n">5</td><td>Áudio com nome e controles claros</td><td>A06</td><td><span class="tag P1">Alta</span></td><td class="esf">Pequeno</td></tr>
+    <tr><td class="n">6</td><td>Experiência no celular</td><td>A07</td><td><span class="tag P1">Alta</span></td><td class="esf">Médio</td></tr>
+    <tr><td class="n">7</td><td>Distâncias em metros e pontos de referência</td><td>A01, A02</td><td><span class="tag P1">Alta</span></td><td class="esf">Pequeno*</td></tr>
+    <tr><td class="n">8</td><td>Testes com o público real</td><td>A09</td><td><span class="tag P1">Alta</span></td><td class="esf">Médio</td></tr>
+    <tr><td class="n">9</td><td>3D e primeira pessoa como recurso opcional</td><td>A12</td><td><span class="tag P2">Evolução</span></td><td class="esf">Pequeno</td></tr>
+    <tr><td class="n">10</td><td>Ajuda contextual e “Pedir ajuda”</td><td>A11</td><td><span class="tag P2">Evolução</span></td><td class="esf">Pequeno</td></tr>
+    <tr><td class="n">11</td><td>Preferências lembradas entre visitas</td><td>A10</td><td><span class="tag P2">Evolução</span></td><td class="esf">Pequeno</td></tr>
+    <tr><td class="n">12</td><td>Testes automáticos de acessibilidade</td><td>—</td><td><span class="tag P2">Evolução</span></td><td class="esf">Pequeno</td></tr>
+  </tbody>
+</table>
+<p class="nota">Esforço: estimativa relativa para a equipe atual (Pequeno ≈ até 1 dia · Médio ≈ 2 a 4 dias). *Depende de confirmar a escala real da planta.</p>
+
+<h2 class="quebra">Máxima prioridade</h2>
+
+<div class="item P0b">
+  <h3><span class="num">1</span> Rota completa só por texto <span class="tag P0">Máxima</span></h3>
+  <div class="ref">Auditoria A01 · WCAG 1.1.1, 1.3.1, 2.4.6 · Retorno do colega: “navegação completa sem depender do mapa visual”</div>
+  <div class="bloco"><span class="rot">Problema</span>Hoje a rota é mostrada principalmente pelo desenho no mapa. A lista de instruções existe, mas fica no painel junto com o mapa, e quem usa leitor de tela, tem baixa visão ou só quer ler precisa “achar” onde está cada passo.</div>
+  <div class="bloco"><span class="rot">O que já existe</span><span class="ja">Instruções geradas pela rota</span> (vire à esquerda/direita, siga até perto de X, suba pelo elevador, o destino fica à sua direita) e anúncios por <i>aria-live</i>.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li>Criar o modo <b>“Passo a passo”</b> disponível para todos os perfis: um cartão por vez com “Passo 2 de 6”, botões grandes <b>Anterior</b> / <b>Próximo</b> / <b>Repetir</b>.</li>
+      <li>Botão <b>“Esconder mapa”</b> que deixa só o texto em tela cheia (o mapa continua acessível por um botão).</li>
+      <li>Ao avançar, anunciar o passo pelo leitor de tela e, se o áudio estiver ligado, falar em voz alta.</li>
+      <li>No cartão do passo, atalhos <b>“Alterar destino”</b> e <b>“Recalcular”</b> (por exemplo, se o elevador estiver fechado).</li>
+      <li>Resumo no topo: destino, piso, se usa elevador ou escada rolante e quantidade de passos.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> uma pessoa com o monitor desligado, só com leitor de tela (NVDA ou TalkBack), escolhe um destino e chega ao último passo sem ajuda.</div>
+</div>
+
+<div class="item P0b">
+  <h3><span class="num">2</span> Teclado, foco e leitor de tela <span class="tag P0">Máxima</span></h3>
+  <div class="ref">Auditoria A03, A08 · WCAG 2.1.1, 2.4.3, 2.4.7, 2.4.11, 4.1.2 · WAI-ARIA APG (diálogo modal)</div>
+  <div class="bloco"><span class="rot">Problema</span>Parte dos controles do mapa são ícones; o mapa SVG e o 3D não têm um equivalente navegável; janelas (cartão do local, aviso de voz, avisos) precisam prender e devolver o foco corretamente. Mudanças de piso e de vista nem sempre são anunciadas.</div>
+  <div class="bloco"><span class="rot">O que já existe</span><span class="ja">Popup de voz como diálogo</span>, anúncios <i>aria-live</i>, alto contraste e aumento de texto.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li>Revisar a ordem do Tab em todas as telas: perfil → busca → resultado → passo a passo → mapa.</li>
+      <li>Foco visível e forte em todos os botões (contorno de 3 px, inclusive no tema Soft UI).</li>
+      <li>Nome acessível em todo botão de ícone (zoom, piso, 2D/3D, tela cheia, fechar).</li>
+      <li>Diálogos: foco vai para dentro ao abrir, Esc fecha, foco volta para o botão de origem.</li>
+      <li>Anunciar “Piso 2 ativo”, “Vista 3D”, “Rota calculada: 6 passos”.</li>
+      <li>Lista de locais do piso como alternativa ao mapa (o mapa vira imagem com descrição).</li>
+      <li>Link “Pular para a busca” no início da página.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> todo o fluxo funciona só com teclado, sem armadilha de foco, e NVDA (Windows) e TalkBack (Android) leem cada controle com nome e estado.</div>
+</div>
+
+<div class="item P0b">
+  <h3><span class="num">3</span> Rotas confiáveis e avisos claros <span class="tag P0">Máxima</span></h3>
+  <div class="ref">Auditoria A02, A04 · Segurança e confiança da pessoa que segue a rota</div>
+  <div class="bloco"><span class="rot">Problema</span>A rota é calculada a partir da planta, não foi verificada no local. A posição do elevador no Piso 1 é estimada. Se não existir caminho sem escada, a pessoa precisa saber disso com clareza, e não receber uma rota “qualquer”.</div>
+  <div class="bloco"><span class="rot">O que já existe</span><span class="ja">Perfil de mobilidade evita escadas e usa o elevador</span>; locais marcados como interditados saem da rota; elevador quebrado bloqueia as duas portas e indica o SAC; envio de avisos por WhatsApp, telefone e Fale Conosco.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li>Selo fixo na rota: <b>“Rota demonstrativa, não verificada no local”</b> com a data da planta usada.</li>
+      <li>Quando não houver caminho sem escada: <b>“Não encontramos caminho acessível confirmado. Procure o SAC no Piso X ou ligue (41) 3094-5300.”</b></li>
+      <li>Aviso discreto: “Não use para emergências. Siga a sinalização e a equipe do shopping.”</li>
+      <li>Mostrar a data do último aviso de interdição recebido, para a pessoa saber se a informação é recente.</li>
+      <li>Confirmar a posição real do elevador do Piso 1 com uma visita e corrigir no mapa.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> toda rota mostra o selo e a data; nenhuma rota do perfil de mobilidade passa por escada; o caso “sem caminho acessível” mostra a mensagem com o contato do SAC.</div>
+</div>
+
+<h2>Alta prioridade</h2>
+
+<div class="item P1b">
+  <h3><span class="num">4</span> Preferências de acessibilidade combináveis <span class="tag P1">Alta</span></h3>
+  <div class="ref">Auditoria A05 · Retorno do colega: “permitir combinar essas adaptações”</div>
+  <div class="bloco"><span class="rot">Problema</span>Hoje a pessoa escolhe <b>um</b> perfil (visual, auditiva ou mobilidade). Muita gente tem mais de uma necessidade: um idoso cadeirante com baixa visão, uma pessoa surda que também quer letras maiores.</div>
+  <div class="bloco"><span class="rot">O que já existe</span><span class="ja">Três perfis</span> com adaptações próprias, alto contraste e A+ separados no topo.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li>Os três perfis viram <b>atalhos</b> que ligam um conjunto de opções; a pessoa pode ajustar depois.</li>
+      <li>Painel “Minhas preferências” com chaves independentes: <b>Ouvir instruções</b>, <b>Evitar escadas</b>, <b>Instruções sempre por escrito</b>, <b>Libras (VLibras)</b>, <b>Texto maior</b>, <b>Alto contraste</b>, <b>Reduzir movimento</b>.</li>
+      <li>Botão sempre visível no topo para abrir esse painel em qualquer tela.</li>
+      <li>Permitir também “Não quero escolher perfil”, indo direto à busca.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> é possível ligar “Evitar escadas” + “Ouvir instruções” + “Libras” ao mesmo tempo e todas funcionam juntas na mesma rota.</div>
+</div>
+
+<div class="item P1b">
+  <h3><span class="num">5</span> Áudio com nome e controles claros <span class="tag P1">Alta</span></h3>
+  <div class="ref">Auditoria A06 · WCAG 1.4.2, 3.3.2 · Retorno do colega sobre o “comando de voz”</div>
+  <div class="bloco"><span class="rot">Problema</span>“Comando de voz” sugere que o site obedece a comandos falados, mas o recurso principal é o site <b>falar</b> as instruções. A busca por microfone é outra coisa. A pessoa também não tem como pausar, repetir ou mudar a velocidade.</div>
+  <div class="bloco"><span class="rot">O que já existe</span><span class="ja">Popup ao abrir perguntando sobre a voz</span>, fala em português (pt-BR) e busca por microfone.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li>Trocar o texto do popup para: <b>“Deseja ouvir as instruções em voz alta? (Recomendado para quem não usa leitor de tela, como o TalkBack)”</b>.</li>
+      <li>Chamar o microfone de <b>“Buscar falando”</b>.</li>
+      <li>Barra de áudio visível quando ligado: <b>Pausar</b>, <b>Repetir</b>, <b>Velocidade</b> (normal / devagar / rápido).</li>
+      <li>Não falar ao mesmo tempo que o leitor de tela: se a pessoa disser que usa TalkBack, o site só anuncia por <i>aria-live</i>.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> uma pessoa entende o que o popup oferece sem explicação, e consegue pausar e repetir a fala a qualquer momento.</div>
+</div>
+
+<div class="item P1b">
+  <h3><span class="num">6</span> Experiência no celular <span class="tag P1">Alta</span></h3>
+  <div class="ref">Auditoria A07 · WCAG 1.4.4, 1.4.10, 2.5.8 · Retorno do colega: “atenção à experiência no celular”</div>
+  <div class="bloco"><span class="rot">Problema</span>A maioria vai usar o Navi andando pelo shopping, com o celular numa mão. O painel de rota e o mapa disputam espaço na tela pequena, e a instrução atual pode ficar longe do polegar.</div>
+  <div class="bloco"><span class="rot">O que já existe</span><span class="ja">Layout responsivo</span>, botões grandes no perfil visual, gestos de pinça no mapa.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li><b>Painel inferior</b> (estilo Google Maps) com a instrução atual e os botões Anterior/Próximo perto do polegar; arrastar para cima mostra a lista completa.</li>
+      <li>Alvos de toque de no mínimo 44 × 44 px.</li>
+      <li>Testar em 320, 375 e 390 px de largura e com zoom de 200% sem rolagem lateral.</li>
+      <li>Tela não apaga durante a rota (Wake Lock), quando o navegador permitir.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> em um celular de 360 px dá para seguir a rota inteira com uma mão, sem dar zoom e sem rolar para os lados.</div>
+</div>
+
+<div class="item P1b">
+  <h3><span class="num">7</span> Distâncias em metros e pontos de referência <span class="tag P1">Alta</span></h3>
+  <div class="ref">Auditoria A01, A02 · Instruções mais concretas para quem não vê o mapa</div>
+  <div class="bloco"><span class="rot">Problema</span>Hoje as distâncias aparecem como “alguns passos”, “trecho curto/médio/longo”, porque a escala real da planta ainda não foi confirmada. Para quem não enxerga, “uns 20 metros” ajuda mais.</div>
+  <div class="bloco"><span class="rot">O que já existe</span><span class="ja">Pontos de referência nas instruções</span> (“siga até perto da loja X”) e o lado em que o destino fica.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li>Medir no local um corredor conhecido (ex.: entre duas lojas) e calcular a escala da planta.</li>
+      <li>Mostrar “cerca de 20 metros (uns 30 passos)”, arredondando de 5 em 5 m.</li>
+      <li>Preferir referências fáceis de perceber sem visão: escada rolante, praça de alimentação, banheiros, portas de entrada.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> medindo 5 rotas no local, a distância informada erra menos de 20%.</div>
+</div>
+
+<div class="item P1b">
+  <h3><span class="num">8</span> Testes com o público real <span class="tag P1">Alta</span></h3>
+  <div class="ref">Auditoria A09 · ABNT NBR 17225:2025 recomenda avaliação com usuários</div>
+  <div class="bloco"><span class="rot">Problema</span>Toda a avaliação até agora foi feita pela equipe e por revisão técnica. Só quem usa leitor de tela, cadeira de rodas ou Libras no dia a dia vai mostrar os problemas reais.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li>Convidar pelo menos 2 pessoas de cada público (visual, auditiva, mobilidade) — associações de Curitiba podem ajudar.</li>
+      <li>Tarefa padrão: “Encontre o banheiro acessível mais próximo” e “Vá até a loja X no outro piso”.</li>
+      <li>Anotar onde a pessoa travou, quanto tempo levou e o que ela diria para melhorar.</li>
+      <li>Fazer uma parte do teste dentro do shopping, seguindo a rota de verdade.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> pelo menos 6 pessoas testaram e os problemas encontrados viraram itens nesta lista.</div>
+</div>
+
+<h2 class="quebra">Evolução</h2>
+
+<div class="item P2b">
+  <h3><span class="num">9</span> 3D e primeira pessoa como recurso opcional <span class="tag P2">Evolução</span></h3>
+  <div class="ref">Auditoria A12 · WCAG 2.3.3 · Retorno do colega: “priorizar primeiro os fluxos principais”</div>
+  <div class="bloco"><span class="rot">Problema</span>O 3D é pesado para celulares simples e não acrescenta para quem não enxerga. Ele deve ser um extra, nunca o caminho principal.</div>
+  <div class="bloco"><span class="rot">O que já existe</span><span class="ja">O 3D só carrega quando a pessoa pede</span> (não pesa a abertura do site) e o site respeita “reduzir movimento” do sistema.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li>Manter o 2D e o passo a passo como padrão; 3D aparece como “Ver em 3D (opcional)”.</li>
+      <li>Avisar o tamanho do download antes de carregar em conexão móvel.</li>
+      <li>Em aparelhos fracos, reduzir a qualidade automaticamente (menos sombras e detalhes).</li>
+      <li>Na primeira pessoa, botão claro “Sair” e opção de avançar sem animação.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> o site abre e calcula rotas sem baixar o 3D, e o 3D roda a pelo menos 30 quadros por segundo em um celular intermediário.</div>
+</div>
+
+<div class="item P2b">
+  <h3><span class="num">10</span> Ajuda contextual e “Pedir ajuda” <span class="tag P2">Evolução</span></h3>
+  <div class="ref">Auditoria A11 · WCAG 3.3.5</div>
+  <div class="bloco"><span class="rot">Problema</span>Se a pessoa se perder, não entender uma instrução ou encontrar algo fechado, não há um caminho rápido para pedir ajuda humana.</div>
+  <div class="bloco"><span class="rot">O que já existe</span><span class="ja">Envio de avisos de interdição</span> ao shopping por WhatsApp, telefone e Fale Conosco.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li>Botão fixo <b>“Pedir ajuda”</b>: ligar para o SAC, mandar WhatsApp com o destino e o último passo já escritos.</li>
+      <li>Pequenas dicas “O que é isto?” ao lado das opções menos óbvias (2D/3D, primeira pessoa).</li>
+      <li>Rota até o SAC com um toque.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> de qualquer tela é possível falar com o shopping em no máximo 2 toques.</div>
+</div>
+
+<div class="item P2b">
+  <h3><span class="num">11</span> Preferências lembradas entre visitas <span class="tag P2">Evolução</span></h3>
+  <div class="ref">Auditoria A10 · WCAG 3.3.7 (entrada redundante)</div>
+  <div class="bloco"><span class="rot">Problema</span>Quem volta ao site não deveria responder tudo de novo (voz, perfil, contraste, tamanho do texto).</div>
+  <div class="bloco"><span class="rot">O que já existe</span><span class="ja">O perfil escolhido já fica salvo</span> no navegador.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li>Salvar todas as preferências do item 4 no próprio aparelho (sem cadastro e sem enviar dados).</li>
+      <li>Na volta: “Bem-vindo de novo. Usar suas preferências?” com <b>Sim</b> / <b>Mudar</b>.</li>
+      <li>Botão “Apagar minhas preferências”.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> ao reabrir o site no mesmo aparelho, as opções voltam como estavam e podem ser apagadas.</div>
+</div>
+
+<div class="item P2b">
+  <h3><span class="num">12</span> Testes automáticos de acessibilidade <span class="tag P2">Evolução</span></h3>
+  <div class="ref">Apoio técnico para manter a qualidade a cada atualização</div>
+  <div class="bloco"><span class="rot">Problema</span>A cada mudança no site, algo que funcionava pode quebrar (um botão sem nome, contraste baixo) sem ninguém perceber.</div>
+  <div class="bloco"><span class="rot">O que já existe</span><span class="ja">Testes automáticos de tela com Playwright</span> usados durante o desenvolvimento.</div>
+  <div class="bloco"><span class="rot">Como aplicar</span>
+    <ul>
+      <li>Adicionar o <b>axe-core</b> aos testes do Playwright e rodar nas telas principais (perfil, busca, rota, avisos).</li>
+      <li>Testar também com alto contraste ligado e com texto aumentado.</li>
+      <li>Rodar antes de cada nova publicação no Netlify.</li>
+    </ul>
+  </div>
+  <div class="aceite"><b>Pronto quando:</b> as telas principais passam no axe-core sem erros graves antes de cada publicação.</div>
+</div>
+
+<h2>Primeira rodada sugerida</h2>
+<p>Três itens que juntos atendem ao ponto principal do retorno (navegar sem depender do mapa, com adaptações combinadas) e aproveitam bastante do que já existe:</p>
+<div class="rodada">
+  <div><b>1 · Passo a passo</b>Rota completa por texto, para todos os perfis.</div>
+  <div><b>4 · Preferências</b>Perfis viram atalhos e as opções podem ser combinadas.</div>
+  <div><b>5 · Áudio</b>Novo texto do popup, “Buscar falando” e controles de pausa e repetição.</div>
+</div>
+<p>Em seguida: <b>2 (teclado e leitor de tela)</b> e <b>3 (avisos de confiabilidade)</b>, que são rápidos e fecham a parte de máxima prioridade, e depois o <b>teste com o público real (8)</b> para validar tudo.</p>
+
+<p class="nota">Documento gerado para análise interna da equipe Navi. As prioridades seguem a auditoria (P0 = máxima, P1 = alta, P2 = evolução) ajustadas pelo retorno do colega.</p>
+
+</body>
+</html>
