@@ -1,12 +1,19 @@
 /* Navi — grafo de circulação, cálculo de rotas e instruções em texto.
-   Funciona no navegador (window.NaviRotas) e no Node (testes). */
+   Funciona no navegador (window.NaviRotas) e no Node (testes e geradores).
+   Duas entradas para o mesmo motor:
+   - criarGrafo(D): dados legados (células do corredor), usado pelo gerador de dados;
+   - criarGrafo11(grafo, lugares): grafo no esquema 1.1 de cada local (locais/<slug>/grafo.json).
+   Os dois devolvem a mesma estrutura G; caminho(), rota() e instrucoes() não mudam. */
 (function (raiz) {
   'use strict';
   const PASSO = 30; // tamanho da célula da malha de circulação, em unidades da planta
+  const INCLINACAO_MAX = 8.33; // % — limite de rampa da ABNT NBR 9050
 
   const semAcento = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
+  /* ------------------------------------------------------------------ dados legados */
   function criarGrafo(D) {
+    const places = D.places.slice(); // cópia: o motor nunca altera os dados recebidos (F5)
     const nos = [];          // {id, piso, x, y}
     const viz = [];          // lista de adjacência: [{para, custo, tipo}]
     const porPiso = { 1: [], 2: [] };
@@ -14,7 +21,7 @@
     for (const piso of [1, 2]) {
       for (const [i, j] of D.grafo[piso]) {
         const id = nos.length;
-        nos.push({ id, piso, x: i * PASSO + PASSO / 2, y: j * PASSO + PASSO / 2, i, j });
+        nos.push({ id, piso, x: i * PASSO + PASSO / 2, y: j * PASSO + PASSO / 2, i, j, tipo: 'corredor' });
         viz.push([]);
         porPiso[piso].push(id);
         chave[piso + ':' + i + ':' + j] = id;
@@ -28,32 +35,25 @@
         if (m !== undefined) viz[n.id].push({ para: m, custo: Math.hypot(a, b) * PASSO, tipo: 'corredor' });
       }
     }
-    const maisProximo = (piso, x, y) => {
-      let melhor = -1, d = Infinity;
-      for (const id of porPiso[piso]) {
-        const n = nos[id], dd = (n.x - x) ** 2 + (n.y - y) ** 2;
-        if (dd < d) { d = dd; melhor = id; }
-      }
-      return melhor;
-    };
+    const maisProximo = maisProximoEm(nos, porPiso);
 
     // Conexões entre pisos: escadas rolantes pareadas por posição; elevador (posição do Piso 2,
     // mesmo poço no Piso 1 — posição estimada).
-    const escadas1 = D.places.filter(p => p.cat === 'escada' && p.piso === 1);
-    const escadas2 = D.places.filter(p => p.cat === 'escada' && p.piso === 2);
+    const escadas1 = places.filter(p => p.cat === 'escada' && p.piso === 1);
+    const escadas2 = places.filter(p => p.cat === 'escada' && p.piso === 2);
     const conexoes = [];
     for (const e1 of escadas1) {
       const e2 = escadas2.reduce((a, b) => Math.hypot(a.x - e1.x, a.y - e1.y) < Math.hypot(b.x - e1.x, b.y - e1.y) ? a : b);
       conexoes.push({ tipo: 'escada', a: maisProximo(1, e1.x, e1.y), b: maisProximo(2, e2.x, e2.y), lugares: [e1.id, e2.id], custo: 60 });
     }
-    const elev2 = D.places.find(p => p.cat === 'elevador' && p.piso === 2);
-    let elev1 = null;
-    if (elev2) {
+    const iElev2 = places.findIndex(p => p.cat === 'elevador' && p.piso === 2);
+    if (iElev2 >= 0) {
+      const elev2 = { ...places[iElev2], nome: 'Elevadores' };
+      places[iElev2] = elev2;
       const n1 = maisProximo(1, elev2.x, elev2.y);
-      elev1 = { id: 'elevador-piso-1', nome: 'Elevadores', cat: 'elevador', piso: 1, x: nos[n1].x, y: nos[n1].y,
+      const elev1 = { id: 'elevador-piso-1', nome: 'Elevadores', cat: 'elevador', piso: 1, x: nos[n1].x, y: nos[n1].y,
         w: 26, h: 26, r: 0, poly: -1, estimado: true };
-      D.places.push(elev1);
-      elev2.nome = 'Elevadores';
+      places.push(elev1);
       conexoes.push({ tipo: 'elevador', a: n1, b: maisProximo(2, elev2.x, elev2.y), lugares: [elev1.id, elev2.id], custo: 90 });
     }
     for (const c of conexoes) {
@@ -61,14 +61,101 @@
       viz[c.b].push({ para: c.a, custo: c.custo, tipo: c.tipo, lugares: c.lugares });
     }
     const lugarPorId = {};
-    for (const p of D.places) lugarPorId[p.id] = p;
+    for (const p of places) lugarPorId[p.id] = p;
     const noDoLugar = p => maisProximo(p.piso, p.x, p.y);
-    return { nos, viz, porPiso, conexoes, maisProximo, noDoLugar, lugarPorId, places: D.places };
+    const pontoDoLugar = p => ({ x: p.x, y: p.y });
+    return { nos, viz, porPiso, conexoes, maisProximo, noDoLugar, pontoDoLugar, lugarPorId, places, referencias: {} };
   }
 
-  // Dijkstra com fila simples (grafo pequeno: ~320 nós)
+  function maisProximoEm(nos, porPiso, filtro) {
+    return (piso, x, y) => {
+      let melhor = -1, d = Infinity;
+      for (const id of porPiso[piso] || []) {
+        const n = nos[id];
+        if (filtro && !filtro(n)) continue;
+        const dd = (n.x - x) ** 2 + (n.y - y) ** 2;
+        if (dd < d) { d = dd; melhor = id; }
+      }
+      return melhor;
+    };
+  }
+
+  /* ------------------------------------------------------------------ grafo 1.1 */
+  // tipo da aresta no grafo 1.1 → tipo interno do motor (o que caminho() entende)
+  const TIPO_INTERNO = { caminhada: 'corredor', rampa: 'corredor', escada: 'escada', escada_rolante: 'escada', elevador: 'elevador', plataforma: 'elevador' };
+  const CATEGORIAS_DE_EQUIPAMENTO = ['escada', 'escada_rolante', 'elevador', 'plataforma'];
+
+  /**
+   * @param {object} grafo   grafo no esquema 1.1 (não é alterado)
+   * @param {object[]} lugares lugares canônicos (NaviLocal.montar): {id, piso, x, y, cat, no_porta, ...} (não são alterados)
+   * @param {{referencias?: Object<string,string>}} [opcoes]
+   */
+  function criarGrafo11(grafo, lugares, opcoes = {}) {
+    const ordemDoAndar = {};
+    for (const a of grafo.andares) ordemDoAndar[a.id] = a.ordem;
+    const e = grafo.escala_m_por_unidade || 1;
+    const nos = [], viz = [], porPiso = {}, indice = {};
+    grafo.nos.forEach((n, i) => {
+      const piso = ordemDoAndar[n.andar];
+      nos.push({ id: i, idGrafo: n.id, piso, x: n.pos[0] / e, y: n.pos[2] / e, tipo: n.tipo });
+      viz.push([]);
+      (porPiso[piso] = porPiso[piso] || []).push(i);
+      indice[n.id] = i;
+    });
+    const lugarPorId = {};
+    for (const l of lugares) lugarPorId[l.id] = l;
+
+    // lugares de cada equipamento: lugares de categoria de equipamento cuja porta é ponta de uma aresta dele
+    const pontasDoEquip = {};
+    for (const a of grafo.arestas) if (a.equipamento) {
+      const s = pontasDoEquip[a.equipamento] = pontasDoEquip[a.equipamento] || new Set();
+      s.add(a.de); s.add(a.para);
+    }
+    const lugaresDoEquip = {}, equipDoLugar = {};
+    for (const [eq, pontas] of Object.entries(pontasDoEquip)) {
+      lugaresDoEquip[eq] = lugares.filter(l => CATEGORIAS_DE_EQUIPAMENTO.includes(l.cat) && pontas.has(l.no_porta)).map(l => l.id);
+      for (const id of lugaresDoEquip[eq]) equipDoLugar[id] = eq;
+    }
+
+    const conexoes = [];
+    for (const a of grafo.arestas) {
+      const de = indice[a.de], para = indice[a.para];
+      let tipo = TIPO_INTERNO[a.tipo] || 'corredor';
+      if (a.tipo === 'rampa' && a.inclinacao_pct != null && a.inclinacao_pct > INCLINACAO_MAX) tipo = 'escada'; // rampa íngreme sai das rotas sem escada
+      const base = { custo: a.custo, tipo };
+      if (a.tipo !== 'caminhada') base.rotulo = a.tipo;
+      if (a.equipamento) { base.equipamento = a.equipamento; base.lugares = lugaresDoEquip[a.equipamento] || []; }
+      viz[de].push({ para, ...base });
+      if (a.sentido !== 'ida') viz[para].push({ para: de, ...base });
+      if (a.equipamento && tipo !== 'corredor') {
+        const [lo, hi] = nos[de].piso <= nos[para].piso ? [de, para] : [para, de];
+        if (!conexoes.some(c => c.equipamento === a.equipamento && c.a === lo && c.b === hi)) {
+          conexoes.push({ tipo, rotulo: a.tipo, a: lo, b: hi, lugares: base.lugares, custo: a.custo, equipamento: a.equipamento });
+        }
+      }
+    }
+    const maisProximo = maisProximoEm(nos, porPiso);
+    const noDoLugar = l => (l.no_porta != null && indice[l.no_porta] != null) ? indice[l.no_porta] : maisProximo(l.piso, l.x, l.y);
+    const pontoDoLugar = l => {
+      const i = l.no_porta != null ? indice[l.no_porta] : null;
+      const n = i != null ? nos[i] : null;
+      return n && (n.tipo === 'porta' || n.tipo === 'acesso') ? { x: n.x, y: n.y } : { x: l.x, y: l.y };
+    };
+    const nomePorOrdem = {};
+    for (const a of grafo.andares) nomePorOrdem[a.ordem] = a.nome;
+    return {
+      nos, viz, porPiso, conexoes, maisProximo, noDoLugar, pontoDoLugar, lugarPorId, places: lugares,
+      referencias: opcoes.referencias || {},
+      nomeDoAndar: piso => nomePorOrdem[piso] || 'Andar ' + piso,
+      equipamentoDoLugar: id => equipDoLugar[id] || null,
+      lugaresDoEquipamento: eq => (lugaresDoEquip[eq] || []).slice()
+    };
+  }
+
+  /* ------------------------------------------------------------------ cálculo */
+  // Dijkstra com fila simples (grafo pequeno: algumas centenas de nós)
   function caminho(G, origemNo, destinoNo, opcoes = {}) {
-    const n = G.nos.length, dist = new Float64Array(n).fill(Infinity), ant = new Int32Array(n).fill(-1), via = new Array(n);
+    const n = G.nos.length, dist = new Float64Array(n).fill(Infinity), ant = new Int32Array(n).fill(-1), via = new Array(n), rot = new Array(n);
     const feito = new Uint8Array(n);
     dist[origemNo] = 0;
     for (;;) {
@@ -80,13 +167,13 @@
         if (opcoes.semEscadas && e.tipo === 'escada') continue;
         if (opcoes.bloqueados && e.lugares && e.lugares.some(id => opcoes.bloqueados.has(id))) continue; // elevador/escada interditados
         const alt = dist[u] + e.custo;
-        if (alt < dist[e.para]) { dist[e.para] = alt; ant[e.para] = u; via[e.para] = e.tipo; }
+        if (alt < dist[e.para]) { dist[e.para] = alt; ant[e.para] = u; via[e.para] = e.tipo; rot[e.para] = e.rotulo; }
       }
     }
     if (!isFinite(dist[destinoNo])) return null;
     const ids = [destinoNo];
     while (ids[0] !== origemNo) ids.unshift(ant[ids[0]]);
-    return { ids, tipos: ids.map(i => via[i] || 'corredor'), custo: dist[destinoNo] };
+    return { ids, tipos: ids.map(i => via[i] || 'corredor'), rotulos: ids.map(i => rot[i] || null), custo: dist[destinoNo] };
   }
 
   function rota(G, origem, destino, opcoes = {}) {
@@ -99,7 +186,7 @@
     c.ids.forEach((id, k) => {
       const no = G.nos[id];
       if (!atual || atual.piso !== no.piso) {
-        if (atual) atual.saida = c.tipos[k]; // tipo de conexão usada para sair deste piso
+        if (atual) { atual.saida = c.tipos[k]; atual.saidaRotulo = c.rotulos[k] || (c.tipos[k] === 'elevador' ? 'elevador' : 'escada_rolante'); }
         atual = { piso: no.piso, pontos: [] };
         trechos.push(atual);
       }
@@ -107,9 +194,13 @@
     });
     // caminho pelo meio dos corredores, desviando dos quiosques (malha fina)
     if (opcoes.malha !== false) trechos.forEach((t, ti) => { t.pontos = refinarTrecho(t.piso, t.pontos, 120, ti > 0, !!t.saida); });
-    // começa e termina na porta dos lugares
-    trechos[0].pontos.unshift({ x: origem.x, y: origem.y });
-    trechos[trechos.length - 1].pontos.push({ x: destino.x, y: destino.y });
+    // começa e termina na porta dos lugares (ou no centro, quando o local não tem porta registrada)
+    const pontoDe = G.pontoDoLugar || (l => ({ x: l.x, y: l.y }));
+    const ini = pontoDe(origem), fim = pontoDe(destino);
+    const p0 = trechos[0].pontos[0], ult = trechos[trechos.length - 1].pontos;
+    if (!p0 || Math.hypot(p0.x - ini.x, p0.y - ini.y) > 1) trechos[0].pontos.unshift({ x: ini.x, y: ini.y });
+    const pN = ult[ult.length - 1];
+    if (!pN || Math.hypot(pN.x - fim.x, pN.y - fim.y) > 1) ult.push({ x: fim.x, y: fim.y });
     const usaEscada = trechos.some(t => t.saida === 'escada');
     const usaElevador = trechos.some(t => t.saida === 'elevador');
     const comprimento = trechos.reduce((s, t) => s + compr(t.pontos), 0);
@@ -144,26 +235,40 @@
     return 'um trecho longo';
   }
 
+  const SEM_REFERENCIA = ['emergencia', 'administracao'];
   function referencia(G, piso, ponto, excluir, raio = 85) {
     let melhor = null, d = raio;
     for (const p of G.places) {
-      if (p.piso !== piso || excluir.has(p.id) || p.cat === 'emergencia' || p.cat === 'administracao') continue;
+      if (p.piso !== piso || excluir.has(p.id) || SEM_REFERENCIA.includes(p.cat)) continue;
       const dd = Math.hypot(p.x - ponto.x, p.y - ponto.y);
       if (dd < d) { d = dd; melhor = p; }
     }
     return melhor;
   }
 
-  const GENERICO = { escada: 'da escada rolante', sanitario: 'dos sanitários', elevador: 'dos elevadores',
+  // Referência genérica por categoria. O local pode trocar ou acrescentar (config.referencias).
+  const GENERICO = {
+    escada: 'da escada rolante', escada_rolante: 'da escada rolante', escada_fixa: 'da escada', sanitario: 'dos sanitários',
+    sanitario_acessivel: 'do sanitário acessível', elevador: 'dos elevadores', plataforma: 'da plataforma elevatória',
     informacao: 'do SAC', estacionamento: 'do pagamento do estacionamento', caixa: 'dos caixas eletrônicos',
-    saida: 'da saída', familia: 'do Espaço Família', museu: 'do Museu Ferroviário' };
-  const pertoDe = p => GENERICO[p.cat] || (p.cat === 'entrada' ? 'do ' + p.nome : 'de ' + p.nome);
+    saida: 'da saída', familia: 'do Espaço Família', museu: 'do museu', biblioteca: 'da biblioteca', secretaria: 'da secretaria',
+    coordenacao: 'da coordenação', auditorio: 'do auditório', cantina: 'da cantina', rampa: 'da rampa'
+  };
+  const pertoDe = (G, p) => (G.referencias && G.referencias[p.cat]) || GENERICO[p.cat] ||
+    (p.cat === 'entrada' ? 'do ' + p.nome : 'de ' + p.nome);
+
+  // como cada meio de troca de andar é dito nas instruções
+  const MEIO = {
+    elevador: ['o elevador', 'do elevador'], escada_rolante: ['a escada rolante', 'da escada rolante'],
+    escada: ['a escada', 'da escada'], plataforma: ['a plataforma elevatória', 'da plataforma elevatória']
+  };
+  const meio = t => MEIO[t.saidaRotulo] || MEIO[t.saida === 'elevador' ? 'elevador' : 'escada_rolante'];
 
   function instrucoes(G, r) {
     const passos = [];
     const excluir = new Set([r.origem.id, r.destino.id]);
     let ultimaRef = null;
-    const nomeConexao = t => t === 'elevador' ? 'o elevador' : 'a escada rolante';
+    const nomeAndar = piso => (G.nomeDoAndar ? G.nomeDoAndar(piso) : 'Piso ' + piso);
     r.trechos.forEach((t, ti) => {
       const pts = simplificar(t.pontos, 20);
       // junta segmentos quase alinhados
@@ -183,7 +288,7 @@
         if (ref && ref === ultimaRef) ref = null;
         if (ref) ultimaRef = ref;
         const ultimoSeg = ti === r.trechos.length - 1 && i === seg.length - 2;
-        const perto = ref && !ultimoSeg ? ` até perto ${pertoDe(ref)}` : '';
+        const perto = ref && !ultimoSeg ? ` até perto ${pertoDe(G, ref)}` : '';
         let tipo, texto;
         if (i === 0) {
           if (ti === 0) {
@@ -191,7 +296,7 @@
             texto = `Saia de ${r.origem.nome} e siga ${trechoEmPalavras(L)} pelo corredor${perto}.`;
           } else {
             tipo = 'reto';
-            texto = `No Piso ${t.piso}, ao sair ${r.trechos[ti - 1].saida === 'elevador' ? 'do elevador' : 'da escada rolante'}, siga ${trechoEmPalavras(L)}${perto}.`;
+            texto = `No ${nomeAndar(t.piso)}, ao sair ${meio(r.trechos[ti - 1])[1]}, siga ${trechoEmPalavras(L)}${perto}.`;
           }
         } else {
           const giro = normal(angulo(a, b) - angulo(seg[i - 1], a)); // y para baixo: positivo = direita
@@ -207,7 +312,7 @@
           ant._L += L; ant.ate = b;
           const refJunta = ultimoSeg ? null : (ref || ant._ref);
           ant.texto = ant.texto.replace(/(siga |por )(alguns passos|um trecho curto|um trecho médio|um trecho longo)( pelo corredor)?( até perto (de|do|da|dos) [^.]*)?\./,
-            (m0, v, _q, corr) => `${v}${trechoEmPalavras(ant._L)}${corr || ''}${refJunta ? ' até perto ' + pertoDe(refJunta) : ''}.`);
+            (m0, v, _q, corr) => `${v}${trechoEmPalavras(ant._L)}${corr || ''}${refJunta ? ' até perto ' + pertoDe(G, refJunta) : ''}.`);
           ant._ref = refJunta;
           continue;
         }
@@ -216,8 +321,8 @@
       if (t.saida) {
         const prox = r.trechos[ti + 1];
         const fim = t.pontos[t.pontos.length - 1];
-        passos.push({ tipo: t.saida, piso: t.piso, de: fim, ate: fim,
-          texto: `Pegue ${nomeConexao(t.saida)} e ${prox.piso > t.piso ? 'suba' : 'desça'} para o Piso ${prox.piso}.` });
+        passos.push({ tipo: t.saida, rotulo: t.saidaRotulo, piso: t.piso, de: fim, ate: fim,
+          texto: `Pegue ${meio(t)[0]} e ${prox.piso > t.piso ? 'suba' : 'desça'} para o ${nomeAndar(prox.piso)}.` });
       }
     });
     // chegada: de que lado fica o destino
@@ -239,8 +344,9 @@
 
   function maisProximoDaCategoria(G, origem, cat, opcoes = {}) {
     let melhor = null;
+    const cats = Array.isArray(cat) ? cat : [cat];
     for (const p of G.places) {
-      if (p.cat !== cat || p.id === origem.id) continue;
+      if (!cats.includes(p.cat) || p.id === origem.id) continue;
       if (opcoes.bloqueados && opcoes.bloqueados.has(p.id)) continue;
       const c = caminho(G, G.noDoLugar(origem), G.noDoLugar(p), opcoes);
       if (c && (!melhor || c.custo < melhor.custo)) melhor = { lugar: p, custo: c.custo };
@@ -248,10 +354,13 @@
     return melhor && melhor.lugar;
   }
 
+  // Busca por nome, código (ex.: "204", "Sala 204") e palavras extras (ex.: bloco). Ignora acentos e maiúsculas.
   function buscar(places, termo, cat) {
     const q = semAcento(termo || '');
+    const palavras = q.split(/\s+/).filter(Boolean);
+    const texto = p => semAcento([p.nome, p.codigo, p.busca].filter(Boolean).join(' '));
     return places.filter(p => (!cat || cat === 'todos' || p.cat === cat || (cat === 'servicos' && !['loja', 'quiosque'].includes(p.cat)))
-      && (!q || semAcento(p.nome).includes(q)))
+      && (!palavras.length || palavras.every(w => texto(p).includes(w))))
       .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR') || a.piso - b.piso);
   }
 
@@ -259,15 +368,20 @@
      Cada célula guarda a folga (distância até a parede ou quiosque mais próximo).
      0 = parede/loja; 1 = quiosque (só se não houver outro jeito); >=2 = livre. */
   let MALHA = null;
+  const decodificar = b64 => {
+    if (typeof atob === 'function') { const t = atob(b64), u = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) u[i] = t.charCodeAt(i); return u; }
+    return new Uint8Array(Buffer.from(b64, 'base64'));
+  };
+  function usarMalha(M) {
+    if (!M) { MALHA = false; return; }
+    const folga = {};
+    for (const k of Object.keys(M.folga)) folga[k] = decodificar(M.folga[k]);
+    MALHA = { passo: M.passo, W: M.larg, H: M.alt, folga };
+  }
   function malha() {
     if (MALHA !== null) return MALHA;
     const M = (typeof window !== 'undefined' && window.NAVI_MALHA) || (typeof globalThis !== 'undefined' && globalThis.NAVI_MALHA);
-    if (!M) return (MALHA = false);
-    const dec = b64 => {
-      if (typeof atob === 'function') { const t = atob(b64), u = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) u[i] = t.charCodeAt(i); return u; }
-      return new Uint8Array(Buffer.from(b64, 'base64'));
-    };
-    MALHA = { passo: M.passo, W: M.larg, H: M.alt, folga: { 1: dec(M.folga[1]), 2: dec(M.folga[2]) } };
+    usarMalha(M || null);
     return MALHA;
   }
   function distPontoSeg(px, py, a, b) {
@@ -277,7 +391,7 @@
   }
   function refinarTrecho(piso, pontos, banda = 120, fixoIni = true, fixoFim = true) {
     const M = malha();
-    if (!M || pontos.length < 2) return pontos;
+    if (!M || pontos.length < 2 || !M.folga[piso]) return pontos;
     const { passo: S, W, H } = M, F = M.folga[piso];
     const cel = p => [Math.round(p.x / S), Math.round(p.y / S)];
     // células permitidas: dentro de uma faixa em volta da rota original (mantém o mesmo corredor das instruções)
@@ -353,6 +467,6 @@
     return cam;
   }
 
-  const api = { criarGrafo, caminho, rota, buscar, maisProximoDaCategoria, semAcento, simplificar, refinarTrecho };
+  const api = { criarGrafo, criarGrafo11, caminho, rota, buscar, maisProximoDaCategoria, semAcento, simplificar, refinarTrecho, usarMalha, INCLINACAO_MAX };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else raiz.NaviRotas = api;
 })(typeof window !== 'undefined' ? window : globalThis);

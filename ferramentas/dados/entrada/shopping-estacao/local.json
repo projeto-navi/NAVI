@@ -1,0 +1,12 @@
+{
+  "slug": "shopping-estacao",
+  "prefixo": "SHE",
+  "data_planta": "2026-10-19",
+  "andares": [
+    { "id": "P01", "nome": "Piso 1", "ordem": 1, "altura_m": 0 },
+    { "id": "P02", "nome": "Piso 2", "ordem": 2, "altura_m": null }
+  ],
+  "escala_m_por_unidade": null,
+  "escala_medida_em": null,
+  "origem": "canto superior esquerdo da planta do Mapa Mall; x para a direita, y para baixo"
+}
