@@ -1,142 +1,188 @@
-// Fluxo até a rota, restrições de mobilidade, interdições e troca 2D / 3D / primeira pessoa.
+// Da Página de Rota até a Página do Mapa, regras do passo a passo, mobilidade e interdições.
 const { test, expect } = require('@playwright/test');
 const N = require('../apoio/navi');
 
-const DESTINO_PISO_2 = { termo: 'atelier', nome: 'Atelier de Costura' };
+const ELEVADOR_COM_DEFEITO = JSON.stringify([{ lugar: '2-22327', tipo: 'danificado', detalhe: 'teste automático', criado: '2026-10-27T10:00:00.000Z' }]);
 
-/**
- * Planeja uma rota do jeito que a tela atual pedir, contando os toques a partir
- * da tela "Para onde você vai?" (digitar não conta como toque).
- */
-async function planejarRota(page, { perfil = 'Mobilidade reduzida', destino = DESTINO_PISO_2, entrada = 'Acesso Azul' } = {}) {
-  await N.abrir(page);
-  await N.responderVoz(page, false);
-  await N.escolherPerfil(page, perfil);
-  let toques = 0;
-  const paraOnde = page.getByRole('heading', { name: /para onde você (vai|quer ir)\?/i });
-  await expect(paraOnde).toBeVisible();
-  if (!(await N.campoBusca(page).isVisible())) {
-    // computador: a tela mostra os dois campos; abre o de destino
-    await page.getByRole('button', { name: /^Para onde vai/ }).click(); toques++;
-  }
-  await N.campoBusca(page).fill(destino.termo);
-  await page.getByRole('button', { name: new RegExp('^' + destino.nome) }).first().click(); toques++;
-  const perguntaEntrada = page.getByRole('heading', { name: /onde você está/i });
-  if (await perguntaEntrada.isVisible().catch(() => false)) {
-    await N.botaoEntrada(page, entrada).click(); toques++;
-  } else {
-    await page.getByRole('button', { name: /^Onde você está/ }).click(); toques++;
-    await N.botaoEntrada(page, entrada).click(); toques++;
-  }
-  return toques;
-}
-
-test.describe('Fluxo até a rota', () => {
-  test('RN56 — no celular: destino primeiro, entrada depois, no máximo 3 toques', async ({ page }, info) => {
-    test.skip(info.project.name !== 'celular', 'regra do celular');
-    await N.abrir(page);
-    await N.responderVoz(page, false);
-    await N.escolherPerfil(page, 'Mobilidade reduzida');
-    // logo depois do perfil a pergunta é o DESTINO, com a busca pronta
-    await expect(page.getByRole('heading', { name: 'Para onde você vai?' })).toBeVisible();
-    await expect(N.campoBusca(page)).toBeVisible();
-    // atalhos "mais próximo" já na tela de destino (RN57)
-    await expect(page.getByRole('button', { name: 'Sanitário mais próximo' })).toBeVisible();
-    let toques = 0;
-    await N.campoBusca(page).fill(DESTINO_PISO_2.termo);
-    await page.getByRole('button', { name: new RegExp('^' + DESTINO_PISO_2.nome) }).first().click(); toques++;
-    // depois pergunta a ENTRADA
-    await expect(page.getByRole('heading', { name: /onde você está/i })).toBeVisible();
-    await N.botaoEntrada(page, 'Acesso Azul').click(); toques++;
-    await expect(page.getByRole('region', { name: 'Seu caminho' })).toBeVisible();
+test.describe('Fluxo até o mapa (RN56, RN57, RN61)', () => {
+  test('RN56 — destino primeiro, entrada depois, no máximo 3 toques até a Página do Mapa', async ({ page }) => {
+    const toques = await N.planejarRota(page);
     expect(toques).toBeLessThanOrEqual(3);
+    expect(page.url()).toMatch(/mapa\.html\?/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Atelier de Costura' })).toBeVisible();
+    // a Página do Mapa não tem barra de pesquisa
+    await expect(page.getByRole('searchbox')).toHaveCount(0);
   });
 
-  test('RN57 — atalho "mais próximo" sem partida pergunta a entrada e calcula sozinho', async ({ page }, info) => {
-    test.skip(info.project.name !== 'celular', 'regra do celular');
-    await N.abrir(page);
-    await N.responderVoz(page, false);
-    await N.escolherPerfil(page, 'Deficiência auditiva');
+  test('RN61 — digitar e mover o foco na lista nunca troca de página', async ({ page }) => {
+    await N.abrir(page, { armazenamento: { ...N.JA_VISITOU, 'navi-perfil': 'geral' } });
+    await N.campoBusca(page).fill('atelier');
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    expect(page.url()).not.toMatch(/mapa\.html/);
+    // o botão que decide a rota avisa no nome
+    await page.getByRole('button', { name: /^Atelier de Costura/ }).first().click();
+    await expect(page.getByRole('button', { name: 'Acesso Azul — ver a rota' })).toBeVisible();
+  });
+
+  test('RN57 — "mais próximo" sem partida pergunta a entrada e calcula sozinho', async ({ page }) => {
+    await N.abrir(page, { armazenamento: { ...N.JA_VISITOU, 'navi-perfil': 'auditiva' } });
     await page.getByRole('button', { name: 'Sanitário mais próximo' }).click();
-    await expect(page.getByRole('heading', { name: /onde você está/i })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /Por qual entrada/ })).toBeVisible();
     await N.botaoEntrada(page, 'Acesso Verde').click();
-    await expect(page.getByRole('region', { name: 'Seu caminho' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /^(Destino|Para onde vai): Sanitários/ })).toBeVisible();
+    await page.waitForURL(/mapa\.html/);
+    await expect(page.getByRole('heading', { level: 1, name: /^Rota até Sanitários/ })).toBeVisible();
   });
 
-  test('RN13 — inverter partida e destino recalcula na hora', async ({ page }) => {
-    await planejarRota(page);
-    await page.getByRole('button', { name: 'Inverter origem e destino' }).click();
-    await expect(page.getByRole('button', { name: /^(Partida|Onde você está): Atelier de Costura/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /^(Destino|Para onde vai): Acesso Azul/ })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Seu caminho' })).toBeVisible();
+  test('Voltar do mapa leva à etapa anterior da Página de Rota', async ({ page }) => {
+    await N.planejarRota(page);
+    await page.getByRole('link', { name: 'Voltar' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: /Por qual entrada/ })).toBeVisible();
   });
 });
 
-test.describe('Mobilidade e interdições', () => {
-  test('RN04 / RN15 — mobilidade troca de piso pelo elevador, nunca pela escada rolante', async ({ page }) => {
-    await planejarRota(page, { perfil: 'Mobilidade reduzida' });
-    const rota = page.getByRole('region', { name: 'Seu caminho' });
-    await expect(rota).toBeVisible();
-    await expect(rota).toContainText('Sem escadas');
-    await expect(rota).toContainText('Usa elevador');
-    await expect(rota).not.toContainText('Usa escada rolante');
+test.describe('Página do Mapa: passo a passo (RN25, RN35, RN42)', () => {
+  test('RN35 — ao abrir, foco no título e um anúncio "Rota calculada: N passos. Passo 1: …"', async ({ page }) => {
+    await N.planejarRota(page);
+    await expect(N.tituloDaRota(page)).toBeFocused();
+    await expect(page.getByRole('status').filter({ hasText: /^Rota calculada: \d+ passos\. Passo 1: / })).toHaveCount(1);
   });
 
-  test('RN16 / RN17 — elevador interditado: sem rota sem escada e mensagem com o SAC', async ({ page }) => {
-    const aviso = [{ lugar: '2-22327', tipo: 'danificado', detalhe: 'teste automático', criado: '2026-10-27T10:00:00.000Z' }];
-    await page.addInitScript(a => { if (!localStorage.getItem('navi-avisos')) localStorage.setItem('navi-avisos', a); }, JSON.stringify(aviso));
-    await planejarRota(page, { perfil: 'Mobilidade reduzida' });
-    await expect(page.getByRole('region', { name: 'Seu caminho' })).toBeHidden();
-    const texto = await N.textoDaRota(page);
-    expect(texto).toMatch(/Não encontramos (um )?caminho/);
-    expect(texto).toMatch(/elevador/i);
+  test('RN25 / RN42 — Anterior, Próximo e Repetir no painel; o foco fica no botão', async ({ page }) => {
+    await N.planejarRota(page);
+    const proximo = page.getByRole('button', { name: 'Próximo' });
+    const anterior = page.getByRole('button', { name: 'Anterior' });
+    await expect(anterior).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.getByRole('button', { name: 'Repetir' })).toBeVisible();
+    await expect(N.painel(page)).toContainText(/Passo 1 de \d+/);
+    await proximo.click();
+    await expect(N.painel(page)).toContainText(/Passo 2 de \d+/);
+    await expect(proximo).toBeFocused();
+    await expect(page.getByRole('status').filter({ hasText: /^Passo 2 de \d+: / })).toHaveCount(1);
+    await anterior.click();
+    await expect(N.painel(page)).toContainText(/Passo 1 de \d+/);
+  });
+
+  test('RN20 — a rota inteira existe só em texto, passo a passo', async ({ page }) => {
+    await N.planejarRota(page);
+    await N.expandirPainel(page);
+    const lista = page.getByRole('list').filter({ has: page.getByRole('button', { name: /^Passo 1/ }) });
+    await expect(lista.getByRole('button', { name: /^Passo \d/ }).first()).toBeVisible();
+    expect(await lista.getByRole('button').count()).toBeGreaterThan(2);
+  });
+
+  test('RN19 — selo "Rota demonstrativa, não verificada no local" com a data da planta', async ({ page }) => {
+    await N.planejarRota(page);
+    await N.expandirPainel(page);
+    await expect(N.painel(page)).toContainText('Rota demonstrativa, não verificada no local.');
+    await expect(N.painel(page)).toContainText('19/10/2026');
+  });
+
+  test('RN54 — aviso de que o Navi não serve para emergências', async ({ page }) => {
+    await N.planejarRota(page);
+    await N.expandirPainel(page);
+    await expect(N.painel(page)).toContainText('Não use o Navi em emergências.');
+  });
+
+  test('painel inferior: alça com aria-expanded, três estados e Esc recolhe', async ({ page }, info) => {
+    test.skip(info.project.name !== 'celular', 'no computador o painel fica à esquerda, sem estados');
+    await N.planejarRota(page);
+    const a = N.alca(page);
+    await expect(a).toHaveAttribute('aria-expanded', 'false');
+    await a.click();
+    await expect(a).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByRole('heading', { name: 'Próximos passos' })).toBeVisible();
+    await a.click();
+    await expect(a).toHaveAccessibleName('Recolher o passo a passo');
+    await expect(page.getByRole('button', { name: 'Recalcular' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(a).toHaveAttribute('aria-expanded', 'false');
+    await expect(a).toBeFocused();
+    // recolhido: o que fica abaixo da borda da tela sai do alcance do foco (inert, WCAG 2.4.11)
+    const recalcular = page.getByRole('button', { name: 'Recalcular' });
+    await expect(recalcular).not.toBeInViewport();
+    expect(await recalcular.evaluate(e => !!e.closest('[inert]'))).toBe(true);
+  });
+
+  test('computador: o passo a passo fica num painel à esquerda, inteiro', async ({ page }, info) => {
+    test.skip(info.project.name !== 'computador', 'layout do computador');
+    await N.planejarRota(page);
+    await expect(N.alca(page)).toBeHidden();
+    await expect(page.getByRole('heading', { name: 'Passo a passo' })).toBeVisible();
+    const box = await N.painel(page).boundingBox();
+    expect(box.x).toBeLessThan(10);
+    expect(box.width).toBeLessThanOrEqual(401);
+  });
+
+  test('"Esconder mapa" deixa só o passo a passo, em tela cheia', async ({ page }) => {
+    await N.planejarRota(page);
+    await N.expandirPainel(page);
+    await page.getByRole('button', { name: /^Esconder mapa/ }).click();
+    await expect(page.getByRole('region', { name: 'Mapa' })).toBeHidden();
+    await expect(page.getByRole('button', { name: /^Mostrar mapa/ }).first()).toBeVisible();
+  });
+});
+
+test.describe('Trocar a rota na Página do Mapa (RN09, RN10, RN13)', () => {
+  test('RN13 — inverter partida e destino recalcula na hora', async ({ page }) => {
+    await N.planejarRota(page);
+    await N.expandirPainel(page);
+    await page.getByRole('button', { name: 'Inverter partida e destino' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Acesso Azul' })).toBeVisible();
+    expect(page.url()).toMatch(/mapa\.html/);
+  });
+
+  test('RN10 — tocar num lugar abre o cartão com "Ir para cá"; o destino troca ali mesmo', async ({ page }) => {
+    await N.planejarRota(page, { destino: { termo: 'pasteis', nome: '10 Pastéis' } });
+    await N.expandirPainel(page);
+    // a lista de lugares do andar é a alternativa em texto ao toque no mapa (RN36)
+    await page.getByText(/^Lugares do Piso 1/).click();
+    await page.getByRole('button', { name: /^Loft\b/ }).click();
+    const cartao = page.getByRole('dialog', { name: 'Loft' });
+    await expect(cartao).toBeVisible();
+    await cartao.getByRole('button', { name: 'Ir para cá' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Loft' })).toBeVisible();
+    expect(page.url()).toMatch(/mapa\.html.*destino=SHE_P01_L0082/);
+  });
+
+  test('RN10 — o toque na planta também abre o cartão (sem trocar de página)', async ({ page }) => {
+    await N.planejarRota(page, { destino: { termo: 'pasteis', nome: '10 Pastéis' } });
+    const ponto = await page.evaluate(() => {
+      const area = document.getElementById('mapa-area').getBoundingClientRect();
+      const cobertos = ['mapa-topo', 'mapa-info', 'mapa-controles', 'conteudo'].map(id => document.getElementById(id).getBoundingClientRect());
+      const livre = (x, y) => x > area.left && x < area.right && y > area.top && y < area.bottom && !cobertos.some(r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom);
+      for (const n of document.querySelectorAll('.loja-forma.clicavel')) {
+        const r = n.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+        if (r.width > 14 && r.height > 14 && livre(x, y) && document.elementFromPoint(x, y) === n) return { x, y };
+      }
+      return null;
+    });
+    expect(ponto, 'alguma loja visível na planta').not.toBeNull();
+    await page.mouse.click(ponto.x, ponto.y);
+    await expect(page.getByRole('dialog').getByRole('button', { name: 'Ir para cá' })).toBeVisible();
+    expect(page.url()).toMatch(/mapa\.html/);
+  });
+});
+
+test.describe('Mobilidade e interdições (RN04, RN15, RN16, RN17)', () => {
+  test('RN04 / RN15 — com mobilidade, a troca de piso é pelo elevador, nunca pela escada rolante', async ({ page }) => {
+    await N.planejarRota(page, { perfil: 'Mobilidade reduzida' });
+    await expect(N.painel(page)).toContainText('pelo elevador');
+    await N.expandirPainel(page);
+    const texto = await N.textoDoPainel(page);
+    expect(texto).toMatch(/Pegue o elevador/);
+    expect(texto).not.toMatch(/Pegue a escada rolante/);
+  });
+
+  test('RN16 / RN17 — elevador com defeito: sem caminho acessível, com o motivo e o contato do SAC', async ({ page }) => {
+    await N.planejarRota(page, { perfil: 'Mobilidade reduzida', armazenamento: { 'navi-avisos': ELEVADOR_COM_DEFEITO } });
+    const texto = await N.textoDoPainel(page);
+    expect(texto).toContain('Não encontramos caminho acessível confirmado');
+    expect(texto).toMatch(/elevador está com aviso de interdição ou defeito/);
     expect(texto).toMatch(/SAC/);
     expect(texto).toMatch(/\(41\) 3094-5300/);
-  });
-
-  // FALHA CONHECIDA: texto de RN17 ainda é o antigo (regra "Parcial").
-  test('RN17 — usa o texto aprovado "Não encontramos caminho acessível confirmado"', async ({ page }) => {
-    test.fail(true, 'RN17 Parcial: o texto atual é "Não encontramos um caminho entre esses dois pontos sem escadas".');
-    const aviso = [{ lugar: '2-22327', tipo: 'danificado', detalhe: '', criado: '2026-10-27T10:00:00.000Z' }];
-    await page.addInitScript(a => { if (!localStorage.getItem('navi-avisos')) localStorage.setItem('navi-avisos', a); }, JSON.stringify(aviso));
-    await planejarRota(page, { perfil: 'Mobilidade reduzida' });
-    expect(await N.textoDaRota(page)).toContain('Não encontramos caminho acessível confirmado');
-  });
-});
-
-test.describe('2D, 3D e primeira pessoa (RN45–RN48)', () => {
-  test('RN45 — o mapa abre em 2D e o 3D só carrega quando pedido', async ({ page }) => {
-    const pedidos = [];
-    page.on('request', r => pedidos.push(r.url()));
-    await planejarRota(page);
-    await expect(page.getByRole('button', { name: 'Mapa 2D' })).toHaveAttribute('aria-pressed', 'true');
-    expect(pedidos.some(u => /three-navi|mapa3d/.test(u))).toBe(false);
-  });
-
-  test('RN48 — rota, piso e destino continuam iguais em 2D, 3D e primeira pessoa', async ({ page }) => {
-    await planejarRota(page);
-    const rota = page.getByRole('region', { name: 'Seu caminho' });
-    const resumo2d = (await rota.innerText()).match(/(\d+) passos/)[1];
-    const pisoAtivo = async () => (await page.getByRole('group', { name: 'Escolher piso' }).getByRole('button', { pressed: true }).innerText()).trim();
-    const piso2d = await pisoAtivo();
-    const destino = page.getByRole('button', { name: /^(Destino|Para onde vai): Atelier de Costura/ });
-
-    await page.getByRole('button', { name: 'Mapa 3D' }).click();
-    await expect(page.getByRole('button', { name: 'Mapa 3D' })).toHaveAttribute('aria-pressed', 'true', { timeout: 20_000 });
-    expect(await pisoAtivo()).toBe(piso2d);
-    await expect(destino).toBeVisible();
-    expect((await rota.innerText()).match(/(\d+) passos/)[1]).toBe(resumo2d);
-
-    await page.getByRole('button', { name: 'Ver em primeira pessoa' }).first().click();
-    const sair = page.getByRole('button', { name: 'Voltar ao mapa' }).first();
-    await expect(sair).toBeVisible();
-    await expect(page.getByText(new RegExp(`passo 1 de ${resumo2d}`))).toBeVisible();
-    await sair.click();
-
-    await page.getByRole('button', { name: 'Mapa 2D' }).click();
-    await expect(page.getByRole('button', { name: 'Mapa 2D' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(destino).toBeVisible();
-    expect((await rota.innerText()).match(/(\d+) passos/)[1]).toBe(resumo2d);
+    await expect(page.getByRole('link', { name: /Ligar para o SAC/ })).toBeVisible();
+    // nenhuma rota inventada
+    await expect(page.getByRole('button', { name: 'Próximo' })).toHaveCount(0);
   });
 });

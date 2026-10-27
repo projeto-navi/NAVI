@@ -1,12 +1,10 @@
-// Ajudantes compartilhados pelos testes de comportamento.
-// Regra: localizar por papel e nome acessível. Quando o site atual não expõe o papel certo
-// (falha registrada no relatório da Fase 0), o ajudante usa o texto visível como reserva,
-// para o teste continuar descrevendo o COMPORTAMENTO e não a implementação.
+// Ajudantes compartilhados pelos testes de comportamento (duas páginas: Rota e Mapa).
+// Regra: localizar por papel e nome acessível (getByRole), nunca por classe CSS.
 const { expect } = require('@playwright/test');
 
 const LOCAL = /^(127\.0\.0\.1|localhost)$/;
 
-/** Abre o site com rede externa bloqueada (fontes e VLibras viram respostas vazias). */
+/** Abre o site com a rede externa bloqueada (VLibras vira resposta vazia). */
 async function abrir(page, { caminho = '', armazenamento = {}, erros } = {}) {
   await page.route(url => !LOCAL.test(url.hostname), rota => rota.fulfill({ status: 200, body: '' }));
   if (Object.keys(armazenamento).length) {
@@ -24,6 +22,9 @@ async function abrir(page, { caminho = '', armazenamento = {}, erros } = {}) {
   await page.goto(caminho);
 }
 
+/** Visita que já respondeu à pergunta de voz (não é a primeira). */
+const JA_VISITOU = { 'navi-boas-vindas': '1', 'navi-voz': '0' };
+
 const dialogoVoz = page => page.getByRole('dialog', { name: /voz/i });
 
 /** Responde à pergunta de abertura sobre a voz. */
@@ -34,32 +35,59 @@ async function responderVoz(page, sim = false) {
   await expect(d).toBeHidden();
 }
 
-/** Opção de perfil: por papel de botão; reserva pelo texto (hoje os cartões têm role="listitem"). */
-async function opcaoPerfil(page, nome) {
-  const botao = page.getByRole('button', { name: new RegExp('^' + nome) });
-  if (await botao.count()) return botao.first();
-  return page.getByText(nome, { exact: true }).first();
-}
+const opcaoPerfil = (page, nome) => page.getByRole('button', { name: new RegExp('^' + nome) });
+async function escolherPerfil(page, nome) { await opcaoPerfil(page, nome).click(); }
 
-async function escolherPerfil(page, nome) {
-  await (await opcaoPerfil(page, nome)).click();
-}
+/** Campo de busca do destino ou da partida (Página de Rota). */
+const campoBusca = page => page.getByRole('searchbox', { name: /buscar/i });
 
-/** Campo de busca do destino ou da partida. */
-const campoBusca = page => page.getByRole('searchbox', { name: /buscar|para onde|nome/i });
-
-/** Busca um lugar e toca no primeiro resultado com esse nome. */
+/** Busca um lugar e toca no resultado com esse nome. */
 async function buscarEEscolher(page, termo, nomeResultado = termo) {
   await campoBusca(page).fill(termo);
   await page.getByRole('button', { name: new RegExp('^' + nomeResultado, 'i') }).first().click();
 }
 
-/** Botão de uma entrada do local (ex.: "Acesso Azul"). */
+/** Botão de uma entrada (ex.: "Acesso Azul — ver a rota"). */
 const botaoEntrada = (page, nome) => page.getByRole('button', { name: new RegExp('^' + nome) }).first();
 
-/** Texto completo visível da região de rota (passo a passo ou mensagem de sem caminho). */
-async function textoDaRota(page) {
-  return (await page.getByRole('main').innerText()).replace(/\s+/g, ' ');
+const DESTINO_PISO_2 = { termo: 'atelier', nome: 'Atelier de Costura' };
+
+/**
+ * Do zero até a Página do Mapa: voz, perfil, destino e entrada.
+ * Conta os toques a partir da tela "Para onde você vai?" (digitar não conta).
+ */
+async function planejarRota(page, { perfil = 'Mobilidade reduzida', destino = DESTINO_PISO_2, entrada = 'Acesso Azul', armazenamento = {} } = {}) {
+  await abrir(page, { armazenamento });
+  await responderVoz(page, false);
+  await escolherPerfil(page, perfil);
+  await expect(page.getByRole('heading', { level: 1, name: 'Para onde você vai?' })).toBeVisible();
+  let toques = 0;
+  await campoBusca(page).fill(destino.termo);
+  await page.getByRole('button', { name: new RegExp('^' + destino.nome) }).first().click(); toques++;
+  await expect(page.getByRole('heading', { level: 1, name: /Por qual entrada/ })).toBeVisible();
+  await botaoEntrada(page, entrada).click(); toques++;
+  await page.waitForURL(/mapa\.html/);
+  await expect(tituloDaRota(page)).toBeVisible();
+  return toques;
+}
+
+/** Título da Página do Mapa ("Rota até …"). */
+const tituloDaRota = page => page.getByRole('heading', { level: 1, name: /^Rota até / });
+/** Painel do passo a passo (é o conteúdo principal da Página do Mapa). */
+const painel = page => page.getByRole('main');
+/** Texto todo do painel, numa linha. */
+async function textoDoPainel(page) { return (await painel(page).innerText()).replace(/\s+/g, ' '); }
+/** Alça do painel (só existe no celular em pé): "Mostrar mais…", "Mostrar o passo a passo inteiro", "Recolher…". */
+const alca = page => page.getByRole("button", { name: /^(Mostrar|Recolher) .*passo a passo/ });
+
+/** Abre o painel até o estado expandido (no computador ele já é um painel lateral inteiro). */
+async function expandirPainel(page) {
+  const a = alca(page);
+  if (!(await a.isVisible())) return;
+  for (let i = 0; i < 3 && !/Recolher/.test(await a.getAttribute('aria-label') || await a.innerText()); i++) {
+    await a.click();
+    await page.waitForTimeout(350);
+  }
 }
 
 /** Sem rolagem lateral na página. */
@@ -68,7 +96,10 @@ async function semRolagemLateral(page) {
   expect(m.sw, `largura do conteúdo ${m.sw}px > janela ${m.cw}px`).toBeLessThanOrEqual(m.cw);
 }
 
-/** Filtra erros de console que vêm só do bloqueio de rede externa feito pelos testes. */
-const errosReais = erros => erros.filter(e => !/vlibras|fonts\.g|Failed to load resource/i.test(e));
+/** Erros de console que vêm só do bloqueio de rede externa feito pelos testes ficam de fora. */
+const errosReais = erros => erros.filter(e => !/vlibras|fonts\.g|Failed to load resource|ERR_INTERNET_DISCONNECTED/i.test(e));
 
-module.exports = { abrir, dialogoVoz, responderVoz, opcaoPerfil, escolherPerfil, campoBusca, buscarEEscolher, botaoEntrada, textoDaRota, semRolagemLateral, errosReais };
+module.exports = {
+  abrir, JA_VISITOU, dialogoVoz, responderVoz, opcaoPerfil, escolherPerfil, campoBusca, buscarEEscolher, botaoEntrada,
+  DESTINO_PISO_2, planejarRota, tituloDaRota, painel, textoDoPainel, alca, expandirPainel, semRolagemLateral, errosReais
+};

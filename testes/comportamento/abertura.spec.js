@@ -1,8 +1,8 @@
-// Abertura, perfis, link direto e preferências lembradas.
+// Abertura, perfis, links e QR Codes, preferências lembradas.
 const { test, expect } = require('@playwright/test');
 const N = require('../apoio/navi');
 
-test.describe('Abertura', () => {
+test.describe('Abertura (RN01, RN02, RN30)', () => {
   test('RN01 — na primeira visita a pergunta de voz aparece antes dos perfis', async ({ page }) => {
     await N.abrir(page);
     const d = N.dialogoVoz(page);
@@ -10,81 +10,109 @@ test.describe('Abertura', () => {
     await expect(d.getByRole('button', { name: 'Sim', exact: true })).toBeVisible();
     await expect(d.getByRole('button', { name: 'Não', exact: true })).toBeVisible();
     // enquanto a pergunta está aberta, o perfil não pode ser escolhido (diálogo modal)
-    const perfil = await N.opcaoPerfil(page, 'Mobilidade reduzida');
-    await expect(perfil.click({ timeout: 800, trial: true })).rejects.toThrow();
+    await expect(N.opcaoPerfil(page, 'Mobilidade reduzida').click({ timeout: 800, trial: true })).rejects.toThrow();
     await N.responderVoz(page, false);
-    await expect(await N.opcaoPerfil(page, 'Mobilidade reduzida')).toBeVisible();
+    await expect(N.opcaoPerfil(page, 'Mobilidade reduzida')).toBeVisible();
   });
 
-  // FALHA CONHECIDA (F7, nova): RN01 diz "primeira vez", mas a pergunta aparece em toda visita.
-  test('RN01 — na segunda visita a pergunta de voz não aparece de novo', async ({ page }) => {
-    test.fail(true, 'F7: a resposta da pergunta de voz não é guardada; ela volta a cada carregamento.');
+  test('RN01 — na segunda visita a pergunta de voz não aparece de novo (F7 corrigida)', async ({ page }) => {
     await N.abrir(page);
     await N.responderVoz(page, false);
     await page.reload();
-    await expect(N.dialogoVoz(page)).toBeHidden({ timeout: 1500 });
+    await expect(N.opcaoPerfil(page, 'Mobilidade reduzida')).toBeVisible();
+    await expect(N.dialogoVoz(page)).toBeHidden();
   });
 
-  // FALHA CONHECIDA (F8, nova): os cartões de perfil têm role="listitem", que apaga o papel de botão.
-  test('RN30 — as opções de perfil são botões com nome para o leitor de tela', async ({ page }) => {
-    test.fail(true, 'F8: <button role="listitem"> — TalkBack/NVDA anunciam "item de lista", não "botão".');
-    await N.abrir(page);
-    await N.responderVoz(page, false);
-    for (const nome of ['Deficiência visual', 'Mobilidade reduzida', 'Deficiência auditiva']) {
-      await expect(page.getByRole('button', { name: new RegExp('^' + nome) })).toBeVisible({ timeout: 1000 });
+  test('RN30 — as opções de perfil são botões com nome e descrição (F8 corrigida)', async ({ page }) => {
+    await N.abrir(page, { armazenamento: N.JA_VISITOU });
+    for (const nome of ['Deficiência visual', 'Mobilidade reduzida', 'Deficiência auditiva', 'Sem adaptações']) {
+      const b = page.getByRole('button', { name: nome, exact: true });
+      await expect(b).toBeVisible();
+      await expect(b).toHaveAccessibleDescription(/\S/);
     }
   });
 
-  test('RN02 — existe a opção de seguir sem adaptações', async ({ page }) => {
-    await N.abrir(page);
-    await N.responderVoz(page, false);
-    await expect(page.getByRole('button', { name: /sem adaptações/i })).toBeVisible();
+  test('RN02 / RN03 — depois do perfil, a primeira pergunta é o destino, com a busca pronta', async ({ page }) => {
+    await N.abrir(page, { armazenamento: N.JA_VISITOU });
+    await N.escolherPerfil(page, 'Sem adaptações');
+    await expect(page.getByRole('heading', { level: 1, name: 'Para onde você vai?' })).toBeVisible();
+    await expect(N.campoBusca(page)).toBeVisible();
+    // a Página de Rota não tem mapa
+    await expect(page.getByRole('img', { name: /Planta/ })).toHaveCount(0);
   });
 });
 
-test.describe('Link direto e QR Code', () => {
-  test('?perfil=mobilidade&origem=1-1401928 abre com a partida no Acesso Azul', async ({ page }) => {
+test.describe('Links e QR Codes (RN59, RN60)', () => {
+  test('QR Code na entrada (?perfil=mobilidade&origem=…): partida preenchida, pergunta só o destino', async ({ page }) => {
     await N.abrir(page, { caminho: '?perfil=mobilidade&origem=1-1401928' });
-    // hoje a pergunta de voz também aparece ao abrir pelo QR Code
     if (await N.dialogoVoz(page).isVisible()) await N.responderVoz(page, false);
-    await expect(page.getByRole('button', { name: /^(Onde você está|Partida): Acesso Azul/ })).toBeVisible();
-    // e o perfil de mobilidade está ativo
-    await expect(page.getByRole('button', { name: /Perfil atual: Mobilidade reduzida/ })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Para onde você vai?' })).toBeVisible();
+    await expect(page.getByRole('main')).toContainText('Partida');
+    await expect(page.getByRole('main')).toContainText('Acesso Azul');
+    // o perfil de mobilidade ligou "evitar escadas"
+    expect(await page.evaluate(() => localStorage.getItem('navi-escadas'))).toBe('1');
   });
 
-  test('link com origem e destino abre com a rota calculada', async ({ page }) => {
-    await N.abrir(page, { caminho: '?perfil=mobilidade&origem=1-1401928&destino=1-1401929' });
-    if (await N.dialogoVoz(page).isVisible()) await N.responderVoz(page, false);
-    await expect(page.getByRole('region', { name: 'Seu caminho' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /^(Para onde vai|Destino): Acesso Vermelho/ })).toBeVisible();
+  test('RN59 — link com partida e destino abre direto a Página do Mapa', async ({ page }) => {
+    await N.abrir(page, { caminho: 'mapa.html?perfil=mobilidade&origem=1-1401928&destino=1-1401929' });
+    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Acesso Vermelho' })).toBeVisible();
+    await expect(N.dialogoVoz(page)).toHaveCount(0); // nunca na Página do Mapa (RN01)
+  });
+
+  test('link antigo index.html?origem=…&destino=… continua funcionando', async ({ page }) => {
+    await N.abrir(page, { caminho: 'index.html?perfil=mobilidade&origem=1-1401928&destino=1-1401929', armazenamento: N.JA_VISITOU });
+    await page.waitForURL(/mapa\.html\?/);
+    expect(page.url()).toContain('origem=');
+    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Acesso Vermelho' })).toBeVisible();
+  });
+
+  test('RN60 — Página do Mapa sem partida ou destino válidos volta para a Página de Rota', async ({ page }) => {
+    await N.abrir(page, { caminho: 'mapa.html?origem=nao-existe', armazenamento: { ...N.JA_VISITOU, 'navi-perfil': 'geral' } });
+    await page.waitForURL(u => !/mapa\.html/.test(u.pathname));
+    await expect(page.getByRole('heading', { level: 1, name: 'Para onde você vai?' })).toBeVisible();
+    await expect(page.getByText('Escolha para onde você vai.')).toBeVisible();
   });
 });
 
-test.describe('Preferências lembradas (RN07)', () => {
-  test('alto contraste e A+ continuam ligados ao recarregar', async ({ page }) => {
-    await N.abrir(page);
-    await N.responderVoz(page, false);
-    const contraste = page.getByRole('button', { name: 'Alto contraste' });
-    const texto = page.getByRole('button', { name: 'Aumentar texto' });
-    await contraste.click();
-    await texto.click();
-    await expect(contraste).toHaveAttribute('aria-pressed', 'true');
-    await expect(texto).toHaveAttribute('aria-pressed', 'true');
+test.describe('Preferências lembradas (RN06, RN07, RN41)', () => {
+  test('tema de alto contraste e texto a 150% continuam ao recarregar', async ({ page }) => {
+    await N.abrir(page, { armazenamento: N.JA_VISITOU });
+    await page.getByRole('button', { name: 'Preferências' }).click();
+    const dlg = page.getByRole('dialog', { name: 'Preferências' });
+    await dlg.getByRole('radio', { name: /^Alto contraste/ }).check();
+    await dlg.getByRole('radio', { name: /^150%/ }).check();
+    await dlg.getByRole('button', { name: 'Fechar preferências' }).click();
     await page.reload();
-    if (await N.dialogoVoz(page).isVisible()) await N.responderVoz(page, false);
-    await expect(contraste).toHaveAttribute('aria-pressed', 'true');
-    await expect(texto).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('html')).toHaveClass(/contraste/);
+    await expect(page.locator('html')).toHaveAttribute('data-texto', '150');
+    await page.getByRole('button', { name: 'Preferências' }).click();
+    await expect(page.getByRole('radio', { name: /^Alto contraste/ })).toBeChecked();
   });
 
-  // FALHA CONHECIDA (F6): A+ só chega a 125%; RN41 pede até 200%.
-  test('RN41 — A+ permite chegar a 200% do tamanho do texto', async ({ page }) => {
-    test.fail(true, 'F6: html.texto-grande = 125%, sem outros níveis.');
-    await N.abrir(page);
-    await N.responderVoz(page, false);
+  test('RN41 — o texto chega a 200% (F6 corrigida)', async ({ page }) => {
+    await N.abrir(page, { armazenamento: N.JA_VISITOU });
     const base = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
-    const texto = page.getByRole('button', { name: 'Aumentar texto' });
-    for (let i = 0; i < 4; i++) await texto.click();
+    await page.getByRole('button', { name: 'Preferências' }).click();
+    await page.getByRole('dialog', { name: 'Preferências' }).getByRole('radio', { name: /^200%/ }).check();
     const maior = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
     expect(maior / base).toBeGreaterThanOrEqual(2);
+  });
+
+  test('tema "Cores distintas" (daltonismo) é um tema do mesmo site', async ({ page }) => {
+    await N.abrir(page, { armazenamento: N.JA_VISITOU });
+    await page.getByRole('button', { name: 'Preferências' }).click();
+    await page.getByRole('dialog', { name: 'Preferências' }).getByRole('radio', { name: /^Cores distintas/ }).check();
+    await expect(page.locator('html')).toHaveClass(/daltonismo/);
+    await expect(page.locator('html')).not.toHaveClass(/contraste/);
+  });
+
+  test('RN07 — "Apagar minhas preferências" volta ao padrão e mantém os avisos', async ({ page }) => {
+    const avisos = JSON.stringify([{ lugar: '1-1401928', tipo: 'obstaculo', detalhe: '', criado: '2026-10-27T10:00:00.000Z' }]);
+    await N.abrir(page, { armazenamento: { ...N.JA_VISITOU, 'navi-perfil': 'visual', 'navi-tema': 'contraste', 'navi-avisos': avisos } });
+    await page.getByRole('button', { name: 'Preferências' }).click();
+    await page.getByRole('button', { name: 'Apagar minhas preferências' }).click();
+    await expect(N.dialogoVoz(page)).toBeVisible(); // volta a ser a primeira visita
+    expect(await page.evaluate(() => [localStorage.getItem('navi-tema'), localStorage.getItem('navi-perfil'), localStorage.getItem('navi-avisos')]))
+      .toEqual([null, null, avisos]);
   });
 });
