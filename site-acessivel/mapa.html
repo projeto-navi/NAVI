@@ -45,6 +45,9 @@
       </button>
       <h1 id="titulo-rota" tabindex="-1">Carregando a rota…</h1>
       <p class="folha-resumo" id="folha-resumo"></p>
+      <button type="button" class="btn btn-icone folha-ajuda" data-acao="ajuda" aria-haspopup="dialog" title="Pedir ajuda">
+        <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-ajuda"/></svg><span class="sr">Pedir ajuda</span>
+      </button>
     </div>
     <div class="folha-corpo" id="folha-corpo">
       <div class="folha-atual" id="folha-atual"></div>
@@ -58,7 +61,7 @@
   <section class="mapa-area" id="mapa-area" aria-label="Mapa">
     <div id="navi-map-slot" class="mapa-slot"></div>
     <div class="mapa-info" id="mapa-info">
-      <div class="mapa-status" id="mapa-status" hidden></div>
+      <div class="mapa-status" id="mapa-status" role="note" aria-label="Andar visível no mapa" hidden></div>
       <div class="mapa-extras3d" id="mapa-extras3d" role="group" aria-label="Opções do mapa 3D" hidden></div>
     </div>
     <div class="mapa-controles" id="mapa-controles"></div>

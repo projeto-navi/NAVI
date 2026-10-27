@@ -277,7 +277,7 @@
     ul.innerHTML = lista.map(l => {
       const a = inter && inter.de(l.id);
       return `<li><button type="button" class="lugar" data-lugar="${esc(l.id)}">${NC.tile(l, svg)}<span class="lugar-texto">` +
-        `<span class="lugar-nome">${esc(l.nome)}</span><span class="sr">, </span><span class="lugar-desc">${esc(NC.descricao(l, local))}</span>` +
+        `<span class="lugar-nome">${esc(l.nome)}<span class="sr">,</span></span><span class="lugar-desc">${esc(NC.descricao(l, local))}</span>` +
         (a ? `<span class="etiqueta etiqueta-alerta">${svg('i-aviso')}${esc(window.NaviInterdicoes.TIPOS[a.tipo].nome)}</span>` : '') +
         `${decide ? '<span class="sr">, ver a rota</span>' : ''}</span>${svg('i-proximo')}</button></li>`;
     }).join('');
@@ -380,7 +380,15 @@
     const busca = $('busca');
     if (busca) {
       busca.oninput = () => { st.termo = busca.value; renderResultados(); ligarResultados(); anunciarContagem(); };
-      busca.onfocus = () => { if (window.visualViewport) setTimeout(() => busca.scrollIntoView({ block: 'start', behavior: 'instant' }), 300); };
+      // o teclado virtual nunca cobre o campo: quando ele abre (a área visível encolhe), o campo sobe se ficou escondido
+      busca.onfocus = () => {
+        const vv = window.visualViewport;
+        if (!vv) return;
+        vv.addEventListener('resize', () => {
+          const r = busca.getBoundingClientRect();
+          if (r.bottom > vv.height - 8 || r.top < 0) busca.scrollIntoView({ block: 'start', behavior: 'instant' });
+        }, { once: true });
+      };
       renderResultados(); ligarResultados();
     }
     area.querySelectorAll('[data-filtro]').forEach(b => b.onclick = () => {

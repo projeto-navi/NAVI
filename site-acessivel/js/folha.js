@@ -62,6 +62,7 @@
         if (o.aoMudar) o.aoMudar('painel', 0, true);
         return;
       }
+      if (!folha.offsetHeight) return; // painel escondido (primeira pessoa no celular): nada a medir
       const a = alturas();
       // o passo atual não cabe no recolhido: o painel rola em qualquer estado e a página é avisada
       const agoraCheia = a.recolhido >= a.H * 0.8;

@@ -364,7 +364,10 @@
           ArrowLeft: () => { vb.x -= passo; }, ArrowRight: () => { vb.x += passo; }, ArrowUp: () => { vb.y -= passo; }, ArrowDown: () => { vb.y += passo; },
           '+': () => zoom(1 / 1.25), '=': () => zoom(1 / 1.25), '-': () => zoom(1.25), '0': () => centralizar(false)
         };
-        if (acoes[ev.key]) { ev.preventDefault(); acoes[ev.key](); mexeu = true; aplicarVB(); }
+        if (!acoes[ev.key]) return;
+        ev.preventDefault();
+        if (animacao) { cancelAnimationFrame(animacao.id); animacao = null; } // a tecla vale mais que o movimento em curso
+        acoes[ev.key](); mexeu = true; aplicarVB();
       });
     }
 

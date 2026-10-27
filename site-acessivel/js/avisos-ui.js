@@ -77,7 +77,7 @@
         <form id="form-aviso" class="pilha" novalidate>
           <fieldset class="grupo"><legend class="campo-rotulo">1. Qual local?</legend><div class="pilha-curta" id="aviso-lugar">${htmlEscolhaLugar()}</div></fieldset>
           <fieldset class="grupo"><legend class="campo-rotulo">2. O que aconteceu?</legend><div class="escolhas escolhas-coluna">` +
-            Object.entries(TIPOS).map(([k, t]) => `<label class="escolha"><input class="sr" type="radio" name="tipo-aviso" value="${k}" ${st.tipo === k ? 'checked' : ''}>` +
+            Object.entries(TIPOS).map(([k, t]) => `<label class="escolha"><input class="escolha-input" type="radio" name="tipo-aviso" value="${k}" ${st.tipo === k ? 'checked' : ''}>` +
               `<span class="marca-escolha" aria-hidden="true"></span><span>${esc(t.nome)}<small class="texto-2 escolha-desc">${esc(t.desc)}</small></span></label>`).join('') +
           `</div></fieldset>
           <div class="campo"><label class="campo-rotulo" for="aviso-detalhe">3. Detalhes <span class="texto-2">(opcional)</span></label>
@@ -110,7 +110,7 @@
       const lista = termo ? R.buscar(local.lugares, termo).slice(0, 12) : [];
       dlg.querySelector('#aviso-contagem').textContent = !termo ? '' : lista.length ? `${lista.length === 12 ? 'Primeiros 12 lugares' : lista.length + (lista.length === 1 ? ' lugar' : ' lugares')} com esse nome` : 'Nenhum lugar com esse nome. Tente outra palavra.';
       ul.innerHTML = lista.map(l => `<li><button type="button" class="lugar" data-aviso-lugar="${esc(l.id)}">${NC.tile(l, svg)}<span class="lugar-texto">` +
-        `<span class="lugar-nome">${esc(l.nome)}</span><span class="sr">, </span><span class="lugar-desc">${esc(NC.descricao(l, local))}</span></span></button></li>`).join('');
+        `<span class="lugar-nome">${esc(l.nome)}<span class="sr">,</span></span><span class="lugar-desc">${esc(NC.descricao(l, local))}</span></span></button></li>`).join('');
     }
     function escolherLugar(id) {
       st.lugar = local.lugar(id);

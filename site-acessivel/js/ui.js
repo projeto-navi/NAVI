@@ -57,7 +57,7 @@
     }
     function radios(nome, rotulo, itens, atual) {
       return `<fieldset class="pilha-curta" style="border:0;padding:0;margin:0"><legend class="campo-rotulo" style="padding:0;margin-bottom:var(--e2)">${esc(rotulo)}</legend><div class="escolhas">` +
-        itens.map(([v, t, d]) => `<label class="escolha"><input class="sr" type="radio" name="${nome}" value="${v}" ${String(v) === String(atual) ? 'checked' : ''}>` +
+        itens.map(([v, t, d]) => `<label class="escolha"><input class="escolha-input" type="radio" name="${nome}" value="${v}" ${String(v) === String(atual) ? 'checked' : ''}>` +
           `<span class="marca-escolha" aria-hidden="true"></span><span>${esc(t)}${d ? `<small class="texto-2" style="display:block;font-weight:400">${esc(d)}</small>` : ''}</span></label>`).join('') +
         `</div></fieldset>`;
     }

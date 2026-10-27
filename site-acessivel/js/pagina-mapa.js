@@ -218,7 +218,7 @@
   function renderMedio() {
     const el = $('folha-medio');
     if (!st.rota) { el.innerHTML = htmlSelo(); return; }
-    el.innerHTML = htmlNotasDaRota() + htmlSelo() + `<section class="secao-folha" aria-labelledby="t-proximos" id="sec-proximos"><h2 id="t-proximos">Próximos passos</h2><ol class="proximos" id="proximos"></ol></section>`;
+    el.innerHTML = htmlNotasDaRota() + htmlSelo() + `<div class="secao-folha" id="sec-proximos"><h2>Próximos passos</h2><ol class="proximos" id="proximos"></ol></div>`;
     renderProximos();
   }
   function renderProximos() {
@@ -240,7 +240,7 @@
     return `<details class="lugares-andar" id="lugares-andar"${aberto ? ' open' : ''}><summary>Lugares do ${esc(nomeAndar(st.andar))} (${lista.length})</summary>` +
       `<p class="nota">Toque num lugar para ver onde fica e ir até ele.</p><ul class="lista-lugares">` +
       lista.map(l => `<li><button type="button" class="lugar" data-lugar="${esc(l.id)}">${NC.tile(l, svg)}<span class="lugar-texto">` +
-        `<span class="lugar-nome">${esc(l.nome)}</span><span class="sr">, </span><span class="lugar-desc">${esc(NC.descricao(l, local))}</span></span></button></li>`).join('') +
+        `<span class="lugar-nome">${esc(l.nome)}<span class="sr">,</span></span><span class="lugar-desc">${esc(NC.descricao(l, local))}</span></span></button></li>`).join('') +
       `</ul></details>`;
   }
   function renderExpandido() {
@@ -249,34 +249,34 @@
     const aberto = !!($('lugares-andar') && $('lugares-andar').open);
     let h = '';
     if (st.rota) {
-      h += `<section class="secao-folha" aria-labelledby="t-passos"><h2 id="t-passos">Passo a passo</h2><ol class="passos" id="lista-passos">` +
+      h += `<div class="secao-folha"><h2>Passo a passo</h2><ol class="passos" id="lista-passos">` +
         st.rota.passos.map((q, i) => `<li><button type="button" class="passo" data-passo="${i}"${i === st.passo ? ' aria-current="step"' : ''}>` +
           `<span class="tile" aria-hidden="true">${svg(iconePasso(q))}</span><span class="passo-texto"><small>Passo ${i + 1}${multiAndar() ? ', ' + esc(nomeAndar(q.piso)) : ''}</small>${esc(q.texto)}</span></button></li>`).join('') +
-        `</ol></section>`;
+        `</ol></div>`;
       if (st.rota.usaElevador && txt.elevadorEstimado) h += `<p class="nota">${esc(txt.elevadorEstimado)}</p>`;
       h += `<p class="nota">As distâncias são aproximadas e usam ${local.config.tipo === 'shopping' ? 'lojas' : 'lugares'} próximos como referência.</p>`;
     }
-    h += `<section class="secao-folha" aria-labelledby="t-rota"><h2 id="t-rota">Rota</h2><div class="acoes">` +
+    h += `<div class="secao-folha"><h2>Rota</h2><div class="acoes">` +
       acao('alterar-destino', 'i-alterar', 'Alterar destino', { href: NE.urlRota({ local: slugUrl, origem: st.origem.id }) }) +
       acao('inverter', 'i-inverter', 'Inverter partida e destino') +
       acao('recalcular', 'i-recalcular', 'Recalcular', { desc: 'Usa os avisos e as preferências de agora.' }) +
-      `</div></section>`;
+      `</div></div>`;
     const cap = mapa ? mapa.capabilities() : {};
-    h += `<section class="secao-folha" aria-labelledby="t-mapa"><h2 id="t-mapa">Mapa</h2><div class="acoes">` +
+    h += `<div class="secao-folha"><h2>Mapa</h2><div class="acoes">` +
       acao('esconder-mapa', st.semMapa ? 'i-plano' : 'i-lista', st.semMapa ? 'Mostrar mapa' : 'Esconder mapa', { desc: st.semMapa ? 'Volta a mostrar a planta.' : 'Mostra só o passo a passo, em tela cheia.' }) +
       (temPlanta ? acao('nomes', 'i-texto', 'Mostrar todos os nomes no mapa', { pressionado: st.nomes }) : '') +
       (tem3D && st.rota && !p.leitorDeTela ? acao('primeira-pessoa', 'i-primeira-pessoa', 'Ver em primeira pessoa', { desc: 'Percorra a rota como se estivesse andando.' }) : '') +
       (st.vista === '3d' && mapa3d ? acao('vista-cima', 'i-plano', 'Vista de cima') +
         (local.andares.length > 1 ? acao('ambos', 'i-andares', `Ver ${local.andares.length === 2 ? 'os dois' : 'todos os'} ${palavraAndar}`, { pressionado: !!mapa3d.emAmbos }) : '') : '') +
-      `</div></section>`;
-    h += `<section class="secao-folha" aria-labelledby="t-ajuda"><h2 id="t-ajuda">Ajuda</h2><div class="acoes">` +
+      `</div></div>`;
+    h += `<div class="secao-folha"><h2>Ajuda</h2><div class="acoes">` +
       (st.rota && voz.temVoz && !p.leitorDeTela ? acao('ouvir-tudo', 'i-voz', 'Ouvir o caminho inteiro') : '') +
       (p.libras ? acao('libras', 'i-libras', 'Abrir tradutor de Libras') : '') +
       acao('cartao', 'i-cartao', 'Mostrar cartão para o atendente') +
       acao('avisar', 'i-aviso', 'Avisar sobre um local', { desc: 'Interditado, danificado ou com obstáculo.' }) +
       acao('ajuda', 'i-ajuda', 'Pedir ajuda') +
       acao('preferencias', 'i-preferencias', 'Preferências', { desc: 'Voz, tamanho do texto, cores e escadas.' }) +
-      `</div></section>`;
+      `</div></div>`;
     h += htmlLugaresAndar(aberto);
     h += `<div class="faixa-aviso">${svg('i-aviso')}<p><b>Não use o Navi em emergências.</b> Siga a sinalização e as orientações da equipe ${esc(txt.doLocal || 'do local')}.</p></div>`;
     el.innerHTML = h;
@@ -446,8 +446,8 @@
       const naRota = new Set(st.rota ? st.rota.trechos.map(t => t.piso) : []);
       h += `<div class="ctl-grupo" role="group" aria-label="Escolher ${palavraAndar === 'pisos' ? 'piso' : 'andar'}">` + local.andares.slice().reverse().map(a =>
         `<button type="button" class="ctl ctl-andar" id="andar-${a.ordem}" data-andar="${a.ordem}" aria-pressed="${a.ordem === st.andar}" title="${esc(a.nome)}">` +
-        `<span class="andar-curto" aria-hidden="true">${esc(curto(a))}</span><span class="sr">${esc(a.nome)}</span>` +
-        (naRota.has(a.ordem) ? `<span class="andar-rota"><span class="sr">, parte da</span> rota</span>` : '') + `</button>`).join('') + `</div>`;
+        `<span class="andar-curto" aria-hidden="true">${esc(curto(a))}</span><span class="sr">${esc(a.nome)}${naRota.has(a.ordem) ? ',' : ''}</span>` +
+        (naRota.has(a.ordem) ? `<span class="andar-rota"><span class="sr">parte da </span>rota</span>` : '') + `</button>`).join('') + `</div>`;
     }
     if (cap.zoom) {
       h += `<button type="button" class="ctl" id="ctl-centralizar" title="Centralizar na rota">${svg('i-centralizar')}<span class="sr">Centralizar na rota</span></button>`;
@@ -581,7 +581,7 @@
   /* ---------- "Esconder mapa": passo a passo em tela cheia ---------- */
   let mapaPedido = false, mapaEscondidoSozinho = false;
   function semEspaco() {
-    if (st.semMapa || mapaPedido) return;
+    if (st.semMapa || mapaPedido || document.body.classList.contains('em-primeira-pessoa')) return;
     mapaEscondidoSozinho = true;
     alternarMapa({ silencioso: true });
   }
