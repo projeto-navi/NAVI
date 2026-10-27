@@ -1,0 +1,257 @@
+/* Navi — tokens da identidade visual. Fonte única de verdade de cor, tipo, espaço, forma e movimento.
+   Temas: claro (padrão, :root), alto contraste (html.contraste) e cores distintas para daltonismo
+   (html.daltonismo). Os componentes e o layout são os mesmos nos três: só os tokens mudam.
+   Contraste de cada par usado: testes/identidade/contraste.spec.js (falha abaixo do mínimo).
+
+   Ideia da paleta: o azul do Símbolo Internacional de Acesso é o caminho e as ações que levam adiante;
+   o amarelo do piso tátil é o destino e o foco. Nada mais é colorido sem motivo. */
+
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  src: url("../fontes/atkinson-hyperlegible-next.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+
+  /* cor — interface */
+  --cor-fundo: #F2F4F7;
+  --cor-superficie: #FFFFFF;
+  --cor-superficie-2: #E8ECF1;          /* preenchimento de chips e itens pressionados */
+  --cor-superficie-elevada: #FFFFFF;    /* controles flutuantes do mapa e painel inferior */
+  --cor-texto: #0D1B2A;
+  --cor-texto-2: #435366;
+  --cor-borda: #74818F;                  /* limite de controle: ≥ 3:1 contra fundo e superfície */
+  --cor-borda-forte: #0D1B2A;
+  --cor-divisor: #D3DAE2;                /* separação visual, não é limite de controle */
+  --cor-foco: #0D1B2A;                   /* anel externo do foco */
+  --cor-foco-interno: #FFFFFF;           /* anel interno: separa o foco de controles escuros */
+  --cor-acao: #0B4FA8;
+  --cor-acao-texto: #FFFFFF;
+  --cor-acao-pressionada: #083B7E;
+  --cor-acao-suave: #E3ECF8;             /* fundo de opção escolhida */
+  --cor-destaque: #FFC62E;               /* destino, passo atual */
+  --cor-destaque-texto: #0D1B2A;
+  --cor-sucesso: #136B45;
+  --cor-sucesso-fundo: #E2F3EA;
+  --cor-alerta: #7F4300;
+  --cor-alerta-fundo: #FFF1D2;
+  --cor-alerta-borda: #A85F00;
+  --cor-erro: #A8231B;
+  --cor-erro-fundo: #FCEBE9;
+  --cor-desabilitado: #E8ECF1;
+  --cor-desabilitado-texto: #6E7A87;
+
+  /* cor — mapa */
+  --mapa-fundo: #DCE2E9;                 /* fora do prédio */
+  --mapa-piso: #FFFFFF;                  /* piso e corredores */
+  --mapa-loja: #C9D3DF;
+  --mapa-parede: #6B7A8C;
+  --mapa-quiosque: #E6EBF1;
+  --mapa-quiosque-borda: #6B7A8C;
+  --mapa-selecionado: #FFE08A;
+  --mapa-rota: #0B4FA8;
+  --mapa-rota-contorno: #FFFFFF;
+  --mapa-trecho-ativo: #FFC62E;
+  --mapa-trecho-ativo-borda: #0D1B2A;
+  --mapa-partida: #FFFFFF;
+  --mapa-partida-borda: #0D1B2A;
+  --mapa-destino: #FFC62E;
+  --mapa-destino-borda: #0D1B2A;
+  --mapa-acessibilidade: #0B4FA8;        /* rampa, elevador, piso tátil, acesso */
+  --mapa-acessibilidade-icone: #FFFFFF;
+  --mapa-acessibilidade-borda: #FFFFFF;
+  --mapa-servico: #0D1B2A;               /* sanitário, SAC, saída, caixa… */
+  --mapa-servico-icone: #FFFFFF;
+  --mapa-servico-borda: #FFFFFF;
+  --mapa-aviso: #A85F00;
+  --mapa-aviso-icone: #FFFFFF;
+  --mapa-aviso-borda: #FFFFFF;
+  --mapa-marca-halo: #FFFFFF;            /* contorno externo de toda marca: separa a marca das lojas */
+  --mapa-rotulo: #0D1B2A;
+  --mapa-rotulo-halo: #FFFFFF;
+  --mapa-desativado: #9AA6B4;            /* escadas fora das rotas sem escada */
+
+  /* tipografia: uma família de alta legibilidade, escala 1,25 */
+  --fonte: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --t-1: 0.875rem;   /* 14 */
+  --t0: 1rem;        /* 16 — base */
+  --t1: 1.25rem;     /* 20 */
+  --t2: 1.5625rem;   /* 25 */
+  --t3: 1.9375rem;   /* 31 */
+  --linha: 1.5;
+  --linha-titulo: 1.2;
+  --peso-normal: 400;
+  --peso-medio: 600;
+  --peso-forte: 700;
+  --peso-titulo: 800;
+
+  /* espaço: passos de 4 e 8 px */
+  --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 24px; --e6: 32px; --e7: 48px; --e8: 64px;
+  --largura-leitura: 640px;
+
+  /* forma: o raio cresce com a hierarquia */
+  --raio-tile: 8px;
+  --raio-controle: 12px;
+  --raio-painel: 20px;
+  --raio-pilula: 999px;
+  --borda-largura: 1.5px;
+  --borda-largura-forte: 2px;
+
+  /* elevação: só para o que flutua sobre o mapa, e sempre com borda */
+  --sombra-flutuante: 0 1px 2px rgb(13 27 42 / 0.10), 0 6px 20px rgb(13 27 42 / 0.14);
+
+  /* foco: anel duplo de 2 + 3 px, visível sobre fundos claros e sobre controles escuros */
+  --foco-largura: 3px;
+  --foco-anel: 0 0 0 2px var(--cor-foco-interno), 0 0 0 5px var(--cor-foco);
+
+  /* toque */
+  --alvo: 48px;
+  --alvo-espaco: 8px;
+
+  /* movimento: só responde a uma ação */
+  --dur-toque: 120ms;
+  --dur-curta: 180ms;
+  --dur-gaveta: 280ms;
+  --curva-saida: cubic-bezier(0.23, 1, 0.32, 1);
+  --curva-gaveta: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-toque: 0ms; --dur-curta: 0ms; --dur-gaveta: 0ms; }
+}
+
+/* ---------- alto contraste: azul-marinho e amarelo, texto ≥ 7:1 ---------- */
+html.contraste {
+  color-scheme: dark;
+  --cor-fundo: #061A33;
+  --cor-superficie: #0B2547;
+  --cor-superficie-2: #12345F;
+  --cor-superficie-elevada: #0B2547;
+  --cor-texto: #FFFFFF;
+  --cor-texto-2: #E3EAF4;
+  --cor-borda: #FFFFFF;
+  --cor-borda-forte: #FFFFFF;
+  --cor-divisor: #5C7699;
+  --cor-foco: #FFD21F;
+  --cor-foco-interno: #061A33;
+  --cor-acao: #FFD21F;
+  --cor-acao-texto: #061A33;
+  --cor-acao-pressionada: #FFE47A;
+  --cor-acao-suave: #12345F;
+  --cor-destaque: #FFD21F;
+  --cor-destaque-texto: #061A33;
+  --cor-sucesso: #8CF0BF;
+  --cor-sucesso-fundo: #0B2547;
+  --cor-alerta: #FFC66B;
+  --cor-alerta-fundo: #0B2547;
+  --cor-alerta-borda: #FFC66B;
+  --cor-erro: #FFB4AB;
+  --cor-erro-fundo: #0B2547;
+  --cor-desabilitado: #12345F;
+  --cor-desabilitado-texto: #A9B8CC;
+
+  --mapa-fundo: #000F22;
+  --mapa-piso: #061A33;
+  --mapa-loja: #F2F5FA;
+  --mapa-parede: #FFFFFF;
+  --mapa-quiosque: #9FB4D8;
+  --mapa-quiosque-borda: #FFFFFF;
+  --mapa-selecionado: #FFD21F;
+  --mapa-rota: #FFD21F;
+  --mapa-rota-contorno: #061A33;
+  --mapa-trecho-ativo: #FFFFFF;
+  --mapa-trecho-ativo-borda: #FFFFFF;
+  --mapa-partida: #061A33;
+  --mapa-partida-borda: #FFFFFF;
+  --mapa-destino: #FFD21F;
+  --mapa-destino-borda: #FFD21F;
+  --mapa-acessibilidade: #FFD21F;
+  --mapa-acessibilidade-icone: #061A33;
+  --mapa-acessibilidade-borda: #000F22;
+  --mapa-servico: #FFFFFF;
+  --mapa-servico-icone: #061A33;
+  --mapa-servico-borda: #000F22;
+  --mapa-aviso: #FFC66B;
+  --mapa-aviso-icone: #061A33;
+  --mapa-aviso-borda: #000F22;
+  --mapa-marca-halo: #000F22;
+  --mapa-rotulo: #061A33;
+  --mapa-rotulo-halo: #F2F5FA;
+  --mapa-desativado: #6F86A8;
+
+  --sombra-flutuante: none;
+  --borda-largura: 2px;
+}
+
+/* ---------- cores distintas (daltonismo): só cinzas, azul e laranja (Okabe–Ito), contornos de 2 px ----------
+   Nunca vermelho contra verde. Sucesso é azul; alerta e erro usam forma, ícone e texto, e não matiz. */
+html.daltonismo {
+  --cor-fundo: #F4F4F4;
+  --cor-superficie: #FFFFFF;
+  --cor-superficie-2: #E6E6E6;
+  --cor-superficie-elevada: #FFFFFF;
+  --cor-texto: #000000;
+  --cor-texto-2: #3A3A3A;
+  --cor-borda: #5C5C5C;
+  --cor-borda-forte: #000000;
+  --cor-divisor: #C8C8C8;
+  --cor-foco: #000000;
+  --cor-foco-interno: #FFFFFF;
+  --cor-acao: #005A8C;
+  --cor-acao-texto: #FFFFFF;
+  --cor-acao-pressionada: #00446B;
+  --cor-acao-suave: #DDEBF5;
+  --cor-destaque: #E69F00;
+  --cor-destaque-texto: #000000;
+  --cor-sucesso: #005A8C;
+  --cor-sucesso-fundo: #DDEBF5;
+  --cor-alerta: #000000;
+  --cor-alerta-fundo: #F0E442;
+  --cor-alerta-borda: #000000;
+  --cor-erro: #000000;
+  --cor-erro-fundo: #FBE3D2;
+  --cor-desabilitado: #E6E6E6;
+  --cor-desabilitado-texto: #6B6B6B;
+
+  --mapa-fundo: #DEDEDE;
+  --mapa-piso: #FFFFFF;
+  --mapa-loja: #C4C4C4;
+  --mapa-parede: #5C5C5C;
+  --mapa-quiosque: #F2F2F2;
+  --mapa-quiosque-borda: #5C5C5C;
+  --mapa-selecionado: #F7C873;
+  --mapa-rota: #0072B2;
+  --mapa-rota-contorno: #000000;
+  --mapa-trecho-ativo: #56B4E9;
+  --mapa-trecho-ativo-borda: #000000;
+  --mapa-partida: #FFFFFF;
+  --mapa-partida-borda: #000000;
+  --mapa-destino: #E69F00;
+  --mapa-destino-borda: #000000;
+  --mapa-acessibilidade: #000000;
+  --mapa-acessibilidade-icone: #FFFFFF;
+  --mapa-acessibilidade-borda: #FFFFFF;
+  --mapa-servico: #000000;
+  --mapa-servico-icone: #FFFFFF;
+  --mapa-servico-borda: #FFFFFF;
+  --mapa-aviso: #F0E442;
+  --mapa-aviso-icone: #000000;
+  --mapa-aviso-borda: #000000;
+  --mapa-marca-halo: #FFFFFF;
+  --mapa-rotulo: #000000;
+  --mapa-rotulo-halo: #FFFFFF;
+  --mapa-desativado: #9E9E9E;
+
+  --sombra-flutuante: 0 1px 2px rgb(0 0 0 / 0.12), 0 6px 20px rgb(0 0 0 / 0.12);
+  --borda-largura: 2px;
+}
+
+/* ---------- tamanho do texto (A+), até 200% (RN41) ---------- */
+html[data-texto="125"] { font-size: 125%; }
+html[data-texto="150"] { font-size: 150%; }
+html[data-texto="175"] { font-size: 175%; }
+html[data-texto="200"] { font-size: 200%; }

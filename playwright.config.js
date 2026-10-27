@@ -26,6 +26,7 @@ module.exports = defineConfig({
   },
   projects: [
     { name: 'dados', testMatch: /dados\/.*\.spec\.js$/ },
+    { name: 'identidade', testMatch: /identidade\/.*\.spec\.js$/ },
     {
       name: 'celular',
       testMatch: /comportamento\/.*\.spec\.js$/,
