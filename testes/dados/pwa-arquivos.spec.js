@@ -26,3 +26,17 @@ test('manifest aponta para ícones que existem', () => {
   const m = JSON.parse(fs.readFileSync(path.join(SITE, 'manifest.webmanifest'), 'utf8'));
   for (const i of m.icons) expect(fs.existsSync(path.join(SITE, i.src)), i.src).toBe(true);
 });
+
+test('o local padrão que as páginas pedem logo no <head> é o mesmo de locais/indice.js', () => {
+  // as duas páginas começam a baixar os arquivos do local padrão antes dos scripts rodarem
+  const indice = fs.readFileSync(path.join(SITE, 'locais/indice.js'), 'utf8');
+  const padrao = indice.match(/slug:\s*'([^']+)'[^}]*padrao:\s*true/)[1];
+  for (const pagina of ['index.html', 'mapa.html']) {
+    const html = fs.readFileSync(path.join(SITE, pagina), 'utf8');
+    expect(html.match(/var PADRAO = '([^']+)'/)[1], pagina).toBe(padrao);
+  }
+  // e o que o <head> pede para o padrão existe (um pedido que dá 404 só atrasa a página)
+  const mapa = fs.readFileSync(path.join(SITE, 'mapa.html'), 'utf8');
+  const arquivos = JSON.parse(mapa.match(/\[('config\.js'[^\]]*)\]/)[0].replace(/'/g, '"'));
+  for (const f of arquivos) expect(fs.existsSync(path.join(SITE, 'locais', padrao, f)), f).toBe(true);
+});

@@ -21,7 +21,8 @@ COMO PUBLICAR (a publicação no Netlify é do Líder Técnico)
 COMO ABRIR SEM INTERNET NO COMPUTADOR
 - Dê dois cliques em index.html: funciona por file://, sem servidor.
 - Por file:// o modo sem internet (service worker) não é ligado; ele só funciona no
-  endereço publicado (https) ou em localhost.
+  endereço publicado (https) ou em localhost. E o Chrome não carrega a fonte do site a
+  partir de arquivos locais: o texto aparece na fonte do sistema (o resto funciona igual).
 - Para testar como no ar: node testes/servidor.mjs site-acessivel 4173 e abra
   http://localhost:4173/
 

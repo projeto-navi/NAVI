@@ -47,35 +47,39 @@
       const med = Math.min(H, Math.max(rec + 1, Math.min(fimMedio, raiz.innerHeight * 0.62)));
       return { H, recolhido: rec, medio: med, expandido: H };
     }
-    function posicionar(v, imediato) {
-      const a = alturas();
+    // só escreve o que mudou: cada escrita à toa obriga o navegador a medir a página de novo
+    const definirInert = (el, v) => { if (el.inert !== v) el.inert = v; };
+    function posicionar(v, imediato, a = alturas()) {
       visivel = v;
       folha.classList.toggle('arrastando', !!imediato);
-      folha.style.transform = `translateY(${Math.max(0, a.H - v)}px)`;
+      const t = `translateY(${Math.max(0, a.H - v)}px)`;
+      if (folha.style.transform !== t) folha.style.transform = t;
     }
     function aplicar(opcoes = {}) {
       if (emPainel()) {
-        folha.style.transform = '';
-        folha.dataset.estado = 'painel';
-        mais.inert = false; medio.inert = false; expandido.inert = false;
+        if (folha.style.transform) folha.style.transform = '';
+        if (folha.dataset.estado !== 'painel') folha.dataset.estado = 'painel';
+        definirInert(mais, false); definirInert(medio, false); definirInert(expandido, false);
         visivel = 0;
         if (o.aoMudar) o.aoMudar('painel', 0, true);
         return;
       }
       if (!folha.offsetHeight) return; // painel escondido (primeira pessoa no celular): nada a medir
-      const a = alturas();
+      let a = alturas(), remedir = false;
       // o passo atual não cabe no recolhido: o painel rola em qualquer estado e a página é avisada
       const agoraCheia = a.recolhido >= a.H * 0.8;
-      if (agoraCheia !== cheia) { cheia = agoraCheia; folha.dataset.cheia = cheia ? 'sim' : 'nao'; if (cheia && o.aoSemEspaco) o.aoSemEspaco(); }
-      folha.dataset.estado = estado;
-      if (estado !== 'expandido') corpo.scrollTop = 0;
-      posicionar(a[estado], opcoes.imediato);
-      mais.inert = estado === 'recolhido';
-      expandido.inert = estado !== 'expandido';
-      medio.inert = estado === 'recolhido';
-      alca.setAttribute('aria-expanded', String(estado !== 'recolhido'));
+      if (agoraCheia !== cheia) { cheia = agoraCheia; folha.dataset.cheia = cheia ? 'sim' : 'nao'; remedir = true; if (cheia && o.aoSemEspaco) o.aoSemEspaco(); }
+      if (folha.dataset.estado !== estado) { folha.dataset.estado = estado; remedir = true; }
+      if (estado !== 'expandido' && corpo.scrollTop) corpo.scrollTop = 0;
+      if (remedir) a = alturas();
+      posicionar(a[estado], opcoes.imediato, a);
+      definirInert(mais, estado === 'recolhido');
+      definirInert(expandido, estado !== 'expandido');
+      definirInert(medio, estado === 'recolhido');
+      const aberto = String(estado !== 'recolhido');
+      if (alca.getAttribute('aria-expanded') !== aberto) alca.setAttribute('aria-expanded', aberto);
       const rot = alca.querySelector('[data-rotulo]');
-      if (rot) rot.textContent = ROTULO[estado];
+      if (rot && rot.textContent !== ROTULO[estado]) rot.textContent = ROTULO[estado];
       if (o.aoMudar) o.aoMudar(estado, a[estado], false);
     }
     function definir(novo, opcoes = {}) {

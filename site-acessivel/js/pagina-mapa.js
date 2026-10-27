@@ -235,13 +235,19 @@
     return extra.href ? `<a class="acao" data-acao="${id}" href="${esc(extra.href)}">${corpo}</a>` :
       `<button type="button" class="acao" data-acao="${id}"${pressed}>${corpo}</button>`;
   }
+  const lugaresDoAndar = () => local.lugares.filter(l => l.piso === st.andar);
+  const ordemAlfabetica = new Intl.Collator('pt-BR').compare; // um comparador só: localeCompare com idioma cria um a cada par
+  const itensLugares = lista => lista.slice().sort((a, b) => ordemAlfabetica(a.nome, b.nome)).map(l => `<li><button type="button" class="lugar" data-lugar="${esc(l.id)}">${NC.tile(l, svg)}<span class="lugar-texto">` +
+    `<span class="lugar-nome">${esc(l.nome)}<span class="sr">,</span></span><span class="lugar-desc">${esc(NC.descricao(l, local))}</span></span></button></li>`).join('');
+  // são muitos lugares por andar: a lista só é montada quando a pessoa abre (a abertura da página fica mais leve)
   function htmlLugaresAndar(aberto) {
-    const lista = local.lugares.filter(l => l.piso === st.andar).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    const lista = lugaresDoAndar();
     return `<details class="lugares-andar" id="lugares-andar"${aberto ? ' open' : ''}><summary>Lugares do ${esc(nomeAndar(st.andar))} (${lista.length})</summary>` +
-      `<p class="nota">Toque num lugar para ver onde fica e ir até ele.</p><ul class="lista-lugares">` +
-      lista.map(l => `<li><button type="button" class="lugar" data-lugar="${esc(l.id)}">${NC.tile(l, svg)}<span class="lugar-texto">` +
-        `<span class="lugar-nome">${esc(l.nome)}<span class="sr">,</span></span><span class="lugar-desc">${esc(NC.descricao(l, local))}</span></span></button></li>`).join('') +
-      `</ul></details>`;
+      `<p class="nota">Toque num lugar para ver onde fica e ir até ele.</p><ul class="lista-lugares">${aberto ? itensLugares(lista) : ''}</ul></details>`;
+  }
+  function preencherLugares() {
+    const ul = document.querySelector('#lugares-andar .lista-lugares');
+    if (ul && !ul.childElementCount) ul.innerHTML = itensLugares(lugaresDoAndar());
   }
   function renderExpandido() {
     const el = $('folha-expandido');
@@ -287,7 +293,10 @@
   }
 
   /* cliques do painel (delegados: o conteúdo é refeito a cada rota) */
+  // a lista de lugares é preenchida antes de abrir (no clique no resumo) ou, se abrir de outro jeito, logo depois
+  $('conteudo').addEventListener('toggle', ev => { if (ev.target.id === 'lugares-andar' && ev.target.open) preencherLugares(); }, true);
   $('conteudo').addEventListener('click', ev => {
+    if (ev.target.closest('#lugares-andar > summary')) { preencherLugares(); return; }
     const passo = ev.target.closest('[data-passo]');
     if (passo) { irParaPasso(+passo.dataset.passo, { daLista: true }); return; }
     const lug = ev.target.closest('[data-lugar]');
@@ -632,56 +641,76 @@
     let base = emPainel ? 0 : Math.max(0, area.bottom - $('conteudo').getBoundingClientRect().top);
     mapa.setMargens({ topo: topo + 12, direita: direita + 8, base: base + 12, esquerda: 12 });
   }
+  /** Onde o topo flutuante termina (o painel e os controles começam abaixo dele). */
+  function medirTopo() {
+    if (folha && folha.emPainel()) return;
+    const v = Math.ceil($('mapa-topo').getBoundingClientRect().bottom) + 'px';
+    if (app.style.getPropertyValue('--topo-medido') !== v) app.style.setProperty('--topo-medido', v);
+  }
   function medirLayout() {
-    const painel = folha ? folha.emPainel() : false;
-    if (!painel) app.style.setProperty('--topo-medido', Math.ceil($('mapa-topo').getBoundingClientRect().bottom) + 'px');
+    medirTopo();
     if (folha) folha.atualizar();
     atualizarMargens();
   }
+  // só escreve o que mudou (cada escrita à toa faz o navegador refazer o estilo da página inteira)
+  const definirInert = (el, v) => { if (el.inert !== v) el.inert = v; };
 
   /* ---------- montagem ---------- */
+  // o contorno do piso (dados3d.js, já pedido no <head>) vem antes do primeiro desenho: a planta sai
+  // pronta de uma vez e o botão 3D e "Ver em primeira pessoa" aparecem desde o início
+  if (temPlanta) {
+    const lajes = await NL.carregarLajes(local).catch(() => null); // sem ele, o 2D usa a caixa do andar
+    tem3D = !!(lajes && Object.keys(lajes).length);
+  }
   calcular();
+  // pausa curta entre calcular e desenhar: o celular continua respondendo ao toque enquanto a página abre
+  await (window.scheduler && scheduler.yield ? scheduler.yield() : new Promise(r => setTimeout(r, 0)));
   renderTopo();
-  renderFolha();
+  // no celular em pé, a parte expandida do painel começa fora da tela: entra logo depois da primeira
+  // pintura, para o passo atual aparecer antes (no painel fixo, tudo aparece de uma vez)
+  const expandidoDepois = !(matchMedia('(min-width: 768px), (orientation: landscape)').matches || document.body.classList.contains('sem-mapa'));
+  renderCabeca(); renderAtual(); renderMedio();
+  if (!expandidoDepois) renderExpandido();
+  // os controles e o andar visível entram antes de medir; o painel se mede já sabendo onde o topo termina
+  renderControles(); renderStatus();
+  medirTopo();
   folha = window.NaviFolha.criar({
     folha: $('conteudo'), cabeca: $('folha-cabeca'), alca: $('folha-alca'), corpo: $('folha-corpo'),
     mais: $('folha-mais'), medio: $('folha-medio'), expandido: $('folha-expandido'),
     aoSemEspaco: () => requestAnimationFrame(semEspaco),
     aoMudar: (estado, visivel) => {
-      app.dataset.folha = estado;
-      app.style.setProperty('--folha-medida', Math.round(visivel) + 'px');
+      if (app.dataset.folha !== estado) app.dataset.folha = estado;
+      const medida = Math.round(visivel) + 'px';
+      if (app.style.getPropertyValue('--folha-medida') !== medida) app.style.setProperty('--folha-medida', medida);
       // com o painel expandido, os controles do mapa ficam atrás dele: fora do alcance do foco (WCAG 2.4.11)
-      const escondidos = estado === 'expandido' || estado === 'medio';
-      $('mapa-controles').inert = escondidos || document.body.classList.contains('em-primeira-pessoa');
-      $('mapa-info').inert = escondidos || document.body.classList.contains('em-primeira-pessoa');
+      const fora = estado === 'expandido' || estado === 'medio' || document.body.classList.contains('em-primeira-pessoa');
+      definirInert($('mapa-controles'), fora);
+      definirInert($('mapa-info'), fora);
       requestAnimationFrame(atualizarMargens);
     }
   });
-  medirLayout();
   if (!st.rota) folha.definir('medio');
 
   // foco no título e um anúncio só (RN35); com a voz ligada, o passo 1 é falado (RN26, RN28)
   $('titulo-rota').focus({ preventScroll: true });
   anunciarRota();
 
-  // o mapa vem depois do texto: o passo a passo aparece primeiro, mesmo em rede lenta
+  // o mapa vem depois do texto: o navegador mostra o passo a passo antes de montar a planta, que é a
+  // parte mais pesada da abertura em celular simples
+  await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+  if (expandidoDepois) renderExpandido();
+  atualizarMargens(); // o espaço livre do mapa (sem o topo, os controles e o painel)
+  // antes do mount, o mapa só guarda o estado; o mount desenha tudo uma vez, já enquadrado na rota
+  aplicarPreferenciasNoMapa();
+  mapa.setAvisos(inter.todos());
+  mapa.setFloor(andarIdDe(st.andar));
+  mapa.showRoute(st.rota, { origem: st.origem, destino: st.destino });
   try {
     await mapa2d.mount(camada2d);
   } catch (e) { /* o passo a passo continua funcionando sem o mapa */ }
-  renderControles(); renderStatus();
-  sincronizarMapa();
+  if (st.rota && st.passo > 0) mapa.focusStep(st.passo); // a pessoa pode ter avançado enquanto o mapa montava
   requestAnimationFrame(() => { medirLayout(); });
-  if (temPlanta) {
-    NL.carregarLajes(local).then(lajes => {
-      tem3D = !!(lajes && Object.keys(lajes).length);
-      aplicarPreferenciasNoMapa();          // redesenha o andar com o contorno do piso
-      mapa.showRoute(st.rota, { origem: st.origem, destino: st.destino });
-      if (st.passo > 0) mapa.focusStep(st.passo);
-      renderControles(); renderExpandido();
-      requestAnimationFrame(atualizarMargens);
-      if (tem3D && NE.ler('vista') === '3d') definirVista('3d', { silencioso: true });
-    }).catch(() => { /* sem o contorno do piso, o mapa usa a caixa do andar */ });
-  }
+  if (tem3D && NE.ler('vista') === '3d') definirVista('3d', { silencioso: true });
 
   new ResizeObserver(() => requestAnimationFrame(medirLayout)).observe($('mapa-topo'));
   window.addEventListener('resize', () => requestAnimationFrame(medirLayout));

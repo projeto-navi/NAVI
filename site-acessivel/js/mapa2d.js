@@ -47,6 +47,7 @@
     let enquadramento = null;   // última forma de enquadrar (refeita quando o espaço livre muda)
     let mexeu = false;          // a pessoa moveu ou aproximou o mapa com a mão
     let animacao = null, kSetas = 0;
+    let escalaAplicada = null;  // escala dos ícones na última passada; null: há ícones novos sem escala
 
     /* ---------- câmera ---------- */
     const k = () => (largura ? vb.w / largura : 1);   // unidades da planta por pixel
@@ -60,9 +61,13 @@
       svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
       const kk = k(), s = 1 + (st.escalaTexto - 1) * 0.5;
       svg.dataset.zoom = kk < 0.95 ? 'perto' : 'longe';
-      svg.querySelectorAll('[data-escala]').forEach(n => {
-        n.setAttribute('transform', `translate(${n.dataset.x} ${n.dataset.y})${n.dataset.rot ? ` rotate(${n.dataset.rot})` : ''} scale(${kk * s * (+n.dataset.escala)})`);
-      });
+      // ícones e marcas mantêm o tamanho na tela: só refaz quando a escala muda (arrastar não muda)
+      if (kk * s !== escalaAplicada) {
+        escalaAplicada = kk * s;
+        svg.querySelectorAll('[data-escala]').forEach(n => {
+          n.setAttribute('transform', `translate(${n.dataset.x} ${n.dataset.y})${n.dataset.rot ? ` rotate(${n.dataset.rot})` : ''} scale(${kk * s * (+n.dataset.escala)})`);
+        });
+      }
       if (st.rota && kSetas && Math.abs(kk / kSetas - 1) > 0.2) desenharSetas();
       ajustarNomesDasMarcas(kk, s);
     }
@@ -142,7 +147,10 @@
       const a = (l.aliases || []).find(x => coresEntradas[x]);
       return a ? coresEntradas[a] : null;
     }
+    // antes do mount os métodos só guardam o estado: o mount desenha tudo de uma vez
     function desenharAndar() {
+      if (!svg) return;
+      escalaAplicada = null;
       for (const c of ['piso', 'planta', 'rotulos', 'icones', 'rota', 'setas', 'marcas']) cam[c].textContent = '';
       // piso e corredores (contorno das lajes; sem ele, a caixa do andar)
       const lajes = (local.lajes && local.lajes[st.piso]) || [];
@@ -236,6 +244,8 @@
       return [p.de, p.ate];
     }
     function desenharRota() {
+      if (!svg) return;
+      escalaAplicada = null;
       cam.rota.textContent = ''; cam.setas.textContent = ''; cam.marcas.textContent = ''; kSetas = 0;
       if (st.rota) {
         const lg = largRota();
@@ -395,8 +405,11 @@
           if (!medir() || !largura) return;
           if (enquadramento && !mexeu) moverPara(enquadramento(), false); else aplicarVB();
         }).observe(container);
+        svg.dataset.nomes = st.nomes ? 'sim' : 'nao';
+        // primeiro enquadra (a rota do andar, ou o andar inteiro), depois desenha uma vez só, sem animação:
+        // a pessoa ainda não viu o mapa, não há de onde animar
+        centralizar(false);
         desenharAndar();
-        ajustar(false);
       },
       unmount() { if (svg) svg.remove(); if (desc) desc.remove(); svg = null; },
       setFloor(andarId) {

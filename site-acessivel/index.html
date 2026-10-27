@@ -26,6 +26,20 @@
   if (['125', '150', '175', '200'].indexOf(x) >= 0) { h.setAttribute('data-texto', x); h.classList.add('texto-grande'); }
 } catch (e) {} })();
 </script>
+<script>
+/* Começa a baixar os arquivos do local já agora, junto com o resto da página, em vez de esperar os
+   scripts rodarem: a primeira tela sai sem duas voltas extras pela rede. Os dados só para o local
+   padrão (um local em preparação não tem dados.js nem grafo.js). PADRAO é o local padrão de
+   locais/indice.js (se mudar lá, mude aqui e no mapa.html; o teste de dados confere). */
+(function () { try {
+  var PADRAO = 'shopping-estacao';
+  var m = /[?&]local=([a-z0-9-]{1,40})(?:&|$)/i.exec(location.search), slug = m ? m[1].toLowerCase() : PADRAO;
+  ['config.js', 'avisos.js'].concat(slug === PADRAO ? ['dados.js', 'grafo.js'] : []).forEach(function (f) {
+    var l = document.createElement('link'); l.rel = 'preload'; l.as = 'script'; l.href = 'locais/' + slug + '/' + f;
+    document.head.appendChild(l);
+  });
+} catch (e) {} })();
+</script>
 <link rel="preload" href="fontes/atkinson-hyperlegible-next.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
