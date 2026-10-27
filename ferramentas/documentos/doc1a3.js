@@ -1,5 +1,5 @@
 const { p, h1, h2, ul, ol, nota, tabela, capa, gerar, EQUIPE } = require('./lib');
-const OUT = '/mnt/user-data/outputs/documentos/';
+const OUT = require('path').resolve(__dirname, '../../documentos') + '/';
 require('fs').mkdirSync(OUT, { recursive: true });
 
 /* ================= 1. IDEIA DO PROJETO ================= */
@@ -81,7 +81,7 @@ const doc1 = [
 
 /* ================= 2. POSICIONAMENTO ================= */
 const doc2 = [
-  capa('02', 'Como queremos ser vistos', 'Posicionamento, identidade e tom de voz', 'alinhar como a equipe apresenta o Navi a usuários, locais parceiros, investidores e banca, para todos falarem a mesma língua.'),
+  capa('02', 'Como queremos ser vistos', 'Posicionamento, identidade e tom de voz', 'alinhar como a equipe apresenta o Navi a usuários, locais parceiros, investidores e banca, para todos falarem a mesma língua.', '1.1 — 27/10/2026'),
   h1('Posicionamento'),
   p('Queremos que o Navi seja visto como uma **startup de impacto social**: tecnologia simples que devolve autonomia a pessoas com deficiência dentro de espaços internos, com potencial de crescer como negócio.'),
   nota('**Declaração de posicionamento.** Para pessoas com deficiência visual, auditiva ou de mobilidade que precisam se locomover em shoppings, universidades e outros espaços internos, o Navi é um mapa acessível no navegador que mostra o caminho certo para cada necessidade. Diferente dos mapas fixos e das placas, o Navi fala, escreve, traduz em Libras e evita escadas — sem aplicativo e sem cadastro.'),
@@ -123,14 +123,39 @@ const doc2 = [
   ]),
 
   h1('Identidade visual'),
+  p('Desde o Marco 1 (outubro de 2026) o Navi tem uma identidade única, acessível por construção: o alto contraste e as cores para daltonismo são **temas do mesmo sistema**, não outro site. O comportamento e as regras do Documento 04 não mudaram com ela.'),
+  nota('**A ideia:** o azul do Símbolo Internacional de Acesso é o caminho e as ações que levam adiante; o amarelo do piso tátil é o destino e o foco. Nada mais é colorido sem motivo.'),
   ...tabela([1, 3], null, [
     ['**Nome**', 'NAVI — Navegador Acessível de Vias Internas'],
-    ['**Logo**', 'Ícone de caminho com dois pontos (partida e chegada) em quadrado azul de cantos arredondados'],
-    ['**Cores**', 'Base cinza frio #E0E5EC, texto #3D4852, violeta #6C63FF para ações, verde-água #38B2AC para sucesso'],
-    ['**Alto contraste**', 'Azul-marinho e amarelo, fonte Atkinson Hyperlegible — padrão do perfil visual'],
-    ['**Tipografia**', 'Plus Jakarta Sans (títulos) e DM Sans (texto)'],
-    ['**Estilo**', 'Soft UI (neumorfismo): superfícies suaves com sombras duplas, cantos bem arredondados']
+    ['**Logo**', 'O mesmo símbolo de antes — caminho com partida e chegada — em quadrado azul #0B4FA8 de cantos arredondados: traço branco e chegada em amarelo #FFC62E. Arquivos em site-acessivel/img (gerados por ferramentas/identidade/gerar-icones.js).'],
+    ['**Tipografia**', 'Atkinson Hyperlegible Next (Braille Institute, licença OFL), uma família só, servida pelo próprio site (sem Google Fonts). Base de 16 px, escala 1,25 (14, 16, 20, 25 e 31 px), altura de linha 1,5. O texto pode ir a 200%.'],
+    ['**Forma**', 'O raio cresce com a hierarquia: 8 px nos ladrilhos, 12 px nos controles, 20 px nos painéis. Todo limite de controle é uma borda (1,5 px; 2 px nos temas de acessibilidade), nunca só sombra. Alvos de toque de 48 × 48 px com 8 px entre eles.'],
+    ['**Foco**', 'Anel duplo: 3 px escuro por fora e 2 px claro por dentro, visível sobre fundo claro e sobre botão escuro.'],
+    ['**Movimento**', 'Só responde a uma ação (abrir o painel, apertar um botão), entre 120 e 280 ms. Com "reduzir movimento" no aparelho, nada se mexe.'],
+    ['**Elemento marcante**', 'A placa do passo: a seta numa placa azul, como as placas de direção, com a trilha de progresso desenhada como o piso tátil direcional. No mapa, setas brancas paradas sobre a linha azul mostram o sentido da rota.'],
+    ['**Ícones**', 'Um conjunto só, de traço de 2 px, com símbolo de acesso, elevador, rampa, piso tátil, sanitário acessível e Libras. Nenhuma informação depende só da cor.']
   ], { zebra: false }),
+  h2('Três temas'),
+  ...tabela([1, 1.4, 1.4, 1.4], ['Uso', 'Claro (padrão)', 'Alto contraste', 'Cores distintas (daltonismo)'], [
+    ['Fundo da página', '#F2F4F7', '#061A33', '#F4F4F4'],
+    ['Superfície', '#FFFFFF', '#0B2547', '#FFFFFF'],
+    ['Texto', '#0D1B2A', '#FFFFFF', '#000000'],
+    ['Ação e caminho', '#0B4FA8', '#FFD21F', '#005A8C (rota #0072B2)'],
+    ['Destino e destaque', '#FFC62E', '#FFD21F', '#E69F00'],
+    ['Borda de controle', '#74818F', '#FFFFFF', '#5C5C5C'],
+    ['Alerta', '#7F4300 sobre #FFF1D2', '#FFC66B', 'preto sobre amarelo #F0E442']
+  ]),
+  p('O tema "Cores distintas" usa só cinzas, azul e laranja (paleta de Okabe e Ito), com contornos de 2 px: nunca vermelho contra verde, e o sucesso é azul. Ele foi pedido pela equipe no Marco 1 e entrou no Documento 04 como RN63, que aguarda a aprovação de Design e Negócios e do Líder Técnico.'),
+  h2('Contraste conferido por teste'),
+  p('Os valores acima ficam em site-acessivel/css/tokens.css, a fonte única de verdade. O teste testes/identidade/contraste.spec.js lê esse arquivo e falha se algum par usado ficar abaixo do mínimo: texto 4,5:1 (7:1 no alto contraste); ícones, bordas e rota 3:1.'),
+  ...tabela([2.2, 1, 1, 1], ['Par', 'Claro', 'Alto contraste', 'Cores distintas'], [
+    ['Texto sobre o fundo', '15,79', '17,45', '19,09'],
+    ['Texto secundário sobre o fundo', '7,14', '14,41', '10,34'],
+    ['Texto do botão sobre a cor de ação', '7,78', '12,04', '7,39'],
+    ['Borda de controle sobre a superfície', '3,98', '15,33', '6,69'],
+    ['Rota sobre o piso do mapa', '7,78', '12,04', '5,19'],
+    ['Foco sobre a superfície', '17,39', '10,58', '21,00']
+  ]),
 
   h1('Mensagens-chave'),
   ol([
@@ -258,9 +283,12 @@ const doc3 = [
   ])
 ];
 
+// Uso: node doc1a3.js [01] [02] [03]  — sem argumentos, gera os três.
+const SO = process.argv.slice(2);
 (async () => {
-  await gerar(OUT + '01-Ideia-do-Projeto.docx', 'Ideia do projeto', doc1);
-  await gerar(OUT + '02-Como-Queremos-Ser-Vistos.docx', 'Como queremos ser vistos', doc2);
-  await gerar(OUT + '03-Governanca-do-Projeto.docx', 'Governança do projeto', doc3);
-  console.log('ok 1-3');
+  const quer = n => !SO.length || SO.includes(n);
+  if (quer('01')) await gerar(OUT + '01-Ideia-do-Projeto.docx', 'Ideia do projeto', doc1);
+  if (quer('02')) await gerar(OUT + '02-Como-Queremos-Ser-Vistos.docx', 'Como queremos ser vistos', doc2);
+  if (quer('03')) await gerar(OUT + '03-Governanca-do-Projeto.docx', 'Governança do projeto', doc3);
+  console.log('ok', SO.join(' ') || '01 02 03');
 })();

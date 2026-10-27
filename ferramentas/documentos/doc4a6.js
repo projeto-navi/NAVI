@@ -7,18 +7,18 @@ const SO = process.argv.slice(2);
 // I = implementada · P = parcial · A = a implementar
 const RN = [
   ['Entrada e perfil', [
-    ['RN01', 'Na primeira visita, a Página de Rota pergunta "Deseja ouvir as instruções em voz alta?", com "Sim" e "Não", antes da escolha de perfil. A resposta fica guardada no aparelho; a pergunta não volta nas visitas seguintes e nunca aparece na Página do Mapa.', 'P'],
+    ['RN01', 'Na primeira visita, a Página de Rota pergunta "Deseja ouvir as instruções em voz alta?", com "Sim" e "Não", antes da escolha de perfil. A resposta fica guardada no aparelho; a pergunta não volta nas visitas seguintes e nunca aparece na Página do Mapa.', 'I'],
     ['RN02', 'O perfil é escolhido entre deficiência visual, mobilidade reduzida e deficiência auditiva; também existe a opção de seguir sem adaptações.', 'I'],
     ['RN03', 'No perfil visual, e em qualquer perfil no celular, a Página de Rota abre direto em "Para onde você vai?", com o campo de busca pronto.', 'I'],
     ['RN04', 'No perfil de mobilidade, a rota nunca usa escada ou escada rolante; a troca de piso é pelo elevador.', 'I'],
     ['RN05', 'No perfil auditivo, o tradutor VLibras fica disponível e todas as orientações aparecem por escrito.', 'I'],
-    ['RN06', 'O perfil é um atalho: a pessoa pode combinar adaptações (evitar escadas, ouvir instruções, Libras, texto maior, alto contraste) ao mesmo tempo.', 'A'],
-    ['RN07', 'O site lembra as escolhas no próprio aparelho (perfil, voz, contraste, texto, vista 2D/3D) e oferece um botão para apagá-las. Nenhum dado é enviado.', 'P']
+    ['RN06', 'O perfil é um atalho: a pessoa pode combinar adaptações (evitar escadas, ouvir instruções, Libras, texto maior, alto contraste) ao mesmo tempo.', 'I'],
+    ['RN07', 'O site lembra as escolhas no próprio aparelho (perfil, voz, contraste, texto, vista 2D/3D) e oferece um botão para apagá-las. Nenhum dado é enviado.', 'I']
   ]],
   ['Origem e destino', [
     ['RN08', 'Toda rota tem um ponto de partida e um destino.', 'I'],
-    ['RN09', 'Na Página de Rota, a partida é escolhida pelos botões das entradas, pela busca ou pelo link do QR Code. Na Página do Mapa, a partida só muda por "Alterar" ou "Inverter".', 'P'],
-    ['RN10', 'Na Página do Mapa, tocar num lugar abre um cartão com o nome, o andar e "Ir para cá"; "Ir para cá" troca o destino e recalcula ali mesmo. Tocar nunca troca de página sozinho.', 'P'],
+    ['RN09', 'Na Página de Rota, a partida é escolhida pelos botões das entradas, pela busca ou pelo link do QR Code. Na Página do Mapa, a partida só muda por "Alterar" ou "Inverter".', 'I'],
+    ['RN10', 'Na Página do Mapa, tocar num lugar abre um cartão com o nome, o andar e "Ir para cá"; "Ir para cá" troca o destino e recalcula ali mesmo. Tocar nunca troca de página sozinho.', 'I'],
     ['RN11', 'A busca ignora acentos e maiúsculas, aceita parte do nome e também funciona falando ("Buscar falando").', 'I'],
     ['RN12', 'Ao pedir uma categoria (sanitário, SAC, saída, elevador, caixa, Espaço Família), o site leva ao local mais próximo que não esteja interditado.', 'I'],
     ['RN13', 'Um botão inverte partida e destino e recalcula a rota na hora.', 'I']
@@ -27,42 +27,43 @@ const RN = [
     ['RN14', 'A rota é o caminho mais curto possível dentro das restrições ativas.', 'I'],
     ['RN15', 'Com "evitar escadas" ativo, a rota nunca usa escada rolante nem escada.', 'I'],
     ['RN16', 'Local com aviso de interdição sai de todas as rotas; elevador com defeito bloqueia as portas de todos os pisos.', 'I'],
-    ['RN17', 'Sem caminho acessível, o site não inventa rota: informa "Não encontramos caminho acessível confirmado", o motivo e o contato do SAC.', 'P'],
+    ['RN17', 'Sem caminho acessível, o site não inventa rota: informa "Não encontramos caminho acessível confirmado", o motivo e o contato do SAC.', 'I'],
     ['RN18', 'A rota passa pelo meio dos corredores, sem atravessar quiosques nem encostar nas lojas.', 'I'],
-    ['RN19', 'Toda rota exibe o selo "Rota demonstrativa, não verificada no local", com a data da planta usada.', 'A']
+    ['RN19', 'Toda rota exibe o selo "Rota demonstrativa, não verificada no local", com a data da planta usada.', 'I']
   ]],
   ['Instruções', [
-    ['RN20', 'Toda rota tem uma versão completa só em texto, passo a passo, que pode ser seguida sem o mapa.', 'P'],
+    ['RN20', 'Toda rota tem uma versão completa só em texto, passo a passo, que pode ser seguida sem o mapa.', 'I'],
     ['RN21', 'Cada passo informa direção, ponto de referência e distância (em metros após a escala da planta ser confirmada).', 'P'],
     ['RN22', 'Passos seguidos na mesma direção são unidos em um só.', 'I'],
     ['RN23', 'Na troca de piso, a instrução diz qual meio usar (elevador ou escada rolante) e o que fazer ao sair.', 'I'],
     ['RN24', 'O último passo diz de que lado fica o destino (esquerda, direita ou frente).', 'I'],
-    ['RN25', 'Cada passo tem "Anterior", "Próximo" e "Repetir" no bottom sheet; "Alterar destino" e "Recalcular" ficam no estado expandido.', 'P']
+    ['RN25', 'Cada passo tem "Anterior", "Próximo" e "Repetir" no bottom sheet; "Alterar destino" e "Recalcular" ficam no estado expandido.', 'I']
   ]],
   ['Voz e áudio', [
     ['RN26', 'A voz fala em português do Brasil e só é ativada se a pessoa aceitar.', 'I'],
-    ['RN27', 'Com a voz ligada, ficam sempre visíveis os controles "Pausar", "Repetir" e "Velocidade".', 'A'],
-    ['RN28', 'O site não fala por cima do leitor de tela: para quem usa TalkBack ou NVDA, os avisos vão só pelo leitor.', 'A'],
-    ['RN29', 'A pergunta inicial diz que a voz lê instruções ("ouvir as instruções em voz alta"), não que obedece a comandos.', 'A']
+    ['RN27', 'Com a voz ligada, ficam sempre visíveis os controles "Pausar", "Repetir" e "Velocidade".', 'I'],
+    ['RN28', 'O site não fala por cima do leitor de tela: para quem usa TalkBack ou NVDA, os avisos vão só pelo leitor.', 'I'],
+    ['RN29', 'A pergunta inicial diz que a voz lê instruções ("ouvir as instruções em voz alta"), não que obedece a comandos.', 'I']
   ]],
   ['Interface acessível', [
-    ['RN30', 'Todo cartão clicável (local, resultado, passo, perfil, aviso) é um botão de verdade, com nome claro, sem role que apague o papel de botão, para o TalkBack e o teclado interagirem.', 'P'],
+    ['RN30', 'Todo cartão clicável (local, resultado, passo, perfil, aviso) é um botão de verdade, com nome claro, sem role que apague o papel de botão, para o TalkBack e o teclado interagirem.', 'I'],
     ['RN31', 'Todo botão só com ícone tem nome acessível (ex.: "Aproximar", "Inverter origem e destino"); o ícone fica oculto do leitor de tela.', 'I'],
-    ['RN32', 'Todo campo tem rótulo visível ligado a ele; texto de exemplo (placeholder) não conta como rótulo.', 'P'],
-    ['RN33', 'Toda janela recebe o foco ao abrir, fecha com Esc e devolve o foco ao botão que a abriu.', 'P'],
-    ['RN34', 'O site funciona só com teclado, sem armadilha de foco, com foco sempre visível.', 'P'],
+    ['RN32', 'Todo campo tem rótulo visível ligado a ele; texto de exemplo (placeholder) não conta como rótulo.', 'I'],
+    ['RN33', 'Toda janela recebe o foco ao abrir, fecha com Esc e devolve o foco ao botão que a abriu.', 'I'],
+    ['RN34', 'O site funciona só com teclado, sem armadilha de foco, com foco sempre visível.', 'I'],
     ['RN35', 'Ao abrir a Página do Mapa, o foco vai para o título "Rota até <destino>" e um único anúncio diz "Rota calculada: N passos. Passo 1: …". Também são anunciados: piso ativo, vista 3D, chegada.', 'I'],
-    ['RN36', 'O mapa visual sempre tem alternativa em texto: passo a passo e lista de locais do piso.', 'P'],
+    ['RN36', 'O mapa visual sempre tem alternativa em texto: passo a passo e lista de locais do piso.', 'I'],
     ['RN37', 'Cada página tem título próprio (<title> e h1) e o link "Pular para o conteúdo".', 'I'],
     ['RN38', 'Nenhuma informação depende só de cor (o destino tem cor, ícone e texto).', 'I'],
-    ['RN39', 'Contraste mínimo de 4,5:1 no texto e 3:1 em ícones e bordas; modo alto contraste sempre disponível.', 'P']
+    ['RN39', 'Contraste mínimo de 4,5:1 no texto e 3:1 em ícones e bordas; modo alto contraste sempre disponível.', 'I']
   ]],
   ['Visual e celular', [
-    ['RN40', 'Toda área de toque tem pelo menos 48 × 48 px, com pelo menos 8 px entre áreas, nas duas páginas.', 'A'],
-    ['RN41', 'O texto pode ser aumentado (A+) até 200% sem quebrar o layout nem criar rolagem lateral.', 'P'],
-    ['RN42', 'No celular, a Página do Mapa mostra o passo atual num painel inferior (bottom sheet) com "Anterior", "Próximo" e "Repetir" perto do polegar; deitado ou a partir de 768 px, o painel fica à esquerda.', 'A'],
-    ['RN43', 'O layout funciona de 320 px de largura em diante, deitado ou em pé, com A+ e com zoom de 200% do navegador, sem rolagem lateral.', 'P'],
-    ['RN44', 'O site respeita "reduzir movimento" do sistema: sem animações automáticas.', 'I']
+    ['RN40', 'Toda área de toque tem pelo menos 48 × 48 px, com pelo menos 8 px entre áreas, nas duas páginas.', 'I'],
+    ['RN41', 'O texto pode ser aumentado (A+) até 200% sem quebrar o layout nem criar rolagem lateral.', 'I'],
+    ['RN42', 'No celular, a Página do Mapa mostra o passo atual num painel inferior (bottom sheet) com "Anterior", "Próximo" e "Repetir" perto do polegar; deitado ou a partir de 768 px, o painel fica à esquerda.', 'I'],
+    ['RN43', 'O layout funciona de 320 px de largura em diante, deitado ou em pé, com A+ e com zoom de 200% do navegador, sem rolagem lateral.', 'I'],
+    ['RN44', 'O site respeita "reduzir movimento" do sistema: sem animações automáticas.', 'I'],
+    ['RN63', 'Em Preferências, além do tema claro e do alto contraste, há o tema "Cores distintas", para pessoas com daltonismo: só cinzas, azul e laranja, contornos de 2 px, e nenhuma informação depende de distinguir vermelho de verde.', 'X']
   ]],
   ['Mapa, 3D e primeira pessoa', [
     ['RN45', 'O mapa 2D é o padrão; 3D e primeira pessoa são opcionais e só carregam quando pedidos.', 'I'],
@@ -77,38 +78,40 @@ const RN = [
     ['RN52', 'Cada aviso mostra a data, para a pessoa saber se a informação é recente.', 'I']
   ]],
   ['Ajuda e segurança', [
-    ['RN53', 'Um botão "Pedir ajuda" fica a no máximo 2 toques de qualquer tela, com o contato do SAC e a rota até ele.', 'A'],
-    ['RN54', 'O site avisa que não deve ser usado em emergências; vale a sinalização e a equipe do local.', 'A'],
+    ['RN53', 'Um botão "Pedir ajuda" fica a no máximo 2 toques de qualquer tela, com o contato do SAC e a rota até ele.', 'I'],
+    ['RN54', 'O site avisa que não deve ser usado em emergências; vale a sinalização e a equipe do local.', 'I'],
     ['RN55', 'O site não pede cadastro nem dados pessoais.', 'I']
   ]],
   ['Fluxo no celular', [
     ['RN56', 'No celular, a Página de Rota pede o destino primeiro e depois a entrada. Tocar na entrada abre a Página do Mapa. No máximo 3 toques da tela "Para onde você vai?" até o mapa.', 'I'],
     ['RN57', 'No celular, os atalhos "mais próximo" aparecem na tela de destino; sem partida definida, o site pergunta a entrada e calcula sozinho.', 'I'],
-    ['RN58', 'Cada página tem layout de celular e de computador, testados separadamente; o celular é desenhado primeiro.', 'P']
+    ['RN58', 'Cada página tem layout de celular e de computador, testados separadamente; o celular é desenhado primeiro.', 'I']
   ]],
   ['Duas páginas, links e uso sem internet', [
-    ['RN59', 'Links e QR Codes: com origem e destino abrem a Página do Mapa; só com origem abrem a Página de Rota com a partida preenchida; o endereço antigo index.html?origem=&destino= leva ao mapa com os mesmos dados.', 'A'],
-    ['RN60', 'A Página do Mapa aberta sem origem ou destino válidos volta para a Página de Rota com "Escolha para onde você vai".', 'A'],
-    ['RN61', 'A troca de página acontece só ao ativar um botão cujo nome avisa (ex.: "Acesso Azul — ver a rota"); digitar ou mover o foco nunca troca de página.', 'A'],
-    ['RN62', 'Depois da primeira visita, o site abre, busca, calcula a rota e mostra o passo a passo sem internet. Libras e "Buscar falando" avisam por texto que precisam de internet.', 'A']
+    ['RN59', 'Links e QR Codes: com origem e destino abrem a Página do Mapa; só com origem abrem a Página de Rota com a partida preenchida; o endereço antigo index.html?origem=&destino= leva ao mapa com os mesmos dados.', 'I'],
+    ['RN60', 'A Página do Mapa aberta sem origem ou destino válidos volta para a Página de Rota com "Escolha para onde você vai".', 'I'],
+    ['RN61', 'A troca de página acontece só ao ativar um botão cujo nome avisa (ex.: "Acesso Azul — ver a rota"); digitar ou mover o foco nunca troca de página.', 'I'],
+    ['RN62', 'Depois da primeira visita, o site abre, busca, calcula a rota e mostra o passo a passo sem internet. Libras e "Buscar falando" avisam por texto que precisam de internet.', 'I']
   ]]
 ];
-const NOME = { I: 'Implementada', P: 'Parcial', A: 'A implementar' };
+const NOME = { I: 'Implementada', P: 'Parcial', A: 'A implementar', X: 'Implementada (proposta, aguarda aprovação)' };
 const todas = RN.flatMap(g => g[1]);
 const conta = k => todas.filter(r => r[2] === k).length;
 
 const doc4 = [
-  capa('04', 'Regras de negócio', 'O que o protótipo base do Navi deve sempre cumprir', 'listar as regras que valem para qualquer local onde o Navi for implantado, com a situação de cada uma no site atual. Toda mudança no produto deve respeitar ou atualizar esta lista.', '1.1 — 27/10/2026'),
+  capa('04', 'Regras de negócio', 'O que o protótipo base do Navi deve sempre cumprir', 'listar as regras que valem para qualquer local onde o Navi for implantado, com a situação de cada uma no site atual. Toda mudança no produto deve respeitar ou atualizar esta lista.', '1.2 — 27/10/2026'),
   h1('Resumo'),
-  p(`São **${todas.length} regras** em ${RN.length} grupos. No site atual (navi-map.netlify.app, versão de 26/10/2026, auditada na Fase 0 em 27/10/2026):`),
+  p(`São **${todas.length} regras** em ${RN.length} grupos. No site do Marco 1 (duas páginas e nova identidade, branch m1/site-novo, conferido pela suíte de testes em 27/10/2026, ainda não publicado):`),
   ...tabela([2, 1], ['Situação', 'Quantidade'], [
-    ['Implementada', String(conta('I'))], ['Parcial', String(conta('P'))], ['A implementar', String(conta('A'))]
+    ['Implementada', String(conta('I'))], ['Implementada, aguardando aprovação da regra', String(conta('X'))], ['Parcial', String(conta('P'))], ['A implementar', String(conta('A'))]
   ]),
   nota('**Como ler:** "Implementada" = funciona hoje em todos os perfis. "Parcial" = funciona em parte (por exemplo, só no celular ou só no perfil visual). "A implementar" = prevista no Plano de Melhorias e no portfólio.'),
-  nota('**Duas páginas:** as regras que citam a Página de Rota e a Página do Mapa descrevem a estrutura do Marco 1. A situação mede o comportamento no site atual, que ainda tem uma página só.'),
+  nota('**Duas páginas:** a Página de Rota (index.html) escolhe perfil, destino e partida e não tem mapa; a Página do Mapa (mapa.html) mostra o mapa e o passo a passo. A publicação no Netlify é do Líder Técnico.'),
+  nota('**Aguarda aprovação:** a RN63 (tema "Cores distintas") foi pedida pela equipe durante o Marco 1 e já está no site. Pela regra deste documento, Design e Negócios e o Líder Técnico precisam aprová-la; se não aprovarem, o tema sai de Preferências sem mudar o resto.'),
   ...RN.flatMap(([grupo, regras]) => [h2(grupo), ...tabela([0.6, 4.2, 1.1], ['ID', 'Regra', 'Situação'], regras.map(r => [`**${r[0]}**`, r[1], NOME[r[2]]]))]),
   h1('Histórico de versões'),
   ...tabela([0.8, 1.1, 4], ['Versão', 'Data', 'O que mudou'], [
+    ['1.2', '27/10/2026', 'Marco 1 (duas páginas, nova identidade, PWA). Passaram para Implementada, conferidas pela suíte de testes: RN01, RN06, RN07, RN09, RN10, RN17, RN19, RN20, RN25, RN27–RN30, RN32–RN34, RN36, RN39–RN43, RN53, RN54 e RN58–RN62. RN21 continua Parcial (metros só depois da escala medida). Regra nova proposta: RN63 (tema "Cores distintas"), aguardando aprovação.'],
     ['1.1', '27/10/2026', 'Fase 0 aprovada por Design e Negócios e pelo Líder Técnico. Texto novo em RN01, RN03, RN09, RN10, RN25, RN30, RN35, RN37, RN40, RN42, RN43, RN56 e RN58; regras novas RN59–RN62. Pela auditoria, RN01, RN30 e RN43 passaram de Implementada para Parcial; RN09, RN10 e RN58 também, porque o texto novo ainda não está no site; RN40 e RN42 passaram para A implementar.'],
     ['1.0', '26/10/2026', 'Primeira versão, com 58 regras.']
   ]),
