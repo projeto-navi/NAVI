@@ -1,0 +1,106 @@
+/* Navi — vista 3D e primeira pessoa (carregado só quando o 3D é pedido, RN45).
+   Mesmos tokens do resto do site: rótulos com halo, HUD com borda (nunca só sombra), alvos de 48 px. */
+
+.mapa3d { position: absolute; inset: 0; background: var(--mapa-fundo); overflow: hidden; touch-action: none; }
+.mapa3d-canvas { display: block; }
+.rotulos3d { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.rotulo3d {
+  position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform;
+  font-family: var(--fonte); font-weight: var(--peso-forte); font-size: 0.8125rem; line-height: 1;
+  padding: 4px 7px; border-radius: 6px;
+  background: var(--cor-superficie); color: var(--cor-texto); border: 1px solid var(--cor-borda);
+}
+.rotulo3d.historico { background: #7A4A32; color: #FFF6E6; border-color: #7A4A32; }
+.rotulo3d.destino {
+  background: var(--mapa-destino); color: var(--cor-destaque-texto); border: 2px solid var(--mapa-destino-borda);
+  font-size: 0.9375rem; padding: 6px 10px; z-index: 2;
+}
+.rotulo3d.origem { background: var(--mapa-partida); color: var(--cor-texto); border: 2px solid var(--mapa-partida-borda); font-size: 0.9375rem; padding: 6px 10px; z-index: 2; }
+html.contraste .rotulo3d.origem { color: #FFFFFF; }
+html.texto-grande .rotulo3d { font-size: 1rem; }
+html.texto-grande .rotulo3d.destino, html.texto-grande .rotulo3d.origem { font-size: 1.125rem; }
+.dica3d {
+  position: absolute; left: 0; top: 0; z-index: 4; pointer-events: none; white-space: nowrap;
+  background: var(--cor-texto); color: var(--cor-superficie); font-weight: var(--peso-forte);
+  padding: 6px 10px; border-radius: var(--raio-tile); font-size: var(--t-1);
+}
+
+/* ---------- primeira pessoa (estilo Street View) ---------- */
+.mapa-area.fp-tela-cheia { position: fixed !important; inset: 0; z-index: 40; }
+.fp-hud { position: absolute; inset: 0; z-index: 5; pointer-events: none; font-family: var(--fonte); }
+.fp-hud button { pointer-events: auto; }
+.fp-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--alvo); padding: 0 var(--e4);
+  border-radius: var(--raio-controle); border: var(--borda-largura-forte) solid var(--cor-borda-forte);
+  background: var(--cor-superficie); color: var(--cor-texto); font-weight: var(--peso-forte); font-size: 1rem;
+  box-shadow: var(--sombra-flutuante);
+  transition: transform var(--dur-toque) var(--curva-saida);
+}
+.fp-btn:active:not(:disabled) { transform: scale(0.97); }
+.fp-btn svg { width: 22px; height: 22px; }
+.fp-btn:disabled { background: var(--cor-desabilitado); color: var(--cor-desabilitado-texto); border-style: dashed; cursor: not-allowed; }
+.fp-btn[aria-pressed="true"] { background: var(--cor-acao); color: var(--cor-acao-texto); border-color: var(--cor-acao); }
+.fp-frente { background: var(--cor-acao); color: var(--cor-acao-texto); border-color: var(--cor-acao); min-width: 140px; }
+.fp-topo {
+  position: absolute; left: max(var(--e3), env(safe-area-inset-left)); right: max(var(--e3), env(safe-area-inset-right));
+  top: calc(env(safe-area-inset-top) + var(--e3)); display: flex; gap: var(--e3); align-items: flex-start;
+}
+.fp-instrucao {
+  pointer-events: auto; flex: 1; max-width: 620px; margin: 0 auto; display: grid; grid-template-columns: 56px 1fr; gap: var(--e3); align-items: center;
+  background: var(--cor-superficie); color: var(--cor-texto); border: var(--borda-largura) solid var(--cor-borda);
+  border-radius: var(--raio-controle); padding: var(--e2) var(--e4) var(--e2) var(--e2); box-shadow: var(--sombra-flutuante);
+}
+.fp-seta { width: 56px; height: 56px; border-radius: var(--raio-tile); background: var(--cor-acao); color: var(--cor-acao-texto); display: grid; place-items: center; }
+.fp-seta svg { width: 34px; height: 34px; }
+.fp-seta.destaque { background: var(--cor-destaque); color: var(--cor-destaque-texto); box-shadow: inset 0 0 0 2px var(--cor-borda-forte); }
+.fp-meta { display: block; font-size: var(--t-1); color: var(--cor-texto-2); font-weight: var(--peso-forte); }
+.fp-texto { display: block; font-size: 1.125rem; line-height: 1.3; }
+.fp-depois { display: block; font-size: var(--t-1); color: var(--cor-texto-2); margin-top: 2px; }
+.fp-depois:empty { display: none; }
+.fp-mini {
+  position: absolute; right: max(var(--e3), env(safe-area-inset-right)); bottom: 140px; width: 220px; height: 138px;
+  border-radius: var(--raio-controle); border: var(--borda-largura-forte) solid var(--cor-borda-forte); background: var(--mapa-piso);
+}
+.fp-base {
+  position: absolute; left: max(var(--e3), env(safe-area-inset-left)); right: max(var(--e3), env(safe-area-inset-right));
+  bottom: calc(env(safe-area-inset-bottom) + var(--e3)); display: flex; flex-direction: column; align-items: center; gap: var(--e2);
+}
+.fp-controles, .fp-opcoes { display: flex; gap: var(--alvo-espaco); flex-wrap: wrap; justify-content: center; }
+.fp-girar { width: 52px; height: 52px; padding: 0; border-radius: 50%; }
+.fp-opcoes .fp-btn { font-size: var(--t-1); padding: 0 var(--e3); }
+/* "Tela cheia": o mapa já ocupa a tela no celular em pé; no painel lateral continua útil */
+@media (max-width: 767.98px) and (orientation: portrait) { .fp-opcoes [data-fp="tela"] { display: none; } }
+.fp-progresso { width: min(520px, 100%); height: 6px; border-radius: 3px; background: var(--cor-superficie-2); box-shadow: inset 0 0 0 1px var(--cor-divisor); overflow: hidden; }
+.fp-progresso i { display: block; height: 100%; width: 0; background: var(--cor-acao); transition: width var(--dur-gaveta) var(--curva-saida); }
+.fp-chegada { position: absolute; inset: 0; display: grid; place-items: center; background: rgb(6 18 33 / 0.45); pointer-events: auto; padding: var(--e4); }
+.fp-chegada[hidden] { display: none; }
+.fp-chegada-caixa {
+  background: var(--cor-superficie); color: var(--cor-texto); border: 4px solid var(--cor-destaque);
+  border-radius: var(--raio-painel); padding: var(--e5); max-width: 440px; width: 100%; text-align: center;
+}
+.fp-chegada-ico { width: 64px; height: 64px; display: block; margin: 0 auto var(--e2); }
+.fp-chegada-ico circle { fill: var(--cor-destaque); }
+.fp-chegada-ico path { stroke: var(--cor-destaque-texto); }
+.fp-chegada-caixa strong { display: block; font-size: var(--t3); line-height: 1.1; }
+.fp-chegada-caixa p { font-size: 1.1875rem; margin: var(--e3) 0 var(--e4); }
+.fp-chegada-btns { display: grid; gap: var(--e2); }
+@media (max-width: 860px) {
+  .fp-topo { flex-direction: column; }
+  .fp-instrucao { width: 100%; grid-template-columns: 44px 1fr; padding: var(--e2) var(--e3) var(--e2) var(--e2); }
+  .fp-seta { width: 44px; height: 44px; } .fp-seta svg { width: 28px; height: 28px; }
+  .fp-texto { font-size: 1rem; }
+  .fp-depois { display: none; }
+  .fp-mini { width: 132px; height: 84px; bottom: auto; top: 176px; }
+  .fp-btn { padding: 0 var(--e3); font-size: 0.9375rem; }
+  .fp-frente { min-width: 110px; }
+}
+@media (max-width: 560px) {
+  .fp-controles { flex-wrap: nowrap; gap: 6px; width: 100%; }
+  .fp-girar { width: var(--alvo); height: var(--alvo); flex: none; }
+  .fp-frente { min-width: 0; flex: 1; }
+  .fp-controles [data-fp="tras"] { flex: 0 0 auto; }
+  .fp-opcoes { flex-wrap: wrap; gap: 6px; width: 100%; }
+  .fp-opcoes .fp-btn { flex: 1 1 auto; font-size: 0.875rem; padding: 0 var(--e2); }
+  .fp-mini { top: auto; bottom: 160px; }
+}
+.mapa-area.em-fp .rotulo3d.destino { font-size: 1.25rem; padding: 8px 14px; }

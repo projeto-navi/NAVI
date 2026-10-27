@@ -87,7 +87,8 @@
         const lista = [];
         if (!reg.dados) lista.push(injetar(base + 'dados.js'));
         if (!reg.grafo) lista.push(injetar(base + 'grafo.js'));
-        if (opcoes.malha !== false && !reg.malha) lista.push(injetar(base + 'malha.js'));
+        // a malha só deixa o traçado mais suave: sem ela (sem internet e ainda fora do cache), a rota continua certa
+        if (opcoes.malha !== false && !reg.malha) lista.push(injetar(base + 'malha.js').catch(() => null));
         await Promise.all(lista);
       }
     } catch (e) {

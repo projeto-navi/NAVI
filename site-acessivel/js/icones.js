@@ -31,6 +31,7 @@
     'i-repetir': `<g ${T}><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4.5V9H9"/></g>`,
     'i-velocidade': `<g ${T}><path d="M4.2 17a8.5 8.5 0 1 1 15.6 0"/><path d="M12 15l3.5-4.5"/></g><circle cx="12" cy="15" r="1.5" ${C}/>`,
     'i-anterior': `<g ${T}><path d="M15 5l-7 7 7 7"/></g>`,
+    'i-seta-direita': `<path d="M4 12h15M13 6l6 6-6 6" ${T}/>`,
     'i-proximo': `<g ${T}><path d="M9 5l7 7-7 7"/></g>`,
     'i-para-cima': `<g ${T}><path d="M5 15l7-7 7 7"/></g>`,
     'i-para-baixo': `<g ${T}><path d="M5 9l7 7 7-7"/></g>`,

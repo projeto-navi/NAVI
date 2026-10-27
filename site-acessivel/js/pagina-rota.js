@@ -341,7 +341,7 @@
   function prefetchMapa() {
     if (prefetchFeito || !/^https?:$/.test(location.protocol)) return;
     prefetchFeito = true;
-    for (const href of ['mapa.html', 'css/mapa.css', 'js/pagina-mapa.js', 'js/folha.js', 'js/mapa-renderer.js', 'js/mapa2d.js', `locais/${slug}/malha.js`]) {
+    for (const href of ['mapa.html', 'css/mapa.css', 'js/pagina-mapa.js', 'js/folha.js', 'js/mapa-renderer.js', 'js/mapa2d.js', `locais/${slug}/malha.js`, `locais/${slug}/dados3d.js`]) {
       const l = document.createElement('link'); l.rel = 'prefetch'; l.href = href; document.head.appendChild(l);
     }
   }

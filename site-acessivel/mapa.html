@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sua rota | Navi</title>
+<meta name="description" content="Navi, Navegador Acessível de Vias Internas: mapa e passo a passo da rota dentro do local, com voz, Libras e caminhos sem escadas.">
+<meta name="theme-color" content="#0B4FA8">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="img/icone-navi.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
+<link rel="apple-touch-icon" href="img/icone-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<script>
+/* Aplica tema e tamanho do texto antes da primeira pintura (preferências do aparelho, RN07). */
+(function () { try {
+  var s = localStorage, h = document.documentElement, t = s.getItem('navi-tema'), x = s.getItem('navi-texto');
+  if (!t && s.getItem('navi-contraste') === '1') t = 'contraste';
+  if (t === 'contraste' || t === 'daltonismo') h.classList.add(t);
+  if (x === '1') x = '125';
+  if (['125', '150', '175', '200'].indexOf(x) >= 0) { h.setAttribute('data-texto', x); h.classList.add('texto-grande'); }
+} catch (e) {} })();
+</script>
+<link rel="preload" href="fontes/atkinson-hyperlegible-next.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/mapa.css">
+</head>
+<body class="pagina-mapa">
+<a class="pular" href="#titulo-rota">Pular para o passo a passo</a>
+
+<div class="mapa-app" id="app" data-folha="recolhido">
+  <header class="mapa-topo" id="mapa-topo">
+    <a class="btn btn-icone" id="voltar" href="index.html">
+      <svg class="ico" aria-hidden="true" focusable="false"><use href="#i-voltar"/></svg><span class="sr">Voltar</span>
+    </a>
+    <p class="mapa-resumo" id="mapa-resumo"></p>
+    <a class="btn btn-alterar" id="alterar" href="index.html"><svg class="ico" aria-hidden="true" focusable="false"><use href="#i-alterar"/></svg><span class="alterar-texto">Alterar</span><span class="sr"> a rota</span></a>
+  </header>
+
+  <main class="folha" id="conteudo" aria-labelledby="titulo-rota" data-estado="recolhido">
+    <div class="folha-cabeca" id="folha-cabeca">
+      <button type="button" class="folha-alca" id="folha-alca" aria-controls="folha-mais" aria-expanded="false">
+        <span class="folha-alca-barra" aria-hidden="true"></span><span class="sr" data-rotulo>Mostrar mais do passo a passo</span>
+      </button>
+      <h1 id="titulo-rota" tabindex="-1">Carregando a rota…</h1>
+      <p class="folha-resumo" id="folha-resumo"></p>
+    </div>
+    <div class="folha-corpo" id="folha-corpo">
+      <div class="folha-atual" id="folha-atual"></div>
+      <div class="folha-mais" id="folha-mais">
+        <div class="folha-medio" id="folha-medio"></div>
+        <div class="folha-expandido" id="folha-expandido"></div>
+      </div>
+    </div>
+  </main>
+
+  <section class="mapa-area" id="mapa-area" aria-label="Mapa">
+    <div id="navi-map-slot" class="mapa-slot"></div>
+    <div class="mapa-info" id="mapa-info">
+      <div class="mapa-status" id="mapa-status" hidden></div>
+      <div class="mapa-extras3d" id="mapa-extras3d" role="group" aria-label="Opções do mapa 3D" hidden></div>
+    </div>
+    <div class="mapa-controles" id="mapa-controles"></div>
+  </section>
+</div>
+
+<noscript>
+  <p class="noscript">O Navi precisa de JavaScript ligado para mostrar a rota. Ligue o JavaScript no navegador ou peça ajuda à equipe do local.</p>
+</noscript>
+
+<div id="anuncio" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="aviso-visual" class="aviso-visual" role="alert" hidden></div>
+<div id="dialogos"></div>
+
+<script src="js/icones.js"></script>
+<script src="locais/indice.js" defer></script>
+<script src="js/estado.js" defer></script>
+<script src="js/categorias.js" defer></script>
+<script src="js/voz.js" defer></script>
+<script src="js/libras.js" defer></script>
+<script src="js/ui.js" defer></script>
+<script src="js/local.js" defer></script>
+<script src="js/rotas.js" defer></script>
+<script src="js/interdicoes.js" defer></script>
+<script src="js/avisos-ui.js" defer></script>
+<script src="js/pwa.js" defer></script>
+<script src="js/folha.js" defer></script>
+<script src="js/mapa-renderer.js" defer></script>
+<script src="js/mapa2d.js" defer></script>
+<script src="js/pagina-mapa.js" defer></script>
+</body>
+</html>

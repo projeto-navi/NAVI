@@ -1,7 +1,9 @@
-/* Navi — vista 3D do Shopping Estação.
+/* Navi — vista 3D procedural (usada pelo adaptador js/mapa3d-renderer.js, só quando o 3D é pedido).
    Geometria construída com as MESMAS coordenadas do mapa 2D (plantas, quiosques, malha de corredores),
-   então lojas, rotas e marcadores ficam exatamente no mesmo lugar nas duas vistas.
-   Alturas e materiais são ilustrativos (referência: fotos públicas do shopping e do antigo prédio da estação). */
+   então lugares, rotas e marcadores ficam exatamente no mesmo lugar nas duas vistas.
+   Alturas e materiais são ilustrativos. As cores vêm dos tokens do tema ativo (css/tokens.css).
+   Desempenho (Marco 1): pixel ratio até 1,5, sem preserveDrawingBuffer, materiais simples e sem sombras,
+   e o quadro só é desenhado quando algo muda (nada se move sozinho). */
 (function () {
   'use strict';
   const T = window.THREE;
@@ -13,7 +15,10 @@
     try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); }
     catch (e) { return false; }
   }
-  const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || '#888';
+  // cor de um token do tema ativo (com reserva, para nunca ficar sem cor)
+  const cssVar = (n, reserva = '#888888') => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || reserva;
+  const ehEscada = cat => cat === 'escada' || cat === 'escada_rolante';
+  const ACESSIBILIDADE = ['elevador', 'plataforma', 'rampa', 'piso_tatil', 'sanitario_acessivel', 'vaga_pcd'];
   const reduzMovimento = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function dentro(x, y, poly) {
@@ -25,20 +30,31 @@
     return c;
   }
 
-  function iniciar(container, D, G, ao) {
+  /**
+   * @param {HTMLElement} container
+   * @param {{places: object[], plantas: object, pisos: object}} D geometria por andar (local.legado)
+   * @param {object} G grafo do motor
+   * @param {{selecionar?: Function, anunciar?: Function, saiuPrimeiraPessoa?: Function}} ao
+   * @param {{lajes?: object, nomeAndar?: (piso: number) => string, textos?: object, corEntrada?: (lugar: object) => string|null}} [opcoes]
+   */
+  function iniciar(container, D, G, ao, opcoes = {}) {
     if (!T || !suportaWebGL()) return null;
-    const lajes = (window.NAVI_3D || {}).lajes || {};
+    const lajes = opcoes.lajes || (window.NAVI_3D || {}).lajes || {};
+    const nomeAndar = opcoes.nomeAndar || (p => 'Piso ' + p);
+    const txt = opcoes.textos || {};
+    const corEntrada = opcoes.corEntrada || (() => null);
+    const PISOS = Object.keys(D.pisos).map(Number).sort((a, b) => a - b);
+    const TOPO = PISOS[PISOS.length - 1];
     // centro da planta → origem do mundo
-    const b1 = D.pisos[1], b2 = D.pisos[2];
-    const cx = (Math.min(b1.minX, b2.minX) + Math.max(b1.maxX, b2.maxX)) / 2;
-    const cz = (Math.min(b1.minY, b2.minY) + Math.max(b1.maxY, b2.maxY)) / 2;
+    const caixas = PISOS.map(p => D.pisos[p]);
+    const cx = (Math.min(...caixas.map(b => b.minX)) + Math.max(...caixas.map(b => b.maxX))) / 2;
+    const cz = (Math.min(...caixas.map(b => b.minY)) + Math.max(...caixas.map(b => b.maxY))) / 2;
     let extra2 = 0;
     const P = (x, y, piso, h = 0) => new T.Vector3(x - cx, (piso - 1) * (ALT_PISO + extra2) + h, y - cz);
 
-    const renderer = new T.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = T.PCFSoftShadowMap;
+    const renderer = new T.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.shadowMap.enabled = false; // sem sombras: o relevo vem da luz ambiente e da cor das paredes
     renderer.domElement.setAttribute('aria-hidden', 'true');
     renderer.domElement.className = 'mapa3d-canvas';
     container.appendChild(renderer.domElement);
@@ -60,10 +76,6 @@
     cena.add(hemi);
     const sol = new T.DirectionalLight(0xffffff, 1.5);
     sol.position.set(-700, 1400, 600);
-    sol.castShadow = true;
-    sol.shadow.mapSize.set(2048, 2048);
-    Object.assign(sol.shadow.camera, { left: -1100, right: 1100, top: 700, bottom: -700, near: 100, far: 3500 });
-    sol.shadow.bias = -0.0008;
     cena.add(sol);
 
     // textura de piso (porcelanato claro em placas, como nos corredores do shopping)
@@ -81,45 +93,53 @@
     }
 
     const M = {};
+    const L = (o) => new T.MeshLambertMaterial(o);
     function criarMateriais() {
       const contraste = document.documentElement.classList.contains('contraste');
-      const fundo = new T.Color(cssVar('--planta'));
+      const fundo = new T.Color(cssVar('--mapa-fundo', '#DCE2E9'));
       cena.background = fundo;
-      const pisoBase = contraste ? '#1B3157' : '#E9EDF2', pisoJunta = contraste ? '#2E4A7A' : '#D0D7E1';
+      const pisoBase = cssVar('--mapa-piso', '#FFFFFF'), pisoJunta = cssVar('--cor-divisor', '#D3DAE2');
       if (M.piso) { M.piso.map.dispose(); }
+      const rota = cssVar('--mapa-rota', '#0B4FA8'), ativo = cssVar('--mapa-trecho-ativo', '#FFC62E'), destino = cssVar('--mapa-destino', '#FFC62E');
       const novo = {
-        piso: new T.MeshStandardMaterial({ map: texturaPiso(pisoBase, pisoJunta), roughness: 0.55, metalness: 0.0 }),
-        borda: new T.MeshStandardMaterial({ color: contraste ? '#2E4A7A' : '#C3CCD8', roughness: 0.9 }),
-        parede: new T.MeshStandardMaterial({ color: contraste ? '#F3F5F9' : '#F2F4F8', roughness: 0.85 }),
-        teto: new T.MeshStandardMaterial({ color: contraste ? '#C9D3E6' : '#D3DAE3', roughness: 0.9 }),
-        quiosque: new T.MeshStandardMaterial({ color: contraste ? '#9FB3D6' : '#D4D8F6', roughness: 0.7 }),
-        selecionada: new T.MeshStandardMaterial({ color: '#FFCB2E', roughness: 0.6, emissive: '#8A6A00', emissiveIntensity: 0.55 }),
-        hover: new T.MeshStandardMaterial({ color: contraste ? '#FFE38A' : '#FFE9A6', roughness: 0.7 }),
-        historico: new T.MeshStandardMaterial({ color: '#D8B46E', roughness: 0.85 }),
-        historicoTeto: new T.MeshStandardMaterial({ color: '#7A4A32', roughness: 0.8 }),
-        rota: new T.MeshStandardMaterial({ color: cssVar('--rota'), roughness: 0.4, emissive: cssVar('--rota'), emissiveIntensity: 0.35 }),
-        passo: new T.MeshStandardMaterial({ color: '#FFCB2E', roughness: 0.4, emissive: '#FFCB2E', emissiveIntensity: 0.4 }),
-        fantasma: new T.MeshBasicMaterial({ color: cssVar('--rota'), transparent: true, opacity: 0.45, depthTest: false, depthWrite: false }),
-        lajeVidro: new T.MeshStandardMaterial({ color: contraste ? '#1B3157' : '#EFEDE6', transparent: true, opacity: 0.55, roughness: 0.6, depthWrite: false }),
-        origem: new T.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.5 }),
-        origemAnel: new T.MeshStandardMaterial({ color: cssVar('--rota'), roughness: 0.4 }),
-        destino: new T.MeshStandardMaterial({ color: '#FFCB2E', roughness: 0.45, emissive: '#7A5A00', emissiveIntensity: 0.25 }),
-        aviso: new T.MeshStandardMaterial({ color: '#F2B8B5', roughness: 0.7, emissive: '#B3261E', emissiveIntensity: 0.25 }),
-        quiosqueFantasma: new T.MeshStandardMaterial({ color: contraste ? '#9FB3D6' : '#D4D8F6', transparent: true, opacity: 0.18, depthWrite: false }),
-        feixe: new T.MeshBasicMaterial({ color: '#FFCB2E', transparent: true, opacity: 0.22, depthWrite: false, side: T.DoubleSide, fog: false }),
-        seta: new T.MeshBasicMaterial({ color: cssVar('--rota') }),
-        setaBorda: new T.MeshBasicMaterial({ color: contraste ? '#0A1A33' : '#FFFFFF' }),
-        vidro: new T.MeshStandardMaterial({ color: '#9CC3E6', roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.35, depthWrite: false })
+        piso: L({ map: texturaPiso(pisoBase, pisoJunta) }),
+        borda: L({ color: cssVar('--mapa-parede', '#6B7A8C') }),
+        parede: L({ color: cssVar('--mapa-quiosque', '#E6EBF1') }),
+        teto: L({ color: cssVar('--mapa-loja', '#C9D3DF') }),
+        quiosque: L({ color: cssVar('--mapa-quiosque', '#E6EBF1') }),
+        selecionada: L({ color: cssVar('--mapa-selecionado', '#FFE08A'), emissive: '#5A4300', emissiveIntensity: 0.25 }),
+        hover: L({ color: contraste ? '#FFE38A' : cssVar('--mapa-selecionado', '#FFE08A') }),
+        historico: L({ color: '#D8B46E' }),
+        historicoTeto: L({ color: '#7A4A32' }),
+        rota: L({ color: rota, emissive: rota, emissiveIntensity: 0.35 }),
+        passo: L({ color: ativo, emissive: ativo, emissiveIntensity: 0.4 }),
+        fantasma: new T.MeshBasicMaterial({ color: rota, transparent: true, opacity: 0.45, depthTest: false, depthWrite: false }),
+        lajeVidro: L({ color: pisoBase, transparent: true, opacity: 0.55, depthWrite: false }),
+        origem: L({ color: cssVar('--mapa-partida', '#FFFFFF') }),
+        origemAnel: L({ color: cssVar('--mapa-partida-borda', '#0D1B2A') }),
+        destino: L({ color: destino, emissive: destino, emissiveIntensity: 0.2 }),
+        aviso: L({ color: cssVar('--mapa-aviso', '#A85F00'), emissive: cssVar('--mapa-aviso', '#A85F00'), emissiveIntensity: 0.2 }),
+        quiosqueFantasma: L({ color: cssVar('--mapa-quiosque', '#E6EBF1'), transparent: true, opacity: 0.18, depthWrite: false }),
+        feixe: new T.MeshBasicMaterial({ color: destino, transparent: true, opacity: 0.22, depthWrite: false, side: T.DoubleSide, fog: false }),
+        seta: new T.MeshBasicMaterial({ color: rota }),
+        setaBorda: new T.MeshBasicMaterial({ color: cssVar('--mapa-rota-contorno', '#FFFFFF') }),
+        setaRota: new T.MeshBasicMaterial({ color: cssVar('--mapa-rota-contorno', '#FFFFFF') }),
+        vidro: L({ color: '#9CC3E6', transparent: true, opacity: 0.35, depthWrite: false })
       };
       for (const k in novo) { if (M[k]) { M[k].dispose(); } M[k] = novo[k]; }
-      for (const e of ['vermelho', 'azul', 'verde']) M['entrada-' + e] = new T.MeshStandardMaterial({ color: { vermelho: '#E5484D', azul: '#3B82C4', verde: '#2FA866' }[e], roughness: 0.6 });
+      for (const k of Object.keys(M)) if (k.startsWith('entrada-')) { M[k].dispose(); delete M[k]; }
+    }
+    /** Material da entrada na cor da placa real (no alto contraste e nas cores distintas, a cor do tema). */
+    function materialEntrada(lugar) {
+      const cor = corEntrada(lugar) || cssVar('--mapa-servico', '#0D1B2A');
+      const k = 'entrada-' + cor;
+      return M[k] || (M[k] = L({ color: cor }));
     }
     criarMateriais();
 
     // ---------- construção da planta ----------
-    const grupos = { 1: new T.Group(), 2: new T.Group() };
-    grupos[1].name = 'piso1'; grupos[2].name = 'piso2';
-    cena.add(grupos[1], grupos[2]);
+    const grupos = {};
+    for (const p of PISOS) { grupos[p] = new T.Group(); grupos[p].name = 'piso' + p; cena.add(grupos[p]); }
     const lojas = [];            // meshes clicáveis: {mesh, lugar, piso}
     const porLugar = {};
 
@@ -136,11 +156,13 @@
     }
 
     const museu = D.places.find(p => p.cat === 'museu');
-    for (const piso of [1, 2]) {
+    const nomeHistorico = txt.historico3d || (museu ? museu.nome : '');
+    const nomeHistoricoLongo = txt.historico3dLongo || nomeHistorico;
+    for (const piso of PISOS) {
       const base = (piso - 1) * ALT_PISO;
       for (const l of lajes[piso] || []) {
         const m = new T.Mesh(extrudar(forma(l.ext, l.buracos), ESP_LAJE, base - ESP_LAJE), [M.piso, M.borda]);
-        m.receiveShadow = true; m.userData.tipo = 'laje';
+        m.userData.tipo = 'laje';
         grupos[piso].add(m);
       }
       const lugaresPiso = D.places.filter(p => p.piso === piso);
@@ -148,10 +170,9 @@
       lugaresPiso.forEach(p => { if (p.poly >= 0 && !porPoly[p.poly]) porPoly[p.poly] = p; });
       (D.plantas[piso] || []).forEach((poly, i) => {
         const lugar = porPoly[i] || null;
-        const historico = piso === 1 && museu && dentro(museu.x, museu.y, poly);
+        const historico = !!(museu && museu.piso === piso && dentro(museu.x, museu.y, poly));
         const alt = historico ? ALT_LOJA + 6 : ALT_LOJA;
         const m = new T.Mesh(extrudar(forma(poly), alt, base), historico ? [M.historicoTeto, M.historico] : [M.teto, M.parede]);
-        m.castShadow = true; m.receiveShadow = true;
         m.userData = { tipo: 'loja', lugar: historico ? museu : lugar, historico };
         grupos[piso].add(m);
         if (m.userData.lugar) { lojas.push(m); (porLugar[m.userData.lugar.id] = porLugar[m.userData.lugar.id] || []).push(m); }
@@ -163,9 +184,9 @@
           const g = new T.ExtrudeGeometry(tri, { depth: w - 6, bevelEnabled: false });
           g.rotateY(Math.PI / 2);
           const telhado = new T.Mesh(g, M.historicoTeto);
-          const c = P((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, 1, alt);
+          const c = P((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, piso, alt);
           telhado.position.set(c.x - (w - 6) / 2, c.y, c.z);
-          telhado.castShadow = true; telhado.userData = m.userData;
+          telhado.userData = m.userData;
           grupos[piso].add(telhado); lojas.push(telhado); porLugar[museu.id].push(telhado);
         }
       });
@@ -174,17 +195,15 @@
         const ent = p.cat === 'entrada';
         const alt = ent ? 3 : p.cat === 'quiosque' ? ALT_QUIOSQUE : ALT_LOJA * 0.6;
         const g = new T.BoxGeometry(p.w, alt, p.h);
-        const cor = ent ? 'entrada-' + (p.nome.toLowerCase().split(' ')[1] || 'azul') : null;
-        const m = new T.Mesh(g, ent ? (M[cor] || M.quiosque) : M.quiosque);
+        const m = new T.Mesh(g, ent ? materialEntrada(p) : M.quiosque);
         const c = P(p.x, p.y, piso, alt / 2);
         m.position.copy(c); m.rotation.y = -(p.r || 0) * Math.PI / 180;
-        m.castShadow = !ent; m.receiveShadow = true;
         m.userData = { tipo: ent ? 'entrada' : 'quiosque', lugar: p };
         grupos[piso].add(m); lojas.push(m); (porLugar[p.id] = porLugar[p.id] || []).push(m);
         if (ent) {
           // pórtico de entrada na cor do acesso
           const port = new T.Mesh(new T.BoxGeometry(p.w + 4, 6, p.h + 4), m.material);
-          port.position.copy(P(p.x, p.y, piso, 58)); port.rotation.y = m.rotation.y; port.castShadow = true;
+          port.position.copy(P(p.x, p.y, piso, 58)); port.rotation.y = m.rotation.y;
           port.userData = m.userData; grupos[piso].add(port); lojas.push(port); porLugar[p.id].push(port);
         }
       });
@@ -195,29 +214,37 @@
     if (elev) {
       const n = G.nos[elev.b];
       poco = new T.Mesh(new T.BoxGeometry(30, ALT_PISO + ALT_LOJA, 30), M.vidro);
-      poco.position.copy(P(n.x, n.y, 1, (ALT_PISO + ALT_LOJA) / 2));
+      poco.position.copy(P(n.x, n.y, PISOS[0], (ALT_PISO + ALT_LOJA) / 2));
       cena.add(poco);
     }
 
     // ---------- pictogramas dos serviços (mesmos símbolos do 2D) ----------
     const icones = [];
     const cacheTex = {};
-    function texturaIcone(cat) {
-      if (cacheTex[cat]) return cacheTex[cat];
-      const c = document.createElement('canvas'); c.width = c.height = 128;
-      const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
-      cacheTex[cat] = t;
-      const sym = document.getElementById('p-' + cat);
+    function pintarIcone(cat, c, t) {
       const g = c.getContext('2d');
-      g.fillStyle = cat === 'emergencia' ? '#2C8A84' : cat === 'escada' ? '#7A8494' : (document.documentElement.classList.contains('contraste') ? '#12233F' : '#3D4852');
+      const acess = ACESSIBILIDADE.includes(cat);
+      const fundo = acess ? cssVar('--mapa-acessibilidade', '#0B4FA8') : cssVar('--mapa-servico', '#0D1B2A');
+      const traco = acess ? cssVar('--mapa-acessibilidade-icone', '#FFFFFF') : cssVar('--mapa-servico-icone', '#FFFFFF');
+      g.clearRect(0, 0, 128, 128);
+      g.fillStyle = fundo;
       g.beginPath(); g.arc(64, 64, 58, 0, Math.PI * 2); g.fill();
-      g.lineWidth = 6; g.strokeStyle = '#FFFFFF'; g.stroke();
+      g.lineWidth = 6; g.strokeStyle = cssVar('--mapa-marca-halo', '#FFFFFF'); g.stroke();
+      const sym = document.getElementById('c-' + cat) || document.getElementById('p-' + cat);
       if (sym) {
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${sym.getAttribute('viewBox')}" width="72" height="72" color="#ffffff">${sym.innerHTML}</svg>`;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${sym.getAttribute('viewBox')}" width="72" height="72" color="${traco}">${sym.innerHTML}</svg>`;
         const img = new Image();
         img.onload = () => { g.drawImage(img, 28, 28, 72, 72); t.needsUpdate = true; pedirRender(); };
         img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
       }
+      t.needsUpdate = true;
+    }
+    function texturaIcone(cat) {
+      if (cacheTex[cat]) return cacheTex[cat].t;
+      const c = document.createElement('canvas'); c.width = c.height = 128;
+      const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace;
+      cacheTex[cat] = { c, t };
+      pintarIcone(cat, c, t);
       return t;
     }
     D.places.filter(p => !['loja', 'quiosque', 'entrada', 'administracao'].includes(p.cat)).forEach(p => {
@@ -237,27 +264,44 @@
 
     // ---------- rota e marcadores ----------
     const grupoRota = new T.Group(); cena.add(grupoRota);
-    let pulso = null, curvaPulso = null;
 
     function tubo(pts, raio, mat) {
       const cp = new T.CurvePath();
       for (let i = 1; i < pts.length; i++) if (pts[i].distanceTo(pts[i - 1]) > 0.01) cp.add(new T.LineCurve3(pts[i - 1], pts[i]));
       if (!cp.curves.length) return null;
       const m = new T.Mesh(new T.TubeGeometry(cp, Math.max(8, cp.curves.length * 6), raio, 10, false), mat);
-      m.castShadow = true;
       return { mesh: m, curva: cp };
     }
 
-    let estado = { piso: 1, ambos: false };
+    // setas paradas sobre a linha da rota mostram o sentido (no lugar da esfera que corria pela linha)
+    function setasSobreRota(pontos, piso) {
+      const ESP = 70;
+      let falta = ESP * 0.6;
+      for (let i = 1; i < pontos.length; i++) {
+        const a = pontos[i - 1], b = pontos[i], L = Math.hypot(b.x - a.x, b.y - a.y);
+        if (L < 0.01) continue;
+        const yaw = yawDe(b.x - a.x, b.y - a.y);
+        let pos = falta;
+        while (pos <= L) {
+          const x = a.x + (b.x - a.x) * pos / L, y = a.y + (b.y - a.y) * pos / L;
+          const m = new T.Mesh(geoSeta, M.setaRota);
+          m.scale.setScalar(0.62); m.position.copy(P(x, y, piso, 10)); m.rotation.y = yaw; m.renderOrder = 11;
+          grupoRota.add(m);
+          pos += ESP;
+        }
+        falta = pos - L;
+      }
+    }
+
+    let estado = { piso: PISOS[0], ambos: false };
     function limparGrupo(g) { while (g.children.length) { const c = g.children.pop(); c.geometry && c.geometry.dispose(); } }
 
     function desenharRota(E) {
-      limparGrupo(grupoRota); pulso = null; curvaPulso = null;
+      limparGrupo(grupoRota);
       document.querySelectorAll('.rotulo3d-fixo').forEach(n => n.remove());
       for (const m of lojas) if (m.userData.marcada) { m.material = m.userData.matOriginal; m.userData.marcada = false; }
       restaurarAvisos();
       const visivel = piso => estado.ambos || piso === estado.piso;
-      const pontosPulso = [];
       if (E.rota && fp) {
         desenharSetasChao(E);
       } else if (E.rota) {
@@ -265,8 +309,8 @@
           const pts = t.pontos.map(p => P(p.x, p.y, t.piso, 5));
           if (visivel(t.piso)) {
             const r = tubo(pts, 4.5, M.rota); if (r) grupoRota.add(r.mesh);
-            const f = tubo(pts, 3, M.fantasma); if (f) { f.mesh.renderOrder = 10; f.mesh.castShadow = false; grupoRota.add(f.mesh); }
-            pontosPulso.push(...pts);
+            const f = tubo(pts, 3, M.fantasma); if (f) { f.mesh.renderOrder = 10; grupoRota.add(f.mesh); }
+            setasSobreRota(t.pontos, t.piso);
           }
           const prox = E.rota.trechos[i + 1];
           if (prox && estado.ambos) {
@@ -279,12 +323,6 @@
         if (p && visivel(p.piso) && (p.de.x !== p.ate.x || p.de.y !== p.ate.y)) {
           const r = tubo([P(p.de.x, p.de.y, p.piso, 6), P(p.ate.x, p.ate.y, p.piso, 6)], 7, M.passo);
           if (r) grupoRota.add(r.mesh);
-        }
-        if (pontosPulso.length > 1) {
-          const cp = tubo(pontosPulso, 1, M.rota); if (cp) { curvaPulso = cp.curva; cp.mesh.geometry.dispose(); }
-          pulso = new T.Mesh(new T.SphereGeometry(8, 18, 12), M.passo);
-          pulso.renderOrder = 11;
-          grupoRota.add(pulso);
         }
       }
       // marcadores
@@ -306,7 +344,7 @@
           const cone = new T.Mesh(new T.ConeGeometry(10, 30, 24), M.destino); cone.rotation.x = Math.PI; cone.position.y = 15;
           const bola = new T.Mesh(new T.SphereGeometry(14, 24, 16), M.destino); bola.position.y = 36;
           g.add(cone, bola); g.position.copy(P(lugar.x, lugar.y, lugar.piso, ALT_LOJA + 4));
-          g.userData.pino = true; cone.castShadow = bola.castShadow = true;
+          g.userData.pino = true;
           grupoRota.add(g);
           if (fp) {
             // feixe de luz sobre o destino, visível de longe na primeira pessoa
@@ -326,8 +364,8 @@
     }
 
     function visibilidade(E) {
-      const mob = E.perfil === 'mobilidade';
-      for (const piso of [1, 2]) {
+      const mob = E.evitarEscadas != null ? !!E.evitarEscadas : E.perfil === 'mobilidade';
+      for (const piso of PISOS) {
         const g = grupos[piso];
         g.visible = estado.ambos || piso === estado.piso;
         // no modo "ambos" o piso de cima fica translúcido para ver o de baixo
@@ -337,11 +375,14 @@
           mats.forEach(m => { m.transparent = false; m.opacity = 1; });
         });
       }
-      for (const s of icones) s.material.opacity = mob && s.userData.lugar.cat === 'escada' ? 0.4 : 1;
-      for (const piso of [1, 2]) grupos[piso].children.forEach(o => { if (o.userData.tipo === 'haste') o.visible = !fp; });
+      for (const s of icones) s.material.opacity = mob && ehEscada(s.userData.lugar.cat) ? 0.4 : 1;
+      for (const piso of PISOS) grupos[piso].children.forEach(o => { if (o.userData.tipo === 'haste') o.visible = !fp; });
       extra2 = estado.ambos ? AFASTAR : 0;
-      grupos[2].position.y = extra2;
-      grupos[2].children.forEach(o => { if (o.userData.tipo === 'laje') o.material = estado.ambos ? [M.lajeVidro, M.lajeVidro] : [M.piso, M.borda]; });
+      for (const piso of PISOS) {
+        if (piso === PISOS[0]) continue;
+        grupos[piso].position.y = extra2 * (piso - PISOS[0]);
+        grupos[piso].children.forEach(o => { if (o.userData.tipo === 'laje') o.material = estado.ambos ? [M.lajeVidro, M.lajeVidro] : [M.piso, M.borda]; });
+      }
       if (poco) { poco.visible = estado.ambos || true; poco.scale.y = (ALT_PISO + extra2 + ALT_LOJA) / (ALT_PISO + ALT_LOJA); poco.position.y = (ALT_PISO + extra2 + ALT_LOJA) / 2; }
     }
 
@@ -352,9 +393,9 @@
       if (texAviso) return texAviso;
       const c = document.createElement('canvas'); c.width = c.height = 128;
       const g = c.getContext('2d');
-      g.fillStyle = '#B3261E'; g.beginPath(); g.moveTo(64, 8); g.lineTo(122, 112); g.lineTo(6, 112); g.closePath(); g.fill();
-      g.lineWidth = 6; g.strokeStyle = '#FFFFFF'; g.lineJoin = 'round'; g.stroke();
-      g.fillStyle = '#FFFFFF'; g.fillRect(58, 42, 12, 40); g.beginPath(); g.arc(64, 96, 7, 0, Math.PI * 2); g.fill();
+      g.fillStyle = cssVar('--mapa-aviso', '#A85F00'); g.beginPath(); g.moveTo(64, 8); g.lineTo(122, 112); g.lineTo(6, 112); g.closePath(); g.fill();
+      g.lineWidth = 6; g.strokeStyle = cssVar('--mapa-aviso-borda', '#FFFFFF'); g.lineJoin = 'round'; g.stroke();
+      g.fillStyle = cssVar('--mapa-aviso-icone', '#FFFFFF'); g.fillRect(58, 42, 12, 40); g.beginPath(); g.arc(64, 96, 7, 0, Math.PI * 2); g.fill();
       texAviso = new T.CanvasTexture(c); texAviso.colorSpace = T.SRGBColorSpace;
       return texAviso;
     }
@@ -402,7 +443,7 @@
       controles.update(); pedirRender(); atualizarRotulos();
     }
     function ajustar() {
-      const pisos = estado.ambos ? [1, 2] : [estado.piso];
+      const pisos = estado.ambos ? PISOS : [estado.piso];
       const pts = []; pisos.forEach(p => { const c = caixaPiso(p); pts.push(c.a, c.b); });
       enquadrar(pts, estado.piso, estado.ambos ? 1.08 : null);
     }
@@ -410,7 +451,7 @@
       enquadrar(pontosPlanta.map(p => P(p.x, p.y, piso || estado.piso)), piso);
     }
     function vistaDeCima() {
-      const pisos = estado.ambos ? [1, 2] : [estado.piso];
+      const pisos = estado.ambos ? PISOS : [estado.piso];
       const pts = []; pisos.forEach(p => { const c = caixaPiso(p); pts.push(c.a, c.b); });
       enquadrar(pts, estado.piso, 0.001, 0);
     }
@@ -435,7 +476,7 @@
         vistos.add(l.id);
         const el = document.createElement('div');
         el.className = 'rotulo3d loja' + (m.userData.historico ? ' historico' : '');
-        el.textContent = m.userData.historico ? 'Museu Ferroviário (antiga estação)' : l.nome;
+        el.textContent = m.userData.historico ? nomeHistorico : l.nome;
         rotulos.appendChild(el);
         rotulosLojas.push({ el, lugar: l, h: m.userData.tipo === 'quiosque' ? ALT_QUIOSQUE + 6 : ALT_LOJA + 8, prio: m.userData.historico ? 2 : m.userData.tipo === 'quiosque' ? 0 : 1 });
       }
@@ -475,7 +516,7 @@
         const perto = dist < 900;
         const fixos = new Set([...rotulos.querySelectorAll('.rotulo3d-fixo')].map(e => e.textContent.replace(/^Você: /, '')));
         rotulosLojas.slice().sort((a, b) => b.prio - a.prio).forEach(r => {
-          const vis = (estado.ambos ? r.lugar.piso === 2 || !perto : r.lugar.piso === estado.piso) && (mostrarTodos || perto || r.prio === 2) && !fixos.has(r.lugar.nome);
+          const vis = (estado.ambos ? r.lugar.piso === TOPO || !perto : r.lugar.piso === estado.piso) && (mostrarTodos || perto || r.prio === 2) && !fixos.has(r.lugar.nome);
           if (!vis) { r.el.style.display = 'none'; return; }
           const s = projetar(r.lugar.x, r.lugar.y, r.lugar.piso, r.h, w, h);
           if (!s) { r.el.style.display = 'none'; return; }
@@ -492,7 +533,7 @@
       const r = renderer.domElement.getBoundingClientRect();
       mouse.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
       ray.setFromCamera(mouse, camera);
-      const vis = lojas.filter(m => grupos[1].visible && m.parent === grupos[1] || grupos[2].visible && m.parent === grupos[2]);
+      const vis = lojas.filter(m => PISOS.some(p => grupos[p].visible && m.parent === grupos[p]));
       const hit = ray.intersectObjects(vis, false)[0];
       return hit ? hit.object : null;
     }
@@ -515,7 +556,7 @@
       if (o && o.userData.lugar) {
         if (!o.isSprite && !o.userData.marcada && o.userData.tipo !== 'entrada' && !o.userData.matHover) { o.userData.matHover = o.material; o.material = Array.isArray(o.material) ? [M.hover, M.hover] : M.hover; }
         const r = container.getBoundingClientRect();
-        dica.textContent = o.userData.historico ? 'Museu Ferroviário — antigo prédio da estação' : o.userData.lugar.nome;
+        dica.textContent = o.userData.historico ? nomeHistoricoLongo : o.userData.lugar.nome;
         dica.style.transform = `translate(${ev.clientX - r.left + 14}px, ${ev.clientY - r.top + 14}px)`;
         dica.hidden = false; renderer.domElement.style.cursor = 'pointer';
       } else { dica.hidden = true; renderer.domElement.style.cursor = ''; }
@@ -528,7 +569,7 @@
     const OLHO = 12, PASSO_FP = 22;
     let fp = null;
     const SETA_HUD = { inicio: 'd-reto', reto: 'd-reto', esq: 'd-esq', dir: 'd-dir', 'leve-esq': 'd-leve-esq', 'leve-dir': 'd-leve-dir',
-      volta: 'd-volta', chegada: 'd-chegada', elevador: 'p-elevador', escada: 'p-escada' };
+      volta: 'd-volta', chegada: 'd-chegada', elevador: 'c-elevador', escada: 'c-escada_rolante' };
     const areaMapa = container.closest('.mapa-area') || container;
     const hud = document.createElement('div');
     hud.className = 'fp-hud'; hud.hidden = true;
@@ -695,7 +736,7 @@
       const s = paraFim ? t.amostras[t.amostras.length - 1] : t.amostras[0];
       fp.i = paraFim ? t.amostras.length - 1 : 0; fp.x = s.x; fp.y = s.y; fp.yaw = s.yaw; fp.anim = null;
       aplicarCamera(); atualizarHud(true);
-      if (!paraFim && ao.anunciar) ao.anunciar(`Você está no Piso ${t.piso}. ${fp.E.rota.passos[t.amostras[0].passo].texto}`);
+      if (!paraFim && ao.anunciar) ao.anunciar(`Você está no ${nomeAndar(t.piso)}. ${fp.E.rota.passos[t.amostras[0].passo].texto}`);
     }
     function chegar() {
       fp.chegou = true; pararAuto();
@@ -709,7 +750,7 @@
     }
     function olharDestino() {
       const d = fp.E.destino; if (!d) return;
-      if (d.piso !== fp.piso) { if (ao.anunciar) ao.anunciar(`O destino fica no Piso ${d.piso}.`); return; }
+      if (d.piso !== fp.piso) { if (ao.anunciar) ao.anunciar(`O destino fica no ${nomeAndar(d.piso)}.`); return; }
       // dá alguns passos para trás (como do outro lado do corredor) para ver a fachada inteira
       const dx = d.x - fp.x, dy = d.y - fp.y, L = Math.hypot(dx, dy) || 1;
       fp.ox = -dx / L * 48; fp.oy = -dy / L * 48;
@@ -728,11 +769,11 @@
       const prox = passos[k + 1];
       $h('.fp-seta use').setAttribute('href', '#' + (SETA_HUD[principal.tipo] || 'd-reto'));
       $h('.fp-seta').classList.toggle('destaque', ['elevador', 'escada', 'chegada'].includes(principal.tipo));
-      $h('.fp-meta').textContent = `Piso ${t.piso}, passo ${k + 1} de ${passos.length}`;
+      $h('.fp-meta').textContent = `${nomeAndar(t.piso)}, passo ${k + 1} de ${passos.length}`;
       $h('.fp-texto').textContent = principal.texto;
       $h('.fp-depois').textContent = prox && !noFim ? 'Depois: ' + prox.texto : '';
       const frente = $h('.fp-controles [data-fp="frente"]');
-      frente.textContent = noFim && t.saida ? `${fp.trechos[fp.ti + 1].piso > t.piso ? 'Subir' : 'Descer'} para o Piso ${fp.trechos[fp.ti + 1].piso}` : noFim ? 'Chegar' : 'Avançar';
+      frente.textContent = noFim && t.saida ? `${fp.trechos[fp.ti + 1].piso > t.piso ? 'Subir' : 'Descer'} para o ${nomeAndar(fp.trechos[fp.ti + 1].piso)}` : noFim ? 'Chegar' : 'Avançar';
       frente.disabled = !!fp.chegou;
       $h('.fp-controles [data-fp="tras"]').disabled = fp.ti === 0 && fp.i === 0;
       // progresso total da rota
@@ -749,21 +790,21 @@
       const k = Math.min((W - pad * 2) / (b.maxX - b.minX), (H - pad * 2) / (b.maxY - b.minY));
       const ox = (W - (b.maxX - b.minX) * k) / 2 - b.minX * k, oy = (H - (b.maxY - b.minY) * k) / 2 - b.minY * k;
       const X = x => ox + x * k, Y = y => oy + y * k;
-      const contraste = document.documentElement.classList.contains('contraste');
       g.clearRect(0, 0, W, H);
-      g.fillStyle = contraste ? '#0A1A33' : '#D8DEE6'; g.fillRect(0, 0, W, H);
-      g.fillStyle = contraste ? '#F3F5F9' : '#F3F5F8'; g.strokeStyle = contraste ? '#0A1A33' : '#B4BFCD'; g.lineWidth = 1;
+      g.fillStyle = cssVar('--mapa-piso', '#FFFFFF'); g.fillRect(0, 0, W, H);
+      g.fillStyle = cssVar('--mapa-loja', '#C9D3DF'); g.strokeStyle = cssVar('--mapa-parede', '#6B7A8C'); g.lineWidth = 1;
       for (const poly of D.plantas[fp.piso] || []) { g.beginPath(); poly.forEach(([x, y], i) => i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y))); g.closePath(); g.fill(); g.stroke(); }
       const t = fp.trechos[fp.ti];
-      g.strokeStyle = cssVar('--rota'); g.lineWidth = 5; g.lineJoin = g.lineCap = 'round';
+      g.strokeStyle = cssVar('--mapa-rota', '#0B4FA8'); g.lineWidth = 5; g.lineJoin = g.lineCap = 'round';
       g.beginPath(); t.amostras.forEach((p, i) => i ? g.lineTo(X(p.x), Y(p.y)) : g.moveTo(X(p.x), Y(p.y))); g.stroke();
       const d = fp.E.destino;
-      if (d && d.piso === fp.piso) { g.fillStyle = '#FFCB2E'; g.strokeStyle = '#12233F'; g.lineWidth = 3; g.beginPath(); g.arc(X(d.x), Y(d.y), 9, 0, Math.PI * 2); g.fill(); g.stroke(); }
+      if (d && d.piso === fp.piso) { g.fillStyle = cssVar('--mapa-destino', '#FFC62E'); g.strokeStyle = cssVar('--mapa-destino-borda', '#0D1B2A'); g.lineWidth = 3; g.beginPath(); g.arc(X(d.x), Y(d.y), 9, 0, Math.PI * 2); g.fill(); g.stroke(); }
       // você: ponto + cone de visão
       const fx = -Math.sin(fp.yaw), fy = -Math.cos(fp.yaw), ang = Math.atan2(fy, fx), abert = (camera.fov * camera.aspect * Math.PI / 180) / 2;
-      g.fillStyle = 'rgba(108, 99, 255, .28)';
+      g.globalAlpha = 0.28; g.fillStyle = cssVar('--mapa-rota', '#0B4FA8');
       g.beginPath(); g.moveTo(X(fp.x), Y(fp.y)); g.arc(X(fp.x), Y(fp.y), 38, ang - Math.min(abert, 1), ang + Math.min(abert, 1)); g.closePath(); g.fill();
-      g.fillStyle = cssVar('--rota'); g.strokeStyle = '#FFFFFF'; g.lineWidth = 3;
+      g.globalAlpha = 1;
+      g.fillStyle = cssVar('--mapa-rota', '#0B4FA8'); g.strokeStyle = cssVar('--mapa-rota-contorno', '#FFFFFF'); g.lineWidth = 3;
       g.beginPath(); g.arc(X(fp.x), Y(fp.y), 8, 0, Math.PI * 2); g.fill(); g.stroke();
     }
 
@@ -798,7 +839,7 @@
       controles.enabled = false;
       camera.fov = 76; camera.updateProjectionMatrix();
       icones.forEach(ic => ic.scale.set(15, 15, 1)); // placas de serviço menores na altura dos olhos
-      const fundo = new T.Color(document.documentElement.classList.contains('contraste') ? '#0A1A33' : '#E3E8EE');
+      const fundo = new T.Color(cssVar('--mapa-fundo', '#DCE2E9'));
       cena.background = fundo; cena.fog = new T.Fog(fundo, 300, 1300);
       visibilidade(E); desenharRota(E); desenharAvisos(E.avisos);
       hud.hidden = false; $h('.fp-chegada').hidden = true;
@@ -812,7 +853,7 @@
       const antes = fp; fp = null;
       areaMapa.classList.remove('em-fp', 'fp-tela-cheia');
       hud.hidden = true;
-      cena.fog = null; cena.background = new T.Color(cssVar('--planta'));
+      cena.fog = null; cena.background = new T.Color(cssVar('--mapa-fundo', '#DCE2E9'));
       camera.fov = 38; camera.updateProjectionMatrix();
       icones.forEach(ic => ic.scale.set(30, 30, 1));
       controles.enabled = true;
@@ -875,19 +916,12 @@
     });
 
     // ---------- laço de desenho ----------
-    let ativo = false, precisa = true, t0 = performance.now();
+    let ativo = false, precisa = true;
     function pedirRender() { precisa = true; }
     function quadro(t) {
       if (!ativo) return;
       requestAnimationFrame(quadro);
-      const anim = !reduzMovimento();
       if (fp) tickPrimeiraPessoa(t); else controles.update();
-      if (pulso && curvaPulso) {
-        const u = anim ? ((t - t0) / 4200) % 1 : 1;
-        const pt = curvaPulso.getPointAt(Math.min(Math.max(u, 0), 0.9999)); // evita ponto nulo no fim da curva
-        if (pt) { pulso.position.copy(pt); precisa = true; }
-      }
-      grupoRota.children.forEach(g => { if (g.userData.pino && anim) { g.children.forEach(c => c.position.y = (c.geometry.type === 'ConeGeometry' ? 15 : 36) + Math.sin(t / 380) * 4); precisa = true; } });
       if (precisa) { renderer.render(cena, camera); precisa = false; }
     }
     function redimensionar() {
@@ -918,21 +952,28 @@
       },
       ajustar() { if (!fp) ajustar(); }, focar(p, piso) { if (!fp) focar(p, piso); }, zoom, vistaDeCima,
       primeiraPessoa: entrarPrimeiraPessoa,
-      sairPrimeiraPessoa() { sairPrimeiraPessoa(); },
+      sairPrimeiraPessoa(silencioso) { sairPrimeiraPessoa(silencioso); },
       get emPrimeiraPessoa() { return !!fp; },
       ambos(on) { estado.ambos = on; },
       get emAmbos() { return estado.ambos; },
-      cores() { criarMateriais(); reaplicarMateriais(); if (fp) { const f = new T.Color(document.documentElement.classList.contains('contraste') ? '#0A1A33' : '#E3E8EE'); cena.background = f; cena.fog = new T.Fog(f, 300, 1300); } pedirRender(); },
+      cores() {
+        criarMateriais(); reaplicarMateriais();
+        for (const cat of Object.keys(cacheTex)) pintarIcone(cat, cacheTex[cat].c, cacheTex[cat].t);
+        if (texAviso) { texAviso.dispose(); texAviso = null; }
+        if (fp) { const f = new T.Color(cssVar('--mapa-fundo', '#DCE2E9')); cena.background = f; cena.fog = new T.Fog(f, 300, 1300); }
+        pedirRender();
+      },
       renderer
     };
 
     function reaplicarMateriais() {
-      for (const piso of [1, 2]) grupos[piso].traverse(o => {
+      for (const piso of PISOS) grupos[piso].traverse(o => {
         if (!o.isMesh) return;
         const u = o.userData;
         if (u.tipo === 'laje') o.material = [M.piso, M.borda];
         else if (u.tipo === 'loja') o.material = u.historico ? (o.geometry.type === 'ExtrudeGeometry' && Array.isArray(o.material) ? [M.historicoTeto, M.historico] : M.historicoTeto) : [M.teto, M.parede];
         else if (u.tipo === 'quiosque') o.material = M.quiosque;
+        else if (u.tipo === 'entrada') o.material = materialEntrada(u.lugar);
         else if (o.geometry.type === 'CylinderGeometry') o.material = M.borda;
         u.marcada = false; u.matHover = null;
       });
