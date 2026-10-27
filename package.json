@@ -1,0 +1,26 @@
+{
+  "name": "navi",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Navi — Navegador Acessível de Vias Internas. Ferramentas de teste do site (o site em si não tem build).",
+  "scripts": {
+    "servidor": "node testes/servidor.mjs",
+    "test": "playwright test",
+    "test:dados": "playwright test --project=dados",
+    "test:celular": "playwright test --project=celular",
+    "test:computador": "playwright test --project=computador",
+    "desempenho": "node testes/desempenho/linha-de-base.mjs",
+    "lighthouse": "node testes/desempenho/lighthouse.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "^1.63.0",
+    "chrome-launcher": "^1.2.0",
+    "lighthouse": "^12.6.1",
+    "playwright": "^1.63.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/projeto-navi/navi.git"
+  }
+}
