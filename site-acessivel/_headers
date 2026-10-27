@@ -1,0 +1,17 @@
+# Netlify — cabeçalhos do site (a publicação é do Líder Técnico).
+# O service worker nunca fica em cache no navegador: assim a versão nova é encontrada na hora.
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache
+
+# a fonte muda raramente: uma semana de cache
+/fontes/*
+  Cache-Control: public, max-age=604800
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

@@ -1,0 +1,20 @@
+{
+  "name": "Navi — Navegador Acessível de Vias Internas",
+  "short_name": "Navi",
+  "description": "Rotas acessíveis dentro do local: voz, Libras, alto contraste e caminhos sem escadas. Sem cadastro.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F2F4F7",
+  "theme_color": "#0B4FA8",
+  "categories": ["navigation", "accessibility", "utilities"],
+  "icons": [
+    { "src": "img/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "img/icone-navi.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
