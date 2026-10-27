@@ -1,6 +1,6 @@
 # Fase 1 — Nova identidade visual do Navi
 
-Versão 1.0 · 27/10/2026 · Status: **para aprovação de Camilly (Design e Negócios) e Leonardo (Líder Técnico)**
+Versão 1.1 · 27/10/2026 · Status: **aplicada no site do Marco 1 (branch `m1/site-novo`); aguarda a aprovação de Camilly (Design e Negócios) e Leonardo (Líder Técnico)**. O que foi decidido depois da versão 1.0 está na seção 7.
 
 A Fase 1 troca a aparência do site inteiro por um sistema único, acessível por construção, em que o alto contraste é um tema e não um segundo site. O comportamento e as 62 regras do Documento 04 v1.1 não mudam. Esta fase entrega design e tokens; nenhuma tela é codada antes da aprovação (a codificação é a M1b e a M1c).
 
@@ -96,3 +96,36 @@ Codar telas (M1b e M1c), PWA (M1d), modelos .glb, tema escuro completo (até a d
 2. **Figma**: seguir só com o canvas e o Design System aqui, ou enviar [LINK_FIGMA].
 3. **Fonte**: posso baixar a Atkinson Hyperlegible Next do repositório oficial no GitHub, ou vocês enviam os arquivos .woff2/.ttf.
 4. **Site publicado igual ao repositório?** Esta sessão não abre navi-map.netlify.app. Se o site no ar tiver algo diferente do branch `main`, preciso de capturas do celular.
+
+## 7. Registro: o que foi decidido e entregue (27/10/2026)
+
+Esta seção registra como a Fase 1 aconteceu de fato. As seções 1 a 6 ficam como estavam na versão 1.0.
+
+### Decisões
+
+| Ponto | Decisão | Quem pediu ou de onde veio |
+| --- | --- | --- |
+| Ordem das entregas | A escolha entre as direções A e B (E1) não aconteceu: a equipe pediu para construir o site direto ("agora crie o site, utilizando a nova identidade visual"). A identidade foi aplicada no código partindo da Direção A ("Sinalização") e vai ser aprovada no site pronto. | Pedido da equipe |
+| Temas | Três temas do mesmo sistema: **Claro** (padrão), **Alto contraste** (RN39) e **Cores distintas**, para pessoas com daltonismo. Só os tokens mudam; componentes e layout são os mesmos. | Pedido da equipe: "faça ele no tema claro e desenvolva um tema mais simples com cores mais distintas para pessoas com daltonismo" |
+| Tema escuro | Fora do Marco 1. Quem usa o modo escuro do aparelho vê o tema claro. | Padrão da seção 2, sem pedido contrário |
+| Cores distintas | Paleta baseada em Okabe e Ito (Color Universal Design); a rota e o destino nunca dependem só de cor (RN38). Virou a regra **RN63**, proposta no Documento 04 v1.2 e **aguardando aprovação** de Camilly e Leonardo. | Documento 04 v1.2 |
+| Ideia central da cor | Azul do Símbolo Internacional de Acesso (#0B4FA8) para caminho e ações; amarelo do piso tátil (#FFC62E) para destino e passo atual; tinta #0D1B2A. As setas brancas paradas sobre a rota mostram o sentido, como o piso tátil direcional. | Direção A |
+| Logo | Mantido o símbolo (caminho com partida e chegada) e o nome, com as cores novas. Observação para a Camilly: o caminho em degraus pode ser lido como uma escada. | Padrão da seção 2 |
+| Figma | Não usado (sem [LINK_FIGMA]). As telas foram conferidas por capturas do próprio site em 7 tamanhos e nos 3 temas, no lugar do `get_screenshot` do Figma. O critério de aceite "Figma com as telas nos dois temas" continua em aberto. | Sem link enviado |
+| Fonte | Atkinson Hyperlegible Next, um arquivo woff2 variável (pesos 200 a 800) servido pelo próprio site, com a licença OFL em `site-acessivel/fontes/OFL.txt`. Por `file://` o Chrome não carrega a fonte e o texto aparece na fonte do sistema. | Seção 1 |
+
+### Entregas
+
+| Entrega | Onde está |
+| --- | --- |
+| E2 — Tokens e contraste | `site-acessivel/css/tokens.css`; teste `testes/identidade/contraste.spec.js`; tabela em `ferramentas/identidade/contraste.md` (texto ≥ 4,5:1, ≥ 7:1 no alto contraste; ícones, bordas e rota ≥ 3:1, nos três temas) |
+| E3 — Componentes | `site-acessivel/css/base.css` e `js/icones.js` (um conjunto só de ícones) |
+| E4 — Telas | Feitas direto no código: Página de Rota (M1b) e Página do Mapa (M1c), conferidas em 320 × 568, 360 × 640, 375 × 667, 390 × 844, 844 × 390, 768 × 1024 e 1440 × 900 |
+| E5 — Documento 02 | Versão 1.1, com a seção "Identidade visual" |
+
+### O que falta para fechar a Fase 1
+
+1. Camilly aprovar a identidade no site pronto (ou pedir ajustes) e Leonardo conferir.
+2. Camilly e Leonardo aprovarem a RN63 (tema Cores distintas) no Documento 04.
+3. Figma: só se a equipe quiser o espelho das telas; basta enviar o [LINK_FIGMA].
+

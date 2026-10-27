@@ -235,89 +235,124 @@ const doc5 = [
 
 /* ================= 6. ARQUITETURA E REFERÊNCIAS ================= */
 const doc6 = () => [
-  capa('06', 'Arquitetura e referências', 'Meios que o Navi usa hoje: componentes, tecnologias e fontes', 'descrever a arquitetura atual do site, o papel de cada componente, como os dados são preparados e em quais normas, tecnologias e materiais o projeto se baseia.'),
+  capa('06', 'Arquitetura e referências', 'Meios que o Navi usa: componentes, tecnologias e fontes', 'descrever a arquitetura do site, o papel de cada componente, como os dados de cada local são preparados e em quais normas, tecnologias e materiais o projeto se baseia.', '1.1 — 27/10/2026'),
+  h1('Histórico de versões'),
+  ...tabela([0.8, 1.1, 4], ['Versão', 'Data', 'O que mudou'], [
+    ['1.1', '27/10/2026', 'Marco 1: duas páginas (Rota e Mapa), módulos compartilhados, dados por local com o grafo 1.1, contrato único para os mapas (2D, 3D e local sem planta), nova identidade com três temas, fonte servida pelo próprio site e uso sem internet (PWA). Saem o app.js, os CSS antigos (estilo, soft-ui, mobile) e o Google Fonts.'],
+    ['1.0', '26/10/2026', 'Primeira versão.']
+  ]),
+
   h1('Visão geral'),
   p('O Navi é um **site estático**: não tem servidor nem banco de dados. Todo o processamento — cálculo de rotas, voz, mapa 2D e 3D — acontece no navegador da pessoa. Os dados de cada local são preparados antes, a partir da planta, e publicados junto com o site.'),
-  ...imagem('/home/claude/build/docs/arquitetura.png', 640, 400, 'Figura 1 — Componentes do Navi e como se relacionam'),
+  p('Desde o Marco 1, o site tem **duas páginas**: a Página de Rota escolhe perfil, destino e partida e não tem mapa; a Página do Mapa mostra o mapa em tela cheia e o passo a passo. Depois da primeira visita, as duas abrem, buscam e calculam rotas **sem internet**. Continua sem etapa de build: HTML, CSS e JavaScript puros, que abrem até com dois cliques no arquivo.'),
+  ...imagem(require('path').resolve(__dirname, 'arquitetura.png'), 640, 420, 'Figura 1 — Componentes do Navi no Marco 1 e como se relacionam'),
 
   h1('Componentes'),
-  h2('Interface'),
-  ...tabela([1.4, 3.2], ['Arquivo', 'Responsabilidade'], [
-    ['index.html', 'Estrutura da página, pergunta de voz, telas de perfil e mapa, ícones SVG, cartão para atendente, área do VLibras'],
-    ['css/estilo.css', 'Estilo base e modo alto contraste (azul-marinho e amarelo, Atkinson Hyperlegible)'],
-    ['css/soft-ui.css', 'Design Soft UI; gerado por escopo.py para valer só fora do alto contraste'],
-    ['css/mobile.css', 'Layout de celular até 860 px; não altera o computador'],
-    ['js/app.js', 'Perfis, painel, busca, mapa 2D em SVG (arrastar, pinça, zoom), voz, Libras, avisos, integração com o 3D']
+  h2('Páginas'),
+  ...tabela([1.7, 2.9], ['Arquivos', 'Responsabilidade'], [
+    ['index.html, js/pagina-rota.js, css/rota.css', 'Página de Rota: pergunta de voz (só na primeira visita), perfil, "Para onde você vai?" (busca, Buscar falando, mais próximo, lista por tipo) e "Por qual entrada você chegou?". A troca para o mapa só acontece num botão que avisa.'],
+    ['mapa.html, js/pagina-mapa.js, css/mapa.css', 'Página do Mapa: topo com Voltar, o resumo e Alterar; andar visível por escrito; controles na zona do polegar; troca de destino com "Ir para cá" e Inverter. Sem barra de pesquisa.'],
+    ['js/folha.js', 'Painel do passo a passo: três estados no celular em pé (recolhido, médio, expandido), com a alça como botão; painel fixo à esquerda no celular deitado e a partir de 768 px.']
   ]),
-  h2('Motor de rotas e dados'),
-  ...tabela([1.4, 3.2], ['Arquivo', 'Responsabilidade'], [
-    ['js/rotas.js', 'Monta o grafo, calcula o caminho, refina o traçado e gera as instruções em texto'],
-    ['js/dados.js', 'Lugares (lojas, serviços, entradas), contornos das plantas e grafo dos corredores'],
-    ['js/malha.js', 'Grade fina com a distância de cada ponto às paredes e quiosques'],
-    ['js/avisos.js', 'Interdições confirmadas pela equipe, válidas para todos'],
-    ['js/config.js', 'Endereço do site e contatos do local (WhatsApp, telefone, Fale Conosco)']
+  h2('Identidade e módulos compartilhados'),
+  ...tabela([1.7, 2.9], ['Arquivo', 'Responsabilidade'], [
+    ['css/tokens.css', 'Cores, tipografia, espaços, raios, foco e movimento nos três temas: Claro (padrão), Alto contraste e Cores distintas (daltonismo)'],
+    ['css/base.css', 'Componentes: botões, campos, listas, interruptores, diálogos e faixas de aviso'],
+    ['fontes/', 'Atkinson Hyperlegible Next (licença OFL), servida pelo próprio site'],
+    ['js/icones.js', 'Um conjunto só de ícones SVG'],
+    ['js/estado.js', 'Preferências, perfis e parâmetros dos links (?local, ?perfil, ?origem, ?destino)'],
+    ['js/voz.js', 'Anúncios para o leitor de tela e fala das instruções, sem falar junto do leitor'],
+    ['js/ui.js', 'Preferências, Pedir ajuda, cartão para o atendente e diálogos'],
+    ['js/libras.js', 'Carrega o VLibras quando a pessoa liga o tradutor'],
+    ['js/categorias.js', 'Tipos de lugar: nomes, ícones e descrições'],
+    ['js/avisos-ui.js', '"Avisar sobre um local": local, o que aconteceu e envio pelos canais do local'],
+    ['js/pwa.js', 'Registra o service worker, oferece a versão nova (só na Página de Rota) e mostra o aviso de sem internet']
   ]),
-  h2('Vista 3D (carregada só quando pedida)'),
-  ...tabela([1.4, 3.2], ['Arquivo', 'Responsabilidade'], [
-    ['js/mapa3d.js', 'Modelo 3D dos pisos, rota em 3D, vista dos dois pisos e modo primeira pessoa'],
-    ['js/dados3d.js', 'Lajes (contornos dos pisos) para o modelo 3D'],
-    ['js/three-navi.min.js', 'Biblioteca Three.js r186 empacotada com esbuild']
+  h2('Motor de rotas e dados de cada local'),
+  ...tabela([1.7, 2.9], ['Arquivo', 'Responsabilidade'], [
+    ['js/rotas.js', 'Grafo 1.1, caminho mais curto, refino pelo meio do corredor e instruções em texto'],
+    ['js/local.js', 'Carrega os arquivos de um local e monta lugares e andares'],
+    ['js/interdicoes.js', 'Avisos de interdição: bloqueia lugares e equipamentos, aceita os ids antigos'],
+    ['locais/indice.js', 'Lista dos locais e o local padrão (aberto quando o link não tem ?local=)'],
+    ['locais/<local>/config.js', 'Nome, contatos, textos, atalhos e filtros do local (a equipe edita)'],
+    ['locais/<local>/avisos.js', 'Avisos confirmados pela equipe, válidos para todos'],
+    ['locais/<local>/dados.js, grafo.js, malha.js, dados3d.js', 'Plantas, grafo dos corredores, grade fina de distâncias e lajes do 3D, gerados a partir da planta (não se editam à mão)']
+  ]),
+  h2('Mapas: um contrato para todos os desenhos'),
+  p('As páginas falam com o mapa por um contrato único, o **MapRenderer** (mount, setFloor, showRoute, focusStep, highlight, applyTheme, applyPreferences, capabilities). Trocar a forma de desenhar — por exemplo, pelos modelos .glb do Marco 3 — não muda as páginas.'),
+  ...tabela([1.7, 2.9], ['Arquivo', 'Responsabilidade'], [
+    ['js/mapa-renderer.js', 'O contrato e o aviso de local sem planta ("em preparação")'],
+    ['js/mapa2d.js', 'Planta em SVG, padrão: arrastar, pinça, roda do mouse e teclado; rota com setas paradas no sentido do caminho'],
+    ['js/mapa3d-renderer.js, js/mapa3d.js', '3D e primeira pessoa, carregados só quando pedidos; avisa e fica no 2D sem WebGL ou com pouca memória'],
+    ['js/three-navi.min.js', 'Three.js r186 (licença MIT), empacotado com esbuild']
+  ]),
+  h2('Uso sem internet (PWA)'),
+  ...tabela([1.7, 2.9], ['Arquivo', 'Responsabilidade'], [
+    ['sw.js', 'Service worker escrito à mão: páginas, CSS, JS, fonte e ícones guardados na instalação; dados de cada local guardados e atualizados por trás; avisos pela rede primeiro; 3D guardado depois do primeiro uso. A Página do Mapa nunca recarrega no meio de uma rota.'],
+    ['manifest.webmanifest', 'Nome, ícones e cores para instalar o Navi na tela inicial'],
+    ['_headers', 'Cabeçalhos do Netlify: o sw.js nunca fica guardado em cache; a fonte fica por uma semana']
   ]),
   h2('Site da maquete (navi-qrcode.netlify.app)'),
-  ...tabela([1.4, 3.2], ['Arquivo', 'Responsabilidade'], [
+  ...tabela([1.7, 2.9], ['Arquivo', 'Responsabilidade'], [
     ['js/maquete.js', 'Maquete 3D do shopping que, girada para a vista de cima, se transforma no QR Code'],
     ['js/qrcodigo.js', 'Codificador de QR Code próprio (ISO/IEC 18004), validado com leitor real']
   ]),
 
   h1('Como a rota é calculada'),
   ol([
-    '**Grafo dos corredores:** pontos a cada 30 unidades da planta, ligados aos 8 vizinhos; escadas rolantes e elevador ligam os pisos.',
-    '**Restrições:** o perfil de mobilidade remove as escadas; locais com aviso de interdição saem do grafo.',
+    '**Grafo dos corredores (esquema 1.1):** pontos nos corredores ligados aos vizinhos; escadas rolantes, escadas e elevadores ligam os andares; cada lugar tem uma porta ligada ao corredor. Os ids são estáveis entre versões e os ids antigos dos links continuam valendo como apelidos.',
+    '**Restrições:** com "Evitar escadas" (perfil de mobilidade), escadas e escadas rolantes saem do caminho e a troca de andar é pelo elevador; lugares e equipamentos com aviso de interdição também saem.',
     '**Caminho mais curto:** algoritmo de Dijkstra.',
-    '**Refino do traçado:** algoritmo A* numa grade fina (6 unidades), que "cobra" mais caro perto de paredes e 30 vezes mais sobre quiosques — por isso a rota segue o meio do corredor.',
+    '**Refino do traçado:** algoritmo A* numa grade fina, que "cobra" mais caro perto de paredes e muito mais sobre quiosques — por isso a rota segue o meio do corredor.',
     '**Suavização:** simplificação de Ramer–Douglas–Peucker e curvas de Chaikin.',
-    '**Instruções:** os ângulos viram "vire à direita", com a loja mais próxima como referência, passos retos unidos e o lado do destino no fim.',
-    '**Exibição:** mapa 2D, 3D, primeira pessoa, texto, voz e aviso visual, conforme o perfil.'
+    '**Instruções:** os ângulos viram "vire à direita", com a loja mais próxima como referência, passos retos unidos e o lado do destino no fim. Sem caminho acessível confirmado, o site diz o motivo e o contato do local; nunca inventa rota.',
+    '**Exibição:** o passo atual aparece primeiro, em texto; depois o mapa 2D (ou o 3D e a primeira pessoa, quando pedidos), a voz e o aviso visual, conforme as preferências.'
   ], 'n3'),
 
   h1('Preparação dos dados de um local'),
-  ...tabela([1.3, 1.3, 2.4], ['Etapa', 'Ferramenta', 'Resultado'], [
+  ...tabela([1.3, 1.5, 2.2], ['Etapa', 'Ferramenta', 'Resultado'], [
     ['Planta oficial', 'Mapa do local (no shopping: Mapa Mall)', 'Contornos das lojas e corredores'],
-    ['Dados do mapa', 'gen-data.js (Node.js)', 'js/dados.js'],
-    ['Malha de distâncias', 'malha.py (Python + OpenCV, transformada de distância)', 'js/malha.js'],
-    ['Lajes do 3D', 'lajes.py (Python + OpenCV, contornos)', 'js/dados3d.js'],
-    ['Estilo Soft UI', 'escopo.py', 'css/soft-ui.css'],
+    ['Malha de distâncias', 'malha.py (Python + OpenCV, transformada de distância)', 'Distância de cada ponto às paredes e quiosques'],
+    ['Lajes do 3D', 'lajes.py (Python + OpenCV, contornos)', 'Contorno de cada piso'],
+    ['Arquivos do local', 'gerar-local.mjs (Node.js)', 'locais/<local>/dados.js, grafo.js, malha.js e dados3d.js'],
+    ['Validação', 'validar-grafo.js (Node.js)', 'Relatório do local; com o grafo válido, a equipe liga dadosProntos no config.js e o mapa do local abre'],
+    ['Ícones do site', 'gerar-icones.js', 'Ícones PNG do símbolo, para instalar o Navi'],
     ['Biblioteca 3D', 'esbuild', 'js/three-navi.min.js'],
-    ['Testes', 'Playwright (Chromium)', 'Capturas de celular e computador, fluxo completo, primeira pessoa']
+    ['Testes', 'Playwright (Chromium)', 'Dados e grafo, contraste dos três temas, comportamento no celular (360 × 640) e no computador (1440 × 900), sem internet'],
+    ['Desempenho', 'linha-de-base.mjs (Playwright)', 'LCP, TBT e peso com o perfil móvel do Lighthouse (CPU 4×, Slow 4G)']
   ]),
 
   h1('Armazenamento e privacidade'),
-  p('Não há cadastro nem servidor. O site guarda apenas preferências no próprio aparelho (localStorage):'),
-  ...tabela([1.4, 3.2], ['Chave', 'Conteúdo'], [
+  p('Não há cadastro nem servidor. O site guarda apenas preferências no próprio aparelho (localStorage), e o service worker guarda uma cópia do site e dos dados dos locais para abrir sem internet. "Apagar minhas preferências" volta tudo ao padrão.'),
+  ...tabela([1.6, 3], ['Chave', 'Conteúdo'], [
+    ['navi-boas-vindas', 'A pergunta "Deseja ouvir as instruções em voz alta?" já foi respondida'],
     ['navi-perfil', 'Último perfil escolhido'],
-    ['navi-voz', 'Voz ligada ou desligada'],
-    ['navi-contraste / navi-texto', 'Alto contraste e texto maior'],
-    ['navi-vista', 'Última vista (2D ou 3D)'],
+    ['navi-voz, navi-velocidade', 'Voz ligada ou desligada e a velocidade da fala'],
+    ['navi-leitor', 'A pessoa usa leitor de tela (o site não fala por cima dele)'],
+    ['navi-libras', 'Tradutor de Libras ligado'],
+    ['navi-escadas', 'Evitar escadas'],
+    ['navi-tema, navi-texto', 'Tema (Claro, Alto contraste, Cores distintas) e tamanho do texto (100% a 200%); navi-contraste, dos sites antigos, ainda é lida'],
+    ['navi-vista', 'Última vista do mapa (2D ou 3D)'],
     ['navi-avisos', 'Avisos de interdição feitos naquele aparelho']
   ]),
 
   h1('Integrações externas'),
-  ...tabela([1.4, 3.2], ['Serviço', 'Uso'], [
-    ['VLibras (vlibras.gov.br)', 'Tradução do conteúdo para Libras, carregada no perfil auditivo'],
-    ['Web Speech API (navegador)', 'Leitura das instruções e busca falando'],
-    ['WhatsApp, telefone, Fale Conosco', 'Envio dos avisos de interdição ao local, sempre confirmado pela pessoa'],
-    ['Google Fonts', 'Fontes Plus Jakarta Sans, DM Sans e Atkinson Hyperlegible'],
-    ['Netlify', 'Hospedagem gratuita; publicação manual por ZIP']
+  ...tabela([1.6, 3], ['Serviço', 'Uso'], [
+    ['VLibras (vlibras.gov.br)', 'Tradução do conteúdo para Libras, quando a pessoa liga o tradutor; precisa de internet'],
+    ['Web Speech API (navegador)', 'Leitura das instruções (voz do aparelho) e "Buscar falando" (precisa de internet)'],
+    ['WhatsApp, telefone, e-mail, Fale Conosco', 'Envio dos avisos de interdição ao local, sempre confirmado pela pessoa'],
+    ['Netlify', 'Hospedagem gratuita com HTTP/2; publicação pelo Líder Técnico']
   ]),
+  p('A fonte deixou de vir do Google Fonts: agora é servida pelo próprio site, funciona sem internet e não envia dados a terceiros.'),
 
   h1('Limitações atuais e próximos passos técnicos'),
   ...tabela([2, 2.6], ['Limitação', 'Próximo passo'], [
-    ['Sem controle de versão', 'Repositório Git (GitHub) com publicação automática no Netlify'],
-    ['Avisos não são compartilhados automaticamente', 'Serviço leve de avisos (ex.: funções do Netlify) com confirmação pela equipe'],
-    ['Dados de um único local; andares fixos em 1 e 2', 'Estrutura para vários locais e seletor de andares dinâmico (necessário para a UniOpet)'],
-    ['Escala da planta e elevador do Piso 1 estimados', 'Medição no local'],
-    ['app.js concentra muita coisa (~1.000 linhas)', 'Dividir em módulos: voz, mapa 2D, painel, avisos'],
-    ['Testes rodam manualmente', 'Rodar Playwright e axe-core a cada publicação']
+    ['Avisos não são compartilhados automaticamente', 'Serviço leve de avisos (ex.: funções do Netlify) com confirmação pela equipe (Marco 4)'],
+    ['UniOpet ainda sem planta e sem dados', 'Gerar e validar os arquivos do campus quando a planta chegar (Marco 2)'],
+    ['Escala da planta, sentido das escadas rolantes e elevador do Piso 1 estimados', 'Medição e confirmação no local'],
+    ['3D com alturas e materiais ilustrativos', 'Modelos .glb por andar no mesmo contrato de mapas (Marco 3)'],
+    ['Testes com axe-core e Lighthouse prontos, mas ainda não rodados', 'Rodar a cada publicação, junto com a suíte do Playwright'],
+    ['Testes com TalkBack, VoiceOver e NVDA ainda não feitos em aparelho real', 'Sessão de testes com pessoas usuárias e leitores de tela']
   ]),
 
   h1('Referências'),
@@ -326,7 +361,7 @@ const doc6 = () => [
     '**WCAG 2.2** — Web Content Accessibility Guidelines, W3C.',
     '**WAI-ARIA Authoring Practices Guide (APG)** — padrões de componentes acessíveis, W3C.',
     '**ABNT NBR 17225:2025** — acessibilidade em conteúdo e aplicações web.',
-    '**ABNT NBR 9050** — acessibilidade a edificações, mobiliário, espaços e equipamentos urbanos (referência para a UniOpet).',
+    '**ABNT NBR 9050** — acessibilidade a edificações, mobiliário, espaços e equipamentos urbanos (inclinação de rampas no validador do grafo e referência para a UniOpet).',
     '**Lei Brasileira de Inclusão** — Lei nº 13.146/2015.',
     '**ISO/IEC 18004** — especificação do QR Code.'
   ]),
@@ -340,8 +375,10 @@ const doc6 = () => [
   ]),
   h2('Tecnologias e bibliotecas'),
   ul([
-    'HTML, CSS e JavaScript puro, sem framework.',
+    'HTML, CSS e JavaScript puro, sem framework e sem build.',
+    'Service worker e Web App Manifest — uso sem internet e instalação na tela inicial.',
     'Three.js r186 (licença MIT) — 3D e primeira pessoa.',
+    'Atkinson Hyperlegible Next (licença OFL) — fonte do site.',
     'VLibras — Governo Federal.',
     'Web Speech API — síntese e reconhecimento de voz do navegador.',
     'Python + OpenCV, Node.js, esbuild e Playwright — preparação de dados e testes.',
@@ -349,7 +386,10 @@ const doc6 = () => [
   ]),
   h2('Design e inspirações'),
   ul([
-    'Design System Soft UI (neumorfismo) fornecido pela equipe.',
+    'Identidade do Marco 1 (Documento 02): azul do Símbolo Internacional de Acesso para caminho e ações, amarelo do piso tátil para destino e foco.',
+    'Paleta de Okabe e Ito (Color Universal Design) — base do tema Cores distintas.',
+    'Braille Institute — Atkinson Hyperlegible, fonte desenhada para baixa visão.',
+    'Aplicativos de mapa com painel inferior — referência para a Página do Mapa.',
     'Google Street View — referência para o modo primeira pessoa.',
     'Planta oficial do Shopping Estação (Mapa Mall).',
     'Conceitos de projeto, programa e portfólio: Artia, manual do TRT2, artigo do TRF5 (Documento 03).'
@@ -358,6 +398,8 @@ const doc6 = () => [
   ul([
     'Relatório de Auditoria UX e Acessibilidade (20/10/2026).',
     'Navi — Plano de Melhorias (21/10/2026).',
+    'Auditoria do código e linha de base de desempenho da Fase 0 (27/10/2026).',
+    'Especificação do Marco 1 e estrutura da Fase 1 (pasta docs/superpowers/specs do repositório).',
     'Portfólio Navi e Relatório de aprendizagem (Claude Docs).'
   ])
 ];

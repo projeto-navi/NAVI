@@ -1,72 +1,85 @@
 <!doctype html><html><head><meta charset="utf-8"><style>
-body{margin:0;font-family:Inter,"DejaVu Sans",sans-serif;color:#2F3A44;background:#fff;width:1500px}
+/* Figura 1 do Documento 06 (arquitetura). Gere o PNG com: node ferramentas/documentos/arq-png.js */
+body{margin:0;font-family:"Atkinson Hyperlegible Next","DejaVu Sans",sans-serif;color:#0D1B2A;background:#fff;width:1500px}
+@font-face{font-family:"Atkinson Hyperlegible Next";src:url("../../site-acessivel/fontes/atkinson-hyperlegible-next.woff2") format("woff2");font-weight:200 800}
 .w{padding:28px 32px}
-h1{font-size:26px;margin:0 0 4px} .sub{color:#5E6873;font-size:16px;margin-bottom:22px}
-.row{display:flex;gap:18px;align-items:stretch}
-.box{border:2px solid #C9CFDA;border-radius:14px;padding:12px 14px;background:#fff}
+h1{font-size:27px;margin:0 0 4px} .sub{color:#435366;font-size:16px;margin-bottom:20px}
+.row{display:flex;gap:16px;align-items:stretch}
+.box{border:2px solid #C9D3DF;border-radius:12px;padding:11px 13px;background:#fff}
 .box h3{margin:0 0 6px;font-size:17px}
-.box p{margin:2px 0;font-size:14px;color:#4A5562;line-height:1.35}
-.zona{border-radius:18px;padding:14px;margin-bottom:16px}
-.z1{background:#F1F0FF;border:2px solid #6C63FF}
-.z2{background:#F2F4F7;border:2px dashed #9AA3B1}
-.z3{background:#EAF7F6;border:2px solid #38B2AC}
-.zt{font-weight:700;font-size:15px;margin:0 0 10px;letter-spacing:.02em;text-transform:uppercase;color:#4A5562}
-.seta{text-align:center;font-size:15px;color:#5E6873;margin:-6px 0 10px}
-.f1{flex:1}.f2{flex:2}
-code{font-family:"DejaVu Sans Mono",monospace;font-size:13px;background:#EEF0F4;padding:1px 4px;border-radius:4px}
+.box p{margin:2px 0;font-size:14px;color:#2B3B4D;line-height:1.36}
+.zona{border-radius:16px;padding:13px;margin-bottom:14px}
+.z1{background:#E3ECF8;border:2px solid #0B4FA8}
+.z2{background:#F2F4F7;border:2px dashed #74818F}
+.z3{background:#FFF6DC;border:2px solid #C98F00}
+.zt{font-weight:700;font-size:15px;margin:0 0 9px;color:#0D1B2A}
+.seta{text-align:center;font-size:15px;color:#435366;margin:-4px 0 10px}
+.f1{flex:1}.f2{flex:2}.f3{flex:3}
+code{font-family:"DejaVu Sans Mono",monospace;font-size:12.5px;background:#EEF1F5;padding:1px 4px;border-radius:4px}
+.pagina{border-color:#0B4FA8;border-width:3px}
 </style></head><body><div class="w">
-<h1>Arquitetura atual do Navi</h1>
-<div class="sub">Site estático, sem servidor: tudo roda no navegador da pessoa. Dados do local são gerados antes, a partir da planta.</div>
+<h1>Arquitetura do Navi no Marco 1</h1>
+<div class="sub">Site estático, sem servidor: tudo roda no navegador da pessoa. Duas páginas, módulos compartilhados, dados por local e uso sem internet depois da primeira visita.</div>
 
 <div class="row" style="margin-bottom:10px">
- <div class="box f1" style="border-color:#2F3A44"><h3>Pessoa usuária</h3><p>Navegador do celular ou computador. Leitor de tela (TalkBack, NVDA), voz, teclado ou toque.</p></div>
- <div class="box f1"><h3>QR Code / link direto</h3><p><code>?perfil=…&amp;origem=…&amp;destino=…</code> — abre o mapa já com o trajeto.</p></div>
+ <div class="box f1" style="border-color:#0D1B2A"><h3>Pessoa usuária</h3><p>Celular (uma mão, andando) ou computador. Leitor de tela (TalkBack, VoiceOver, NVDA), voz, teclado ou toque.</p></div>
+ <div class="box f1"><h3>QR Code ou link</h3><p><code>?local=…&amp;perfil=…&amp;origem=…</code> abre a Página de Rota com a partida; com <code>&amp;destino=…</code> vai direto à Página do Mapa. Ids antigos continuam valendo.</p></div>
 </div>
-<div class="seta">▼ acessa por HTTPS</div>
+<div class="seta">▼ HTTPS (HTTP/2) ou, depois da primeira visita, sem internet</div>
 
-<div class="zona z1"><div class="zt">Site navi-map.netlify.app (Netlify, plano gratuito)</div>
+<div class="zona z1"><div class="zt">Site navi-map.netlify.app (Netlify)</div>
+ <div class="row" style="margin-bottom:12px">
+  <div class="box f1 pagina"><h3>Página de Rota</h3>
+   <p><code>index.html</code> · <code>js/pagina-rota.js</code> · <code>css/rota.css</code></p>
+   <p>Pergunta de voz, perfil, "Para onde você vai?", "Por qual entrada você chegou?". Sem mapa.</p></div>
+  <div class="seta" style="align-self:center;margin:0;font-size:22px">▶</div>
+  <div class="box f1 pagina"><h3>Página do Mapa</h3>
+   <p><code>mapa.html</code> · <code>js/pagina-mapa.js</code> · <code>js/folha.js</code> · <code>css/mapa.css</code></p>
+   <p>Mapa em tela cheia e o passo a passo no painel (3 estados no celular, painel fixo no computador).</p></div>
+ </div>
  <div class="row">
-  <div class="box f2"><h3>1. Interface</h3>
-   <p><code>index.html</code> — estrutura, diálogos, ícones SVG</p>
-   <p><code>css/estilo.css</code> — base e modo alto contraste</p>
-   <p><code>css/soft-ui.css</code> — design Soft UI (neumorfismo)</p>
-   <p><code>css/mobile.css</code> — layout de celular (até 860 px)</p>
-   <p><code>js/app.js</code> — perfis, painel, mapa 2D (SVG), voz, Libras, avisos</p></div>
-  <div class="box f2"><h3>2. Motor de rotas</h3>
-   <p><code>js/rotas.js</code> — grafo, Dijkstra, refino A*, instruções</p>
-   <p><code>js/dados.js</code> — lugares, plantas, grafo dos corredores</p>
-   <p><code>js/malha.js</code> — grade fina de distância às paredes</p>
-   <p><code>js/avisos.js</code> — interdições confirmadas pela equipe</p>
-   <p><code>js/config.js</code> — endereço do site e contatos do local</p></div>
-  <div class="box f1"><h3>3. Vista 3D (sob demanda)</h3>
-   <p><code>js/mapa3d.js</code> — 3D e primeira pessoa</p>
-   <p><code>js/dados3d.js</code> — lajes dos pisos</p>
-   <p><code>js/three-navi.min.js</code> — Three.js r186</p>
-   <p>Só baixa quando a pessoa toca em 3D.</p></div>
+  <div class="box f2"><h3>Identidade e módulos compartilhados</h3>
+   <p><code>css/tokens.css</code> 3 temas · <code>css/base.css</code> · <code>fontes/</code> Atkinson Hyperlegible Next</p>
+   <p><code>estado.js</code> preferências e links · <code>voz.js</code> · <code>ui.js</code> · <code>libras.js</code></p>
+   <p><code>icones.js</code> · <code>categorias.js</code> · <code>avisos-ui.js</code> · <code>pwa.js</code></p></div>
+  <div class="box f2"><h3>Motor de rotas e locais</h3>
+   <p><code>js/rotas.js</code> grafo 1.1, caminho, refino, instruções</p>
+   <p><code>js/local.js</code> · <code>js/interdicoes.js</code> · <code>locais/indice.js</code></p>
+   <p><code>locais/&lt;local&gt;/</code> config, avisos, dados, grafo, malha, dados3d</p></div>
+  <div class="box f2"><h3>Mapas (contrato MapRenderer)</h3>
+   <p><code>mapa-renderer.js</code> contrato e local sem planta</p>
+   <p><code>mapa2d.js</code> planta em SVG (padrão)</p>
+   <p><code>mapa3d-renderer.js</code> + <code>mapa3d.js</code> + Three.js: 3D e primeira pessoa, só quando pedidos</p></div>
+  <div class="box f1"><h3>Uso sem internet</h3>
+   <p><code>sw.js</code> service worker</p>
+   <p><code>manifest.webmanifest</code></p>
+   <p><code>_headers</code> do Netlify</p></div>
  </div>
 </div>
 
-<div class="row" style="margin-bottom:16px">
+<div class="row" style="margin-bottom:14px">
  <div class="zona z3 f1" style="margin:0"><div class="zt">No aparelho da pessoa</div>
-  <div class="box"><h3>localStorage</h3><p>Perfil, voz, contraste, tamanho do texto, vista 2D/3D e avisos feitos no aparelho. Nenhum dado pessoal sai do aparelho.</p></div></div>
- <div class="zona z2 f2" style="margin:0"><div class="zt">Serviços externos</div>
   <div class="row">
-   <div class="box f1"><h3>VLibras</h3><p>Tradutor de Libras do Governo Federal (vlibras.gov.br)</p></div>
-   <div class="box f1"><h3>Web Speech API</h3><p>Voz (speechSynthesis) e busca falando (SpeechRecognition), do próprio navegador</p></div>
-   <div class="box f1"><h3>Canais do local</h3><p>WhatsApp, telefone e Fale Conosco, para enviar avisos</p></div>
-   <div class="box f1"><h3>Google Fonts</h3><p>Plus Jakarta Sans, DM Sans, Atkinson Hyperlegible</p></div>
+   <div class="box f1"><h3>localStorage</h3><p>Chaves <code>navi-*</code>: perfil, voz, tema, texto, escadas, vista e avisos feitos no aparelho. Nada sai do aparelho.</p></div>
+   <div class="box f1"><h3>Cache do navegador</h3><p>O service worker guarda o site e os dados de cada local para abrir sem internet.</p></div>
+  </div></div>
+ <div class="zona z2 f1" style="margin:0"><div class="zt">Serviços externos (precisam de internet)</div>
+  <div class="row">
+   <div class="box f1"><h3>VLibras</h3><p>Tradutor de Libras do Governo Federal</p></div>
+   <div class="box f1"><h3>Web Speech API</h3><p>"Buscar falando" do navegador (a fala das instruções é do aparelho)</p></div>
+   <div class="box f1"><h3>Canais do local</h3><p>WhatsApp, telefone, e-mail e Fale Conosco, para avisos</p></div>
   </div></div>
 </div>
 
 <div class="row">
- <div class="zona z2 f2" style="margin:0"><div class="zt">Preparação dos dados (feita uma vez por local, no computador da equipe)</div>
+ <div class="zona z2 f3" style="margin:0"><div class="zt">Preparação dos dados e testes (no computador da equipe)</div>
   <div class="row">
-   <div class="box f1"><h3>Planta oficial</h3><p>Mapa do local (no shopping: Mapa Mall)</p></div>
-   <div class="box f1"><h3>Scripts</h3><p><code>gen-data.js</code> → dados.js</p><p><code>malha.py</code> (OpenCV) → malha.js</p><p><code>lajes.py</code> (OpenCV) → dados3d.js</p></div>
-   <div class="box f1"><h3>Build visual</h3><p><code>escopo.py</code> → soft-ui.css</p><p><code>esbuild</code> → three-navi.min.js</p></div>
-   <div class="box f1"><h3>Testes</h3><p>Playwright: capturas de celular e desktop, fluxo completo, primeira pessoa</p></div>
+   <div class="box f1"><h3>Planta oficial</h3><p>Mapa do local (no shopping: Mapa Mall)</p><p><code>malha.py</code>, <code>lajes.py</code> (OpenCV)</p></div>
+   <div class="box f1"><h3>Arquivos do local</h3><p><code>gerar-local.mjs</code> → <code>locais/&lt;local&gt;/</code></p><p><code>validar-grafo.js</code> → relatório</p></div>
+   <div class="box f1"><h3>Testes (Playwright)</h3><p>Dados, contraste dos 3 temas, comportamento no celular e no computador, sem internet</p></div>
+   <div class="box f1"><h3>Desempenho</h3><p><code>linha-de-base.mjs</code>: LCP, TBT e peso no perfil móvel</p></div>
   </div></div>
- <div class="zona z1 f1" style="margin:0"><div class="zt">Site navi-qrcode.netlify.app</div>
-  <div class="box"><h3>Maquete que vira QR Code</h3><p><code>js/maquete.js</code> + <code>js/qrcodigo.js</code> (codificador ISO/IEC 18004 próprio). Girada para cima, a maquete vira o QR que abre o navi-map.</p></div></div>
+ <div class="zona z1 f1" style="margin:0"><div class="zt">navi-qrcode.netlify.app</div>
+  <div class="box"><h3>Maquete que vira QR Code</h3><p><code>maquete.js</code> + <code>qrcodigo.js</code>. Girada para cima, a maquete vira o QR que abre o Navi.</p></div></div>
 </div>
 </div></body></html>
