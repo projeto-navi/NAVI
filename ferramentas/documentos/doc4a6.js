@@ -1,13 +1,15 @@
 const { p, h1, h2, ul, ol, nota, tabela, imagem, capa, gerar } = require('./lib');
-const OUT = '/mnt/user-data/outputs/documentos/';
+const OUT = require('path').resolve(__dirname, '../../documentos') + '/';
+// Uso: node doc4a6.js [04] [05] [06]  — sem argumentos, gera os três.
+const SO = process.argv.slice(2);
 
 /* ================= 4. REGRAS DE NEGÓCIO ================= */
 // I = implementada · P = parcial · A = a implementar
 const RN = [
   ['Entrada e perfil', [
-    ['RN01', 'Ao abrir o site pela primeira vez, aparece a pergunta sobre ouvir as instruções em voz alta, com "Sim" e "Não". A escolha de perfil só aparece depois da resposta.', 'I'],
+    ['RN01', 'Na primeira visita, a Página de Rota pergunta "Deseja ouvir as instruções em voz alta?", com "Sim" e "Não", antes da escolha de perfil. A resposta fica guardada no aparelho; a pergunta não volta nas visitas seguintes e nunca aparece na Página do Mapa.', 'P'],
     ['RN02', 'O perfil é escolhido entre deficiência visual, mobilidade reduzida e deficiência auditiva; também existe a opção de seguir sem adaptações.', 'I'],
-    ['RN03', 'No perfil visual (e em qualquer perfil no celular), o site abre direto "Para onde você vai?" com o campo de busca pronto.', 'I'],
+    ['RN03', 'No perfil visual, e em qualquer perfil no celular, a Página de Rota abre direto em "Para onde você vai?", com o campo de busca pronto.', 'I'],
     ['RN04', 'No perfil de mobilidade, a rota nunca usa escada ou escada rolante; a troca de piso é pelo elevador.', 'I'],
     ['RN05', 'No perfil auditivo, o tradutor VLibras fica disponível e todas as orientações aparecem por escrito.', 'I'],
     ['RN06', 'O perfil é um atalho: a pessoa pode combinar adaptações (evitar escadas, ouvir instruções, Libras, texto maior, alto contraste) ao mesmo tempo.', 'A'],
@@ -15,8 +17,8 @@ const RN = [
   ]],
   ['Origem e destino', [
     ['RN08', 'Toda rota tem um ponto de partida e um destino.', 'I'],
-    ['RN09', 'A partida pode ser escolhida pelos botões das entradas do local, pela busca ou tocando no mapa.', 'I'],
-    ['RN10', 'Tocar num local do mapa preenche o campo que está sendo escolhido; sem campo aberto, vira partida se não houver uma, senão vira destino.', 'I'],
+    ['RN09', 'Na Página de Rota, a partida é escolhida pelos botões das entradas, pela busca ou pelo link do QR Code. Na Página do Mapa, a partida só muda por "Alterar" ou "Inverter".', 'P'],
+    ['RN10', 'Na Página do Mapa, tocar num lugar abre um cartão com o nome, o andar e "Ir para cá"; "Ir para cá" troca o destino e recalcula ali mesmo. Tocar nunca troca de página sozinho.', 'P'],
     ['RN11', 'A busca ignora acentos e maiúsculas, aceita parte do nome e também funciona falando ("Buscar falando").', 'I'],
     ['RN12', 'Ao pedir uma categoria (sanitário, SAC, saída, elevador, caixa, Espaço Família), o site leva ao local mais próximo que não esteja interditado.', 'I'],
     ['RN13', 'Um botão inverte partida e destino e recalcula a rota na hora.', 'I']
@@ -35,7 +37,7 @@ const RN = [
     ['RN22', 'Passos seguidos na mesma direção são unidos em um só.', 'I'],
     ['RN23', 'Na troca de piso, a instrução diz qual meio usar (elevador ou escada rolante) e o que fazer ao sair.', 'I'],
     ['RN24', 'O último passo diz de que lado fica o destino (esquerda, direita ou frente).', 'I'],
-    ['RN25', 'Cada passo tem "Anterior", "Próximo", "Repetir", "Alterar destino" e "Recalcular".', 'P']
+    ['RN25', 'Cada passo tem "Anterior", "Próximo" e "Repetir" no bottom sheet; "Alterar destino" e "Recalcular" ficam no estado expandido.', 'P']
   ]],
   ['Voz e áudio', [
     ['RN26', 'A voz fala em português do Brasil e só é ativada se a pessoa aceitar.', 'I'],
@@ -44,22 +46,22 @@ const RN = [
     ['RN29', 'A pergunta inicial diz que a voz lê instruções ("ouvir as instruções em voz alta"), não que obedece a comandos.', 'A']
   ]],
   ['Interface acessível', [
-    ['RN30', 'Todo card clicável (local, resultado, passo, perfil, aviso) é um botão de verdade, com nome claro, para o TalkBack e o teclado interagirem.', 'I'],
+    ['RN30', 'Todo cartão clicável (local, resultado, passo, perfil, aviso) é um botão de verdade, com nome claro, sem role que apague o papel de botão, para o TalkBack e o teclado interagirem.', 'P'],
     ['RN31', 'Todo botão só com ícone tem nome acessível (ex.: "Aproximar", "Inverter origem e destino"); o ícone fica oculto do leitor de tela.', 'I'],
     ['RN32', 'Todo campo tem rótulo visível ligado a ele; texto de exemplo (placeholder) não conta como rótulo.', 'P'],
     ['RN33', 'Toda janela recebe o foco ao abrir, fecha com Esc e devolve o foco ao botão que a abriu.', 'P'],
     ['RN34', 'O site funciona só com teclado, sem armadilha de foco, com foco sempre visível.', 'P'],
-    ['RN35', 'Mudanças importantes são anunciadas ao leitor de tela: rota calculada, piso ativo, vista 3D, chegada.', 'I'],
+    ['RN35', 'Ao abrir a Página do Mapa, o foco vai para o título "Rota até <destino>" e um único anúncio diz "Rota calculada: N passos. Passo 1: …". Também são anunciados: piso ativo, vista 3D, chegada.', 'I'],
     ['RN36', 'O mapa visual sempre tem alternativa em texto: passo a passo e lista de locais do piso.', 'P'],
-    ['RN37', 'A página tem um link "Pular para o conteúdo" no início.', 'I'],
+    ['RN37', 'Cada página tem título próprio (<title> e h1) e o link "Pular para o conteúdo".', 'I'],
     ['RN38', 'Nenhuma informação depende só de cor (o destino tem cor, ícone e texto).', 'I'],
     ['RN39', 'Contraste mínimo de 4,5:1 no texto e 3:1 em ícones e bordas; modo alto contraste sempre disponível.', 'P']
   ]],
   ['Visual e celular', [
-    ['RN40', 'Toda área de toque tem pelo menos 44 × 44 px; no perfil visual, os botões são maiores.', 'I'],
+    ['RN40', 'Toda área de toque tem pelo menos 48 × 48 px, com pelo menos 8 px entre áreas, nas duas páginas.', 'A'],
     ['RN41', 'O texto pode ser aumentado (A+) até 200% sem quebrar o layout nem criar rolagem lateral.', 'P'],
-    ['RN42', 'No celular, o passo atual fica logo abaixo do trajeto e "Anterior"/"Próximo" ficam presos embaixo, perto do polegar.', 'I'],
-    ['RN43', 'O layout funciona a partir de 320 px de largura e com o celular deitado.', 'I'],
+    ['RN42', 'No celular, a Página do Mapa mostra o passo atual num painel inferior (bottom sheet) com "Anterior", "Próximo" e "Repetir" perto do polegar; deitado ou a partir de 768 px, o painel fica à esquerda.', 'A'],
+    ['RN43', 'O layout funciona de 320 px de largura em diante, deitado ou em pé, com A+ e com zoom de 200% do navegador, sem rolagem lateral.', 'P'],
     ['RN44', 'O site respeita "reduzir movimento" do sistema: sem animações automáticas.', 'I']
   ]],
   ['Mapa, 3D e primeira pessoa', [
@@ -80,9 +82,15 @@ const RN = [
     ['RN55', 'O site não pede cadastro nem dados pessoais.', 'I']
   ]],
   ['Fluxo no celular', [
-    ['RN56', 'No celular, o destino é escolhido primeiro; em seguida o site pergunta por qual entrada a pessoa chegou. No máximo 3 toques até a rota.', 'I'],
+    ['RN56', 'No celular, a Página de Rota pede o destino primeiro e depois a entrada. Tocar na entrada abre a Página do Mapa. No máximo 3 toques da tela "Para onde você vai?" até o mapa.', 'I'],
     ['RN57', 'No celular, os atalhos "mais próximo" aparecem na tela de destino; sem partida definida, o site pergunta a entrada e calcula sozinho.', 'I'],
-    ['RN58', 'Mudanças feitas para o celular não alteram a interface do computador.', 'I']
+    ['RN58', 'Cada página tem layout de celular e de computador, testados separadamente; o celular é desenhado primeiro.', 'P']
+  ]],
+  ['Duas páginas, links e uso sem internet', [
+    ['RN59', 'Links e QR Codes: com origem e destino abrem a Página do Mapa; só com origem abrem a Página de Rota com a partida preenchida; o endereço antigo index.html?origem=&destino= leva ao mapa com os mesmos dados.', 'A'],
+    ['RN60', 'A Página do Mapa aberta sem origem ou destino válidos volta para a Página de Rota com "Escolha para onde você vai".', 'A'],
+    ['RN61', 'A troca de página acontece só ao ativar um botão cujo nome avisa (ex.: "Acesso Azul — ver a rota"); digitar ou mover o foco nunca troca de página.', 'A'],
+    ['RN62', 'Depois da primeira visita, o site abre, busca, calcula a rota e mostra o passo a passo sem internet. Libras e "Buscar falando" avisam por texto que precisam de internet.', 'A']
   ]]
 ];
 const NOME = { I: 'Implementada', P: 'Parcial', A: 'A implementar' };
@@ -90,14 +98,20 @@ const todas = RN.flatMap(g => g[1]);
 const conta = k => todas.filter(r => r[2] === k).length;
 
 const doc4 = [
-  capa('04', 'Regras de negócio', 'O que o protótipo base do Navi deve sempre cumprir', 'listar as regras que valem para qualquer local onde o Navi for implantado, com a situação de cada uma no site atual. Toda mudança no produto deve respeitar ou atualizar esta lista.'),
+  capa('04', 'Regras de negócio', 'O que o protótipo base do Navi deve sempre cumprir', 'listar as regras que valem para qualquer local onde o Navi for implantado, com a situação de cada uma no site atual. Toda mudança no produto deve respeitar ou atualizar esta lista.', '1.1 — 27/10/2026'),
   h1('Resumo'),
-  p(`São **${todas.length} regras** em ${RN.length} grupos. No site atual (navi-map.netlify.app, versão de 26/10/2026):`),
+  p(`São **${todas.length} regras** em ${RN.length} grupos. No site atual (navi-map.netlify.app, versão de 26/10/2026, auditada na Fase 0 em 27/10/2026):`),
   ...tabela([2, 1], ['Situação', 'Quantidade'], [
     ['Implementada', String(conta('I'))], ['Parcial', String(conta('P'))], ['A implementar', String(conta('A'))]
   ]),
   nota('**Como ler:** "Implementada" = funciona hoje em todos os perfis. "Parcial" = funciona em parte (por exemplo, só no celular ou só no perfil visual). "A implementar" = prevista no Plano de Melhorias e no portfólio.'),
+  nota('**Duas páginas:** as regras que citam a Página de Rota e a Página do Mapa descrevem a estrutura do Marco 1. A situação mede o comportamento no site atual, que ainda tem uma página só.'),
   ...RN.flatMap(([grupo, regras]) => [h2(grupo), ...tabela([0.6, 4.2, 1.1], ['ID', 'Regra', 'Situação'], regras.map(r => [`**${r[0]}**`, r[1], NOME[r[2]]]))]),
+  h1('Histórico de versões'),
+  ...tabela([0.8, 1.1, 4], ['Versão', 'Data', 'O que mudou'], [
+    ['1.1', '27/10/2026', 'Fase 0 aprovada por Design e Negócios e pelo Líder Técnico. Texto novo em RN01, RN03, RN09, RN10, RN25, RN30, RN35, RN37, RN40, RN42, RN43, RN56 e RN58; regras novas RN59–RN62. Pela auditoria, RN01, RN30 e RN43 passaram de Implementada para Parcial; RN09, RN10 e RN58 também, porque o texto novo ainda não está no site; RN40 e RN42 passaram para A implementar.'],
+    ['1.0', '26/10/2026', 'Primeira versão, com 58 regras.']
+  ]),
   h1('Como alterar uma regra'),
   ol([
     'Proponha a mudança na revisão da onda, dizendo qual regra muda e por quê.',
@@ -217,7 +231,7 @@ const doc5 = [
 ];
 
 /* ================= 6. ARQUITETURA E REFERÊNCIAS ================= */
-const doc6 = [
+const doc6 = () => [
   capa('06', 'Arquitetura e referências', 'Meios que o Navi usa hoje: componentes, tecnologias e fontes', 'descrever a arquitetura atual do site, o papel de cada componente, como os dados são preparados e em quais normas, tecnologias e materiais o projeto se baseia.'),
   h1('Visão geral'),
   p('O Navi é um **site estático**: não tem servidor nem banco de dados. Todo o processamento — cálculo de rotas, voz, mapa 2D e 3D — acontece no navegador da pessoa. Os dados de cada local são preparados antes, a partir da planta, e publicados junto com o site.'),
@@ -346,8 +360,9 @@ const doc6 = [
 ];
 
 (async () => {
-  await gerar(OUT + '04-Regras-de-Negocio.docx', 'Regras de negócio', doc4);
-  await gerar(OUT + '05-Plano-de-Implantacao-UniOpet.docx', 'Plano de implantação — UniOpet', doc5);
-  await gerar(OUT + '06-Arquitetura-e-Referencias.docx', 'Arquitetura e referências', doc6);
+  const quer = n => !SO.length || SO.includes(n);
+  if (quer('04')) await gerar(OUT + '04-Regras-de-Negocio.docx', 'Regras de negócio', doc4);
+  if (quer('05')) await gerar(OUT + '05-Plano-de-Implantacao-UniOpet.docx', 'Plano de implantação — UniOpet', doc5);
+  if (quer('06')) await gerar(OUT + '06-Arquitetura-e-Referencias.docx', 'Arquitetura e referências', doc6());
   console.log('ok 4-6', todas.length, conta('I'), conta('P'), conta('A'));
 })();

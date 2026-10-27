@@ -1,5 +1,6 @@
 // Modelo comum dos documentos do Navi (docx-js).
 const fs = require('fs');
+const path = require('path');
 const {
   Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ShadingType,
   AlignmentType, BorderStyle, ImageRun, Footer, Header, PageNumber, LevelFormat, PageBreak, TableLayoutType
@@ -64,8 +65,8 @@ const EQUIPE = [
   ['Lucas', 'Engenharia de Software', 'Desenvolvedor']
 ];
 
-function capa(numero, titulo, subtitulo, objetivo) {
-  const logo = fs.readFileSync('/mnt/user-data/outputs/site-acessivel/img/icone-512.png');
+function capa(numero, titulo, subtitulo, objetivo, versao = '1.0 — 26/10/2026') {
+  const logo = fs.readFileSync(path.resolve(__dirname, '../../site-acessivel/img/icone-512.png'));
   return [
     new Paragraph({ spacing: { before: 600, after: 200 }, children: [new ImageRun({ type: 'png', data: logo, transformation: { width: 84, height: 84 } })] }),
     new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: 'NAVI · Navegador Acessível de Vias Internas', font: FONTE, size: 22, color: COR.acento, bold: true })] }),
@@ -77,7 +78,7 @@ function capa(numero, titulo, subtitulo, objetivo) {
     ...tabela([1, 2.2], null, [
       ['**Projeto**', 'Navi — mapa interno acessível para pessoas com deficiência visual, auditiva ou de mobilidade'],
       ['**Site**', 'https://navi-map.netlify.app/'],
-      ['**Versão**', '1.0 — 26/10/2026'],
+      ['**Versão**', versao],
       ['**Equipe**', EQUIPE.map(e => `${e[0]} — ${e[2]} (${e[1]})`).join('\n')]
     ], { zebra: false, size: 20 }),
     quebra()
