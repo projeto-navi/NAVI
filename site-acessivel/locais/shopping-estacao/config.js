@@ -26,7 +26,8 @@ naviLocal('shopping-estacao').config = {
     avisoTitulo: 'Aviso pelo Navi, mapa acessível do Shopping Estação',
     elevadorEstimado: 'A posição do elevador no Piso 1 foi estimada a partir da planta do Piso 2. Confirme com o SAC se o elevador está funcionando.',
     historico3d: 'Museu Ferroviário (antiga estação)',
-    historico3dLongo: 'Museu Ferroviário — antigo prédio da estação'
+    historico3dLongo: 'Museu Ferroviário — antigo prédio da estação',
+    exemploBusca: 'Nome da loja ou do serviço'
   },
   // Como os lugares aparecem nas instruções ("siga até perto do Museu Ferroviário").
   referencias: { museu: 'do Museu Ferroviário' },

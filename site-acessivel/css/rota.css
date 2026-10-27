@@ -1,0 +1,142 @@
+/* Navi — Página de Rota (index.html). Uma coluna, desenhada primeiro para o celular de 360 px.
+   No computador, a mesma ordem numa coluna centralizada de até 640 px. Sem mapa nesta página. */
+
+/* ---------- topo compacto ---------- */
+.topo {
+  position: sticky; top: 0; z-index: 20;
+  container: topo / inline-size;
+  background: var(--cor-superficie); border-bottom: 1px solid var(--cor-divisor);
+  padding: calc(var(--e2) + env(safe-area-inset-top)) max(var(--e4), env(safe-area-inset-right)) var(--e2) max(var(--e4), env(safe-area-inset-left));
+}
+.topo { display: flex; align-items: center; gap: var(--alvo-espaco); flex-wrap: wrap; }
+.topo .marca-navi { flex: 1 1 0; min-width: 0; margin-right: auto; }
+.topo-acoes { display: flex; gap: var(--alvo-espaco); flex: none; }
+.btn-topo { padding: var(--e2) var(--e3); }
+/* sem espaço para o texto, o botão fica só com o ícone (o nome continua para o leitor de tela) */
+@container topo (max-width: 30rem) {
+  .btn-topo { width: var(--alvo); padding: 0; }
+  .btn-topo-texto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* ---------- área principal ---------- */
+.rota-main {
+  max-width: calc(var(--largura-leitura) + 2 * var(--e4));
+  margin: 0 auto;
+  padding: var(--e5) max(var(--e4), env(safe-area-inset-right)) calc(var(--e7) + env(safe-area-inset-bottom)) max(var(--e4), env(safe-area-inset-left));
+  display: grid; gap: var(--e5);
+}
+.rota-main:focus { outline: none; }
+.etapa { display: grid; gap: var(--e5); min-width: 0; }
+.avisos-pagina:empty, .avisos-pagina:not(:has(> :not([hidden]):not(:empty))) { display: none; }
+.avisos-pagina { display: grid; gap: var(--e3); }
+
+.etapa-cabeca { display: grid; gap: var(--e2); }
+.etapa-cabeca .voltar { justify-self: start; margin-left: calc(-1 * var(--e1)); }
+.etapa-cabeca h1:focus { outline: none; }
+.etapa-apoio { color: var(--cor-texto-2); max-width: 60ch; }
+
+.secao { display: grid; gap: var(--e3); }
+.secao > h2 { font-size: var(--t1); font-weight: var(--peso-forte); letter-spacing: 0; }
+.secao-cabeca { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--e2) var(--e3); justify-content: space-between; }
+.secao-cabeca h2 { font-size: var(--t1); font-weight: var(--peso-forte); letter-spacing: 0; }
+
+/* ---------- perfis ---------- */
+.perfis { display: grid; gap: var(--alvo-espaco); }
+.perfil {
+  display: flex; align-items: center; gap: var(--e4); width: 100%; min-height: 88px; padding: var(--e4);
+  background: var(--cor-superficie); color: var(--cor-texto);
+  border: var(--borda-largura) solid var(--cor-borda); border-radius: var(--raio-controle); text-align: left;
+  transition: transform var(--dur-toque) var(--curva-saida);
+}
+.perfil:active { transform: scale(0.98); }
+.perfil .tile { width: 48px; height: 48px; }
+.perfil .tile .ico { width: 30px; height: 30px; }
+.perfil-texto { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.perfil-texto b { font-size: var(--t1); line-height: 1.25; }
+.perfil-texto span { color: var(--cor-texto-2); }
+.perfil > .ico:last-child { color: var(--cor-texto-2); }
+.perfil[data-ouvido="sim"] { border-color: var(--cor-acao); box-shadow: inset 0 0 0 1px var(--cor-acao); background: var(--cor-acao-suave); }
+@media (hover: hover) and (pointer: fine) { .perfil:hover { background: var(--cor-superficie-2); } }
+
+/* ---------- ponto já escolhido (partida do QR Code, destino escolhido) ---------- */
+.ponto-escolhido {
+  display: flex; align-items: center; gap: var(--e3); padding: var(--e3) var(--e3) var(--e3) var(--e4);
+  background: var(--cor-superficie); border: var(--borda-largura) solid var(--cor-borda); border-radius: var(--raio-controle);
+}
+.ponto-escolhido .lugar-texto { flex: 1; min-width: 0; }
+.ponto-escolhido small { display: block; color: var(--cor-texto-2); font-weight: var(--peso-forte); font-size: var(--t-1); }
+.ponto-escolhido b { display: block; font-size: 1.125rem; line-height: 1.3; }
+.ponto-escolhido .lugar-desc { display: block; color: var(--cor-texto-2); font-size: var(--t-1); }
+.ponto-escolhido .btn-texto { flex: none; }
+
+/* ---------- entradas: cada uma com a cor da placa real ---------- */
+.entradas { display: grid; gap: var(--alvo-espaco); }
+.entrada-btn {
+  display: flex; align-items: center; gap: var(--e4); width: 100%; min-height: 76px; padding: var(--e3) var(--e4) var(--e3) var(--e3);
+  background: var(--cor-superficie); color: var(--cor-texto);
+  border: var(--borda-largura-forte) solid var(--cor-borda); border-radius: var(--raio-controle); text-align: left;
+  transition: transform var(--dur-toque) var(--curva-saida);
+}
+.entrada-btn:active { transform: scale(0.98); }
+.entrada-btn .tile { width: 52px; height: 52px; border-radius: var(--raio-tile); }
+.entrada-btn .tile .ico { width: 30px; height: 30px; }
+.entrada-rotulo { flex: 1; min-width: 0; display: grid; }
+.entrada-rotulo b { font-size: var(--t1); line-height: 1.25; }
+.entrada-rotulo small { color: var(--cor-acao); font-weight: var(--peso-forte); }
+.entrada-btn > .ico:last-child { color: var(--cor-acao); width: 28px; height: 28px; }
+@media (hover: hover) and (pointer: fine) { .entrada-btn:hover { background: var(--cor-superficie-2); } }
+/* no alto contraste e nas cores distintas, a placa usa o ícone do tema (a cor real continua no nome) */
+html.contraste .entrada-btn .tile, html.daltonismo .entrada-btn .tile { background: var(--cor-texto) !important; color: var(--cor-superficie) !important; }
+
+/* ---------- trajeto (Sua rota) ---------- */
+.trajeto { display: grid; grid-template-columns: 1fr auto; gap: var(--alvo-espaco); align-items: center; }
+.trajeto-pontos { display: grid; gap: var(--alvo-espaco); min-width: 0; }
+.ponto-btn {
+  display: flex; align-items: center; gap: var(--e3); width: 100%; min-height: 72px; padding: var(--e3);
+  background: var(--cor-superficie); color: var(--cor-texto); text-align: left;
+  border: var(--borda-largura) solid var(--cor-borda); border-radius: var(--raio-controle);
+}
+.ponto-btn .lugar-texto { flex: 1; min-width: 0; }
+.ponto-btn small { display: block; color: var(--cor-texto-2); font-weight: var(--peso-forte); font-size: var(--t-1); }
+.ponto-btn b { display: block; font-size: 1.125rem; line-height: 1.3; }
+.ponto-btn > .ico:last-child { color: var(--cor-acao); }
+.marca-ponto { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 50%; }
+.marca-ponto.partida { background: var(--mapa-partida); border: 4px solid var(--mapa-partida-borda); }
+.marca-ponto.partida::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--mapa-partida-borda); }
+.marca-ponto.destino { background: var(--mapa-destino); border: 2px solid var(--mapa-destino-borda); color: var(--cor-destaque-texto); border-radius: var(--raio-tile); }
+
+/* ---------- local em preparação ---------- */
+.preparacao { display: grid; gap: var(--e4); }
+.preparacao-arte {
+  height: 132px; border-radius: var(--raio-painel); border: var(--borda-largura) solid var(--cor-borda);
+  background-color: var(--mapa-piso);
+  background-image: radial-gradient(circle, var(--mapa-desativado) 1.4px, transparent 1.9px);
+  background-size: 14px 14px;
+  display: grid; place-items: center; overflow: hidden; position: relative;
+}
+.preparacao-arte::before {
+  content: ""; position: absolute; inset: 18px 18px auto auto; width: 44%; height: 58%;
+  border: 2px dashed var(--mapa-parede); border-radius: var(--raio-tile);
+}
+.preparacao-arte::after {
+  content: ""; position: absolute; left: 18px; bottom: 18px; width: 36%; height: 42%;
+  border: 2px dashed var(--mapa-parede); border-radius: var(--raio-tile);
+}
+.preparacao-arte .tile { position: relative; z-index: 1; width: 56px; height: 56px; }
+.preparacao-arte .tile .ico { width: 32px; height: 32px; }
+
+.rodape-etapa { border-top: 1px solid var(--cor-divisor); padding-top: var(--e3); display: grid; gap: var(--e2); justify-items: start; }
+.rodape-etapa .btn-texto { text-align: left; }
+
+.noscript { max-width: 640px; margin: var(--e5) auto; padding: 0 var(--e4); }
+
+/* diálogo da pergunta de voz */
+.dialogo-voz .dialogo-corpo { padding: var(--e5); gap: var(--e4); }
+.dialogo-voz h2 { font-size: var(--t2); }
+.dialogo-voz .linha-acoes .btn { min-height: 56px; font-size: 1.125rem; }
+
+/* computador: mesma coluna, mais respiro */
+@media (min-width: 768px) {
+  .rota-main { padding-top: var(--e7); gap: var(--e6); }
+  .perfis { grid-template-columns: 1fr 1fr; }
+}

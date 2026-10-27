@@ -27,7 +27,10 @@ naviLocal('uniopet-reboucas').config = {
     oLocal: 'o campus', doLocal: 'do campus', noLocal: 'no campus', aoLocal: 'ao campus',
     avisoTitulo: 'Aviso pelo Navi, mapa acessível da UniOpet — Campus Rebouças',
     elevadorEstimado: '',
-    emPreparacao: 'O mapa deste campus está em preparação. A planta dos andares ainda vai ser adicionada.'
+    emPreparacao: 'A planta dos andares ainda vai ser adicionada.',
+    preparacaoTitulo: 'O mapa do Campus Rebouças está em preparação',
+    preparacaoDepois: 'Quando a planta chegar, você vai poder buscar salas, laboratórios, a biblioteca e a secretaria, com rotas sem escadas quando precisar.',
+    exemploBusca: 'Sala, bloco ou serviço'
   },
   referencias: {},
   // Atalhos pedidos no Documento 05.
