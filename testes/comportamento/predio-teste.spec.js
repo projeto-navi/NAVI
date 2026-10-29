@@ -4,7 +4,7 @@ const N = require('../apoio/navi');
 
 const CEGO = { ...N.JA_VISITOU, 'navi-perfil': 'visual', 'navi-piso-tatil': '1' };
 const CADEIRA = { ...N.JA_VISITOU, 'navi-perfil': 'mobilidade', 'navi-escadas': '1' };
-const ATE_SALA_DE_REUNIAO = 'mapa.html?origem=PCT_P01_L0001&destino=PCT_P02_L0003';
+const ATE_SALA_DE_REUNIAO = 'mapa.html?origem=PCT_P01_L0001&destino=PCT_P02_L0007';
 const resumo = page => page.getByRole('main').getByText(/^\d+ passos/).first();
 
 test.describe('Prédio de testes', () => {
