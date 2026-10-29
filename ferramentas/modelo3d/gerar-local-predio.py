@@ -341,6 +341,16 @@ def js(obj_nome, valor, comentario):
         f'naviLocal({json.dumps(SLUG)}).{obj_nome}={json.dumps(valor, ensure_ascii=False, separators=(",", ":"))};\n'
 
 
+def copia_em_texto(caminho, url):
+    """modelo.glb.js: o mesmo .glb em base64, para o 3D funcionar com o site aberto direto do computador (file://)."""
+    import base64
+    b64 = base64.b64encode(open(caminho, 'rb').read()).decode('ascii')
+    with open(caminho + '.js', 'w', encoding='utf-8') as f:
+        f.write('/* Navi — cópia em texto (base64) de modelo.glb, usada só quando o site é aberto direto do computador '
+                '(file://), onde o navegador não deixa ler o .glb. Gerado por ferramentas/modelo3d/gerar-local-predio.py. */\n')
+        f.write(f'(self.NAVI_GLB_BASE64 = self.NAVI_GLB_BASE64 || {{}})[{json.dumps(url)}] = "{b64}";\n')
+
+
 def main():
     os.makedirs(SAIDA, exist_ok=True)
     G, portas, esp_nos = montar_grafo()
@@ -430,6 +440,7 @@ def main():
     raiz = No(f'{PRE}_PREDIO', {'tipo': 'predio', 'local': SLUG, 'unidade': 'metro', 'unidades_planta_por_metro': U, 'deslocamento_planta_m': [OX, OZ]})
     raiz.filhos = andares
     tam = escrever_glb(os.path.join(SAIDA, 'modelo.glb'), raiz, MOD.M, 'Prédio comercial de testes')
+    copia_em_texto(os.path.join(SAIDA, 'modelo.glb'), 'locais/predio-teste/modelo.glb')
     print(f'{len(G.nos)} nós, {len(G.arestas)} arestas, {len(lugs)} lugares; modelo.glb {tam / 1024 / 1024:.2f} MB')
     tat = sum(1 for a in G.arestas if a['piso_tatil'] != 'nenhum')
     print(f'arestas com piso tátil: {tat}')

@@ -5,11 +5,27 @@
 (function (raiz) {
   'use strict';
 
-  /** Baixa o .glb do local; devolve um ArrayBuffer. */
+  /**
+   * Baixa o .glb do local; devolve um ArrayBuffer. Aberto direto do computador (file://), o navegador
+   * não deixa ler o .glb: aí o site carrega a cópia em texto (<arquivo>.glb.js, em base64).
+   */
   async function baixar(url) {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error('Modelo 3D não encontrado: ' + url);
-    return r.arrayBuffer();
+    if (location.protocol !== 'file:') {
+      const r = await fetch(url).catch(() => null);
+      if (r && r.ok) return r.arrayBuffer();
+    }
+    const b64 = await new Promise((ok, erro) => {
+      const guardados = raiz.NAVI_GLB_BASE64 || {};
+      if (guardados[url]) { ok(guardados[url]); return; }
+      const s = document.createElement('script');
+      s.src = url + '.js';
+      s.onload = () => (raiz.NAVI_GLB_BASE64 || {})[url] ? ok(raiz.NAVI_GLB_BASE64[url]) : erro(new Error('Cópia do modelo vazia: ' + url));
+      s.onerror = () => erro(new Error('Modelo 3D não encontrado: ' + url));
+      document.head.appendChild(s);
+    });
+    const bin = atob(b64), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
   }
 
   /**
