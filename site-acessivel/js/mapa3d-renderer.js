@@ -6,7 +6,8 @@
 
   function carregarScript(src) {
     return new Promise((ok, erro) => {
-      if (document.querySelector(`script[src="${src}"]`) && (src.includes('three') ? raiz.THREE : raiz.NaviMapa3D)) { ok(); return; }
+      const pronto = src.includes('three') ? raiz.THREE : src.includes('glb') ? raiz.NaviGLB : raiz.NaviMapa3D;
+      if (document.querySelector(`script[src="${src}"]`) && pronto) { ok(); return; }
       const s = document.createElement('script');
       s.src = src; s.onload = () => ok(); s.onerror = () => erro(new Error('Falhou: ' + src));
       document.head.appendChild(s);
@@ -51,15 +52,23 @@
 
     return {
       async mount(container) {
-        await Promise.all([carregarScript('js/three-navi.min.js'), raiz.NaviLocal.carregarLajes(local), carregarCss('css/mapa3d.css')]);
+        const mod = cfg.modelo3d || null;
+        await Promise.all([carregarScript('js/three-navi.min.js'), raiz.NaviLocal.carregarLajes(local), carregarCss('css/mapa3d.css'),
+          mod ? carregarScript('js/glb-leitor.js') : null]);
         await carregarScript('js/mapa3d.js');
+        // local com modelo .glb: o prédio vem do arquivo (baixado só agora, quando o 3D é pedido)
+        const modelo = mod && raiz.NaviGLB ? {
+          cena: raiz.NaviGLB.baixar(`locais/${local.slug}/${mod.arquivo}`).then(buf => raiz.NaviGLB.ler(buf, raiz.THREE)),
+          unidadesPorMetro: mod.unidadesPorMetro, deslocamento: mod.deslocamento, alturaAndar: mod.alturaAndar,
+          piso: andarId => pisoDe(andarId)
+        } : null;
         caixa = document.createElement('div');
         caixa.className = 'mapa3d';
         container.appendChild(caixa);
         m3d = raiz.NaviMapa3D.iniciar(caixa, local.legado, o.G, {
           selecionar: ao.selecionar, anunciar: ao.anunciar,
           saiuPrimeiraPessoa: () => { if (ao.saiuPrimeiraPessoa) ao.saiuPrimeiraPessoa(); }
-        }, { lajes: local.lajes, nomeAndar: o.nomeAndar, textos: cfg.textos, corEntrada });
+        }, { lajes: local.lajes, nomeAndar: o.nomeAndar, textos: cfg.textos, corEntrada, modelo });
         if (!m3d) { caixa.remove(); throw new Error('Sem WebGL'); }
         m3d.mostrar(true);
       },

@@ -15,6 +15,23 @@ test.describe('slugDaUrl', () => {
   for (const [entrada, esperado] of casos) test(`"${entrada}" → ${esperado}`, () => expect(NaviLocal.slugDaUrl(entrada, indice)).toBe(esperado));
 });
 
+test.describe('slugDaUrl com o prédio de testes como padrão e links antigos do Shopping', () => {
+  const { NaviLocal } = carregarLocalNode('shopping-estacao');
+  const indice2 = [{ slug: 'predio-teste', padrao: true }, { slug: 'shopping-estacao', codigosAntigos: /^(SHE_|\d+-\d+$)/ }];
+  const casos = [['', 'predio-teste'], ['?origem=PCT_P01_L0001', 'predio-teste'],
+    ['?origem=1-1401928', 'shopping-estacao'], ['?perfil=mobilidade&origem=1-1401928&destino=1-1401929', 'shopping-estacao'],
+    ['?destino=SHE_P01_L0012', 'shopping-estacao'], ['?local=predio-teste&origem=1-1401928', 'predio-teste'],
+    ['?local=nao-existe&origem=1-1401928', 'predio-teste'], ['?origem=1-14x', 'predio-teste']];
+  for (const [entrada, esperado] of casos) test(`"${entrada}" → ${esperado}`, () => expect(NaviLocal.slugDaUrl(entrada, indice2)).toBe(esperado));
+  test('o índice publicado tem o prédio como padrão e os códigos antigos do Shopping', () => {
+    const ctx = { self: {} };
+    require('node:vm').runInNewContext(fs.readFileSync(path.join(SITE, 'locais/indice.js'), 'utf8'), ctx);
+    const lista = ctx.self.NAVI_LOCAIS_INDICE;
+    expect(NaviLocal.slugDaUrl('', lista)).toBe('predio-teste');
+    expect(NaviLocal.slugDaUrl('?origem=1-1401928&destino=1-1401929', lista)).toBe('shopping-estacao');
+  });
+});
+
 test('lugar() aceita id novo e id antigo e devolve o mesmo objeto', () => {
   const { local } = carregarLocalNode('shopping-estacao');
   const azul = local.lugar('1-1401928');

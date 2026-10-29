@@ -59,9 +59,11 @@
   const st = { origem: origem0, destino: destino0, rota: null, passo: 0, andar: origem0.piso, vista: '2d', nomes: false, semMapa: false, mudouAqui: false };
 
   /* ---------- rota ---------- */
-  const opcoesRota = () => { const p = NE.preferencias(); return { semEscadas: p.evitarEscadas, bloqueados: inter.bloqueados() }; };
+  // preferências que mudam o caminho (RN15, RN64, RN65): js/preferencias-rota.js
+  const PR = window.NaviPreferenciasRota;
+  const opcoesRota = () => PR.opcoes(NE.preferencias(), inter.bloqueados(), G);
   function calcular() {
-    st.rota = R.rota(G, st.origem, st.destino, opcoesRota());
+    st.rota = PR.rota(R, G, st.origem, st.destino, NE.preferencias(), inter.bloqueados());
     st.passo = 0;
     st.andar = st.rota ? st.rota.trechos[0].piso : st.origem.piso;
   }
@@ -72,8 +74,14 @@
     if (bloq.has(st.origem.id)) return `${st.origem.nome} está com aviso de interdição.`;
     const ignorandoAvisos = R.rota(G, st.origem, st.destino, { semEscadas: p.evitarEscadas, malha: false });
     if (ignorandoAvisos) {
-      const equipBloq = local.lugares.some(l => NC.ehEquipamento(l.cat) && !NC.ehEscada(l.cat) && bloq.has(l.id));
-      if (equipBloq && st.origem.piso !== st.destino.piso) return 'O elevador está com aviso de interdição ou defeito, e a rota sem escadas depende dele.';
+      // elevador, plataforma ou rampa com aviso: diz qual (a rampa é o caminho sem escada quando não há elevador, RN65)
+      const NOME_MEIO = { elevador: 'o elevador', plataforma: 'a plataforma elevatória', rampa: 'a rampa' };
+      const meiosBloq = [...new Set(local.lugares.filter(l => (NC.ehEquipamento(l.cat) || l.cat === 'rampa') && !NC.ehEscada(l.cat) && bloq.has(l.id)).map(l => l.cat))];
+      if (meiosBloq.length && st.origem.piso !== st.destino.piso) {
+        const nomes = meiosBloq.map(c => NOME_MEIO[c] || 'o equipamento'), varios = nomes.length > 1;
+        const sujeito = nomes.join(' e ');
+        return `${sujeito[0].toUpperCase() + sujeito.slice(1)} ${varios ? 'estão' : 'está'} com aviso de interdição ou defeito, e a rota sem escadas depende ${varios ? 'deles' : nomes[0].startsWith('a ') ? 'dela' : 'dele'}.`;
+      }
       return 'O caminho passa por um local com aviso de interdição.';
     }
     if (p.evitarEscadas && R.rota(G, st.origem, st.destino, { bloqueados: bloq, malha: false })) return 'O único caminho encontrado usa escada ou escada rolante.';
@@ -81,8 +89,10 @@
   }
   const SETAS = { inicio: 'd-inicio', reto: 'd-reto', esq: 'd-esq', dir: 'd-dir', 'leve-esq': 'd-leve-esq', 'leve-dir': 'd-leve-dir', volta: 'd-volta', chegada: 'd-chegada' };
   const iconePasso = p => SETAS[p.tipo] || NC.icone(p.rotulo || (p.tipo === 'elevador' ? 'elevador' : 'escada_rolante'));
-  const MEIO = { elevador: 'o elevador', escada_rolante: 'a escada rolante', escada: 'a escada', plataforma: 'a plataforma elevatória' };
+  const MEIO = { elevador: 'o elevador', escada_rolante: 'a escada rolante', escada: 'a escada', plataforma: 'a plataforma elevatória', rampa: 'a rampa' };
   const meioDe = t => MEIO[t.saidaRotulo] || (t.saida === 'elevador' ? 'o elevador' : 'a escada rolante');
+  const POR = { elevador: 'pelo elevador', escada_rolante: 'pela escada rolante', escada: 'pela escada', plataforma: 'pela plataforma', rampa: 'pela rampa' };
+  const por = t => POR[t.saidaRotulo] || (t.saida === 'elevador' ? 'pelo elevador' : 'pela escada rolante');
   const multiAndar = () => !!st.rota && new Set(st.rota.trechos.map(t => t.piso)).size > 1;
 
   function resumoRota() {
@@ -91,7 +101,9 @@
     const n = r.passos.length, pisos = [...new Set(r.trechos.map(t => t.piso))];
     const semEscadas = NE.preferencias().evitarEscadas || !r.usaEscada;
     if (pisos.length === 1) return `${n} passos no ${nomeAndar(pisos[0])}${semEscadas ? ', sem escadas' : ''}.`;
-    const meio = r.usaElevador ? 'pelo elevador' : r.usaEscada ? 'pela escada rolante' : '';
+    // como a rota troca de andar, na ordem (ex.: "pelo elevador e pela rampa")
+    const meios = [...new Set(r.trechos.slice(0, -1).filter(t => t.saida).map(por))];
+    const meio = meios.join(' e ');
     return `${n} passos, do ${nomeAndar(pisos[0])} ao ${nomeAndar(pisos[pisos.length - 1])}${meio ? ' ' + meio : ''}.`;
   }
   const textoPasso = i => `Passo ${i + 1} de ${st.rota.passos.length}: ${st.rota.passos[i].texto}`;
@@ -102,7 +114,7 @@
     aoMudarPreferencias: (p, nome) => {
       if (nome === 'libras') p.libras ? window.NaviLibras.carregar() : window.NaviLibras.esconder();
       if (nome === 'voz' || nome === 'leitor') { renderVoz(); renderExpandido(); }
-      if (nome === 'escadas') { recalcular({ anunciar: true, focar: false }); return; }
+      if (nome === 'escadas' || nome === 'pisoTatil') { recalcular({ anunciar: true, focar: false }); return; }
       if (nome === 'tema') mapa.applyTheme();
       if (nome === 'texto') { aplicarPreferenciasNoMapa(); requestAnimationFrame(medirLayout); }
     },
@@ -281,7 +293,7 @@
       acao('cartao', 'i-cartao', 'Mostrar cartão para o atendente') +
       acao('avisar', 'i-aviso', 'Avisar sobre um local', { desc: 'Interditado, danificado ou com obstáculo.' }) +
       acao('ajuda', 'i-ajuda', 'Pedir ajuda') +
-      acao('preferencias', 'i-preferencias', 'Preferências', { desc: 'Voz, tamanho do texto, cores e escadas.' }) +
+      acao('preferencias', 'i-preferencias', 'Preferências', { desc: 'Voz, tamanho do texto, cores e rotas.' }) +
       `</div></div>`;
     h += htmlLugaresAndar(aberto);
     h += `<div class="faixa-aviso">${svg('i-aviso')}<p><b>Não use o Navi em emergências.</b> Siga a sinalização e as orientações da equipe ${esc(txt.doLocal || 'do local')}.</p></div>`;
@@ -483,7 +495,6 @@
     let det = '';
     if (st.rota && st.rota.trechos.length > 1) {
       const ts = st.rota.trechos, i = ts.findIndex(t => t.piso === st.andar);
-      const por = t => (t.saidaRotulo === 'elevador' || t.saida === 'elevador' ? 'pelo elevador' : t.saidaRotulo === 'plataforma' ? 'pela plataforma' : t.saidaRotulo === 'escada' ? 'pela escada' : 'pela escada rolante');
       if (i < 0) det = 'Sua rota não passa por aqui.';
       else if (ts[i].saida) det = `Depois: ${nomeAndar(ts[i + 1].piso)}, ${por(ts[i])}.`;
       else det = `Você chega ${por(ts[i - 1])}.`;

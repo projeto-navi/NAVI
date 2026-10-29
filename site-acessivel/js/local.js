@@ -9,14 +9,21 @@
   raiz.naviLocal = function (slug) { return registros[slug] || (registros[slug] = {}); };
 
   const SLUG = /^[a-z0-9-]{1,40}$/;
-  const PADRAO = 'shopping-estacao';
+  const PADRAO = 'predio-teste';
 
-  /** Slug pedido em ?local=, se for válido e estiver no índice; senão, o local padrão do índice. */
+  /**
+   * Slug pedido em ?local=, se for válido e estiver no índice. Sem ?local=, um link antigo cuja partida ou
+   * destino tem o código de um local (codigosAntigos no índice) abre nele; senão, abre o local padrão.
+   */
   function slugDaUrl(search, indice) {
     const lista = indice || raiz.NAVI_LOCAIS_INDICE || [];
     const padrao = (lista.find(l => l.padrao) || lista[0] || {}).slug || PADRAO;
-    const pedido = (new URLSearchParams(search || '').get('local') || '').trim().toLowerCase();
-    return pedido && SLUG.test(pedido) && lista.some(l => l.slug === pedido) ? pedido : padrao;
+    const q = new URLSearchParams(search || '');
+    const pedido = (q.get('local') || '').trim().toLowerCase();
+    if (pedido) return SLUG.test(pedido) && lista.some(l => l.slug === pedido) ? pedido : padrao;
+    const codigos = [q.get('origem'), q.get('destino')].filter(Boolean);
+    const antigo = codigos.length && lista.find(l => l.codigosAntigos && codigos.some(c => l.codigosAntigos.test(c)));
+    return antigo ? antigo.slug : padrao;
   }
 
   /** Junta config, grafo e geometria num objeto só, com lugares canônicos. Não altera o registro. */
@@ -63,7 +70,7 @@
       pendente: !grafo,
       lugar: chave => (chave != null && porChave.get(String(chave))) || null,
       andarPorPiso: piso => andares.find(a => a.ordem === piso) || null,
-      legado: { places: lugares, plantas: porOrdem(dados && dados.plantas), pisos: porOrdem(dados && dados.pisos) }
+      legado: { places: lugares, plantas: porOrdem(dados && dados.plantas), pisos: porOrdem(dados && dados.pisos), tatil: porOrdem(dados && dados.tatil) }
     };
   }
 

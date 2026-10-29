@@ -160,6 +160,10 @@
         const b = D.pisos[st.piso];
         el('rect', { x: b.minX - 14, y: b.minY - 14, width: b.maxX - b.minX + 28, height: b.maxY - b.minY + 28, rx: 16, class: 'piso-forma' }, cam.piso);
       }
+      // piso tátil direcional (quando a planta traz as linhas): faixa amarela por baixo das salas
+      for (const linha of (D.tatil && D.tatil[st.piso]) || []) {
+        el('path', { d: 'M' + linha.map(q => q[0] + ' ' + q[1]).join('L'), class: 'piso-tatil' }, cam.piso);
+      }
       const lugares = lugaresDoPiso();
       const porPoly = {};
       lugares.forEach(p => { if (p.poly >= 0 && !porPoly[p.poly]) porPoly[p.poly] = p; });

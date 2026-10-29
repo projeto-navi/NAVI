@@ -4,8 +4,12 @@ const { expect } = require('@playwright/test');
 
 const LOCAL = /^(127\.0\.0\.1|localhost)$/;
 
-/** Abre o site com a rede externa bloqueada (VLibras vira resposta vazia). */
-async function abrir(page, { caminho = '', armazenamento = {}, erros } = {}) {
+/**
+ * Abre o site com a rede externa bloqueada (VLibras vira resposta vazia).
+ * A maior parte dos testes de comportamento usa o Shopping Estação, que deixou de ser o local padrão
+ * (o padrão agora é o prédio de testes): sem caminho, abre ?local=shopping-estacao.
+ */
+async function abrir(page, { caminho = '?local=shopping-estacao', armazenamento = {}, erros } = {}) {
   await page.route(url => !LOCAL.test(url.hostname), rota => rota.fulfill({ status: 200, body: '' }));
   if (Object.keys(armazenamento).length) {
     await page.addInitScript(itens => {

@@ -7,7 +7,27 @@ O QUE MUDOU NO MARCO 1
   e Cores distintas (para daltonismo). Fonte Atkinson Hyperlegible Next, servida pelo site.
 - Funciona sem internet depois da primeira visita (PWA). Pode ser instalado na tela inicial.
 - Vários locais: cada local mora em locais/<nome>/ e é escolhido por ?local=<nome>.
-  Sem o parâmetro, abre o Shopping Estação.
+  Sem o parâmetro, abre o Prédio comercial de testes (testes kaizen, desde 29/10/2026).
+  O Shopping Estação continua em ?local=shopping-estacao, e os links e QR Codes antigos
+  do Shopping (sem ?local=) continuam abrindo o Shopping.
+
+TESTES KAIZEN NO PRÉDIO DE TESTES (29/10/2026)
+- Prédio fictício de 3 andares, com piso tátil, Escada A (sem braille) e Escada B (com
+  braille no corrimão), Elevadores 1 e 2 (só até o 2º andar), rampa em ziguezague até o
+  3º andar e passagens de 0,85 m a 1,80 m. O 2D desenha as linhas de piso tátil e o 3D
+  é o modelo do prédio (locais/predio-teste/modelo.glb, baixado só quando o 3D é pedido).
+- Regras em teste (RN64 e RN65, propostas no Documento 04 v1.3, aguardando aprovação):
+  · "Preferir piso tátil e braille" (ligado pelo perfil Deficiência visual): a rota segue
+    o piso tátil e usa a escada com braille, mesmo mais longa; o passo avisa onde o piso
+    tátil acaba e recomeça.
+  · "Evitar escadas" (perfil Mobilidade reduzida): troca de andar pelo elevador; sem
+    elevador funcionando até o andar, pela rampa. Entre caminhos parecidos, o mais largo.
+- O prédio começa sem nenhum lugar interditado. Para testar rotas alternativas, use
+  "Avisar sobre um local" (ex.: Elevador 1 e Elevador 2 danificados -> a rota vai pela rampa).
+- Em locais sem piso tátil nem braille na planta (como o Shopping), nada muda nas rotas.
+- Gerar de novo: python3 ferramentas/modelo3d/gerar-local-predio.py (precisa de numpy
+  e Pillow). Os testes estão em testes/dados/predio-teste.spec.js e
+  testes/comportamento/predio-teste.spec.js.
 
 COMO PUBLICAR (a publicação no Netlify é do Líder Técnico)
 1. No Netlify, publique a pasta site-acessivel (ela tem o arquivo _headers, que impede
@@ -58,6 +78,9 @@ PÁGINA DO MAPA
 - Botão 3D nos controles do mapa. Só carrega quando pedido (Three.js, licença MIT,
   js/THREE-LICENSE.txt, guardado depois do primeiro uso). Sem WebGL ou com pouca memória,
   o site avisa e continua no 2D.
+- Local com modelo (.glb, config.modelo3d no config.js): o prédio vem do modelo, lido por
+  js/glb-leitor.js; as paredes ficam cortadas na altura da cintura para a rota aparecer, e
+  voltam inteiras na primeira pessoa. Sem modelo, o 3D é montado a partir da planta.
 - "Ver em primeira pessoa": anda sobre a rota na altura dos olhos, com setas no chão,
   aviso de troca de piso, "Você chegou!" e "Voltar ao mapa" (ou Esc).
 - Alturas, cores e materiais do 3D são ilustrativos.
@@ -66,7 +89,9 @@ PREFERÊNCIAS (botão no topo da Página de Rota e no painel da Página do Mapa)
 - Ouvir as instruções em voz alta (com Pausar, Repetir e Velocidade sempre visíveis).
 - Uso leitor de tela (TalkBack, VoiceOver, NVDA): o site não fala por cima dele.
 - Tradutor de Libras (VLibras; precisa de internet).
-- Evitar escadas (inclui escada rolante; a troca de andar é pelo elevador).
+- Evitar escadas (inclui escada rolante; a troca de andar é pelo elevador; sem elevador,
+  pela rampa).
+- Preferir piso tátil e braille (vale nos locais que têm piso tátil marcado na planta).
 - Tamanho do texto: 100% a 200%. Cores: Claro, Alto contraste, Cores distintas.
 - "Apagar minhas preferências" volta tudo ao padrão (os avisos continuam).
 - Tudo fica guardado só no aparelho (chaves navi-*). Nada é enviado.
@@ -84,13 +109,14 @@ LOCAIS
   avisos.js   -> avisos confirmados pela equipe (a equipe pode editar)
   dados.js, grafo.js, malha.js, dados3d.js -> gerados por ferramentas/dados/gerar-local.mjs
                  a partir da planta (não editar à mão)
-- Shopping Estação: pronto (planta oficial do Mapa Mall de 19/10/2026).
+- Prédio comercial de testes (padrão): pronto, para os testes kaizen. Prédio fictício.
+- Shopping Estação (?local=shopping-estacao): pronto (planta oficial do Mapa Mall de 19/10/2026).
 - UniOpet — Campus Rebouças (?local=uniopet-reboucas): em preparação. Enquanto
   dadosProntos for false, o site mostra "O mapa do Campus Rebouças está em preparação".
   Quando a planta chegar: gerar os arquivos, validar (ferramentas/dados/validar-grafo.js)
   e mudar dadosProntos para true. As pendências estão no topo do config.js.
 
-LINKS E QR CODES (ids antigos, como 1-1401928, continuam valendo)
+LINKS E QR CODES (ids antigos, como 1-1401928, continuam valendo e abrem o Shopping)
 - Só a partida (QR Code numa entrada):  index.html?perfil=mobilidade&origem=1-1401928
   -> a Página de Rota abre com a partida preenchida e pergunta só o destino.
 - Partida e destino:  mapa.html?origem=1-1401928&destino=1-2482759
@@ -106,7 +132,8 @@ ARQUIVOS
   interdicoes.js e avisos-ui.js (avisos), pwa.js
 - js/pagina-rota.js, js/pagina-mapa.js, js/folha.js (painel do passo a passo)
 - js/mapa-renderer.js (contrato dos mapas), mapa2d.js (SVG), mapa3d-renderer.js e
-  mapa3d.js (3D), three-navi.min.js
+  mapa3d.js (3D), glb-leitor.js (modelo .glb do local), three-navi.min.js
+- js/preferencias-rota.js (o que cada preferência pesa no caminho: RN15, RN64, RN65)
 - fontes/ (Atkinson Hyperlegible Next, licença OFL), img/ (ícones gerados por
   ferramentas/identidade/gerar-icones.js)
 

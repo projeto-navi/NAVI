@@ -3,12 +3,12 @@
    - as duas páginas, CSS, JS, fontes e ícones: guardados na instalação (precache), servidos do cache;
    - dados e grafo de cada local: do cache na hora e atualizados por trás (stale-while-revalidate);
    - avisos.js: rede primeiro, cache como reserva (cada aviso mostra a própria data, RN52);
-   - Three.js e 3D: guardados depois do primeiro uso;
+   - Three.js e 3D (com o modelo .glb do local, quando há): guardados depois do primeiro uso;
    - VLibras e "Buscar falando" são de fora: só funcionam com internet (o site avisa por texto).
    Versão nova: troque VERSAO. A Página de Rota oferece "Atualizar agora"; a Página do Mapa nunca
    recarrega no meio de uma rota (a versão nova entra no próximo carregamento). */
 'use strict';
-const VERSAO = '2026-10-27-m1';
+const VERSAO = '2026-10-29-kaizen';
 const APP = 'navi-app-' + VERSAO;
 const DADOS = 'navi-dados-' + VERSAO;
 const TRES_D = 'navi-3d-' + VERSAO;
@@ -21,13 +21,13 @@ const PRECACHE = [
   'fontes/atkinson-hyperlegible-next.woff2',
   'img/icone-navi.svg', 'img/icone-192.png', 'img/icone-512.png', 'img/icone-180.png',
   'js/icones.js', 'js/estado.js', 'js/categorias.js', 'js/voz.js', 'js/libras.js', 'js/ui.js',
-  'js/local.js', 'js/rotas.js', 'js/interdicoes.js', 'js/avisos-ui.js', 'js/pwa.js',
+  'js/local.js', 'js/rotas.js', 'js/preferencias-rota.js', 'js/interdicoes.js', 'js/avisos-ui.js', 'js/pwa.js',
   'js/pagina-rota.js', 'js/folha.js', 'js/mapa-renderer.js', 'js/mapa2d.js', 'js/pagina-mapa.js',
   'locais/indice.js'
 ];
 // a malha entra também: sem ela o traçado muda e o texto dos passos ficaria diferente sem internet
 const ARQUIVOS_DO_LOCAL = ['config.js', 'avisos.js', 'dados.js', 'grafo.js', 'malha.js', 'dados3d.js'];
-const SO_DEPOIS_DO_USO = /\/(js\/three-navi\.min\.js|js\/mapa3d\.js|js\/mapa3d-renderer\.js|css\/mapa3d\.css)$/;
+const SO_DEPOIS_DO_USO = /\/(js\/three-navi\.min\.js|js\/mapa3d\.js|js\/mapa3d-renderer\.js|js\/glb-leitor\.js|css\/mapa3d\.css|locais\/[^/]+\/[^/]+\.glb)$/;
 
 /** Arquivos de cada local do índice (o que não existir, como os dados de um local em preparação, fica de fora). */
 function arquivosDosLocais() {

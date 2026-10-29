@@ -83,7 +83,7 @@
   /* ------------------------------------------------------------------ grafo 1.1 */
   // tipo da aresta no grafo 1.1 → tipo interno do motor (o que caminho() entende)
   const TIPO_INTERNO = { caminhada: 'corredor', rampa: 'corredor', escada: 'escada', escada_rolante: 'escada', elevador: 'elevador', plataforma: 'elevador' };
-  const CATEGORIAS_DE_EQUIPAMENTO = ['escada', 'escada_rolante', 'elevador', 'plataforma'];
+  const CATEGORIAS_DE_EQUIPAMENTO = ['escada', 'escada_rolante', 'elevador', 'plataforma', 'rampa']; // rampa: pode ser interditada como um equipamento
 
   /**
    * @param {object} grafo   grafo no esquema 1.1 (não é alterado)
@@ -122,7 +122,10 @@
       const de = indice[a.de], para = indice[a.para];
       let tipo = TIPO_INTERNO[a.tipo] || 'corredor';
       if (a.tipo === 'rampa' && a.inclinacao_pct != null && a.inclinacao_pct > INCLINACAO_MAX) tipo = 'escada'; // rampa íngreme sai das rotas sem escada
-      const base = { custo: a.custo, tipo };
+      const base = { custo: a.custo, tipo, tatil: a.piso_tatil || 'nenhum' };
+      // dados da aresta que as preferências de rota usam (js/preferencias-rota.js); o cálculo não muda sem elas
+      if (a.braille) base.braille = true;
+      if (a.largura_min_m != null) base.largura = a.largura_min_m;
       if (a.tipo !== 'caminhada') base.rotulo = a.tipo;
       if (a.equipamento) { base.equipamento = a.equipamento; base.lugares = lugaresDoEquip[a.equipamento] || []; }
       viz[de].push({ para, ...base });
@@ -166,7 +169,7 @@
       for (const e of G.viz[u]) {
         if (opcoes.semEscadas && e.tipo === 'escada') continue;
         if (opcoes.bloqueados && e.lugares && e.lugares.some(id => opcoes.bloqueados.has(id))) continue; // elevador/escada interditados
-        const alt = dist[u] + e.custo;
+        const alt = dist[u] + (opcoes.custo ? opcoes.custo(e) : e.custo); // opcoes.custo: preferências (RN64, RN65)
         if (alt < dist[e.para]) { dist[e.para] = alt; ant[e.para] = u; via[e.para] = e.tipo; rot[e.para] = e.rotulo; }
       }
     }
@@ -203,8 +206,9 @@
     if (!pN || Math.hypot(pN.x - fim.x, pN.y - fim.y) > 1) ult.push({ x: fim.x, y: fim.y });
     const usaEscada = trechos.some(t => t.saida === 'escada');
     const usaElevador = trechos.some(t => t.saida === 'elevador');
+    const usaRampa = trechos.some(t => t.saidaRotulo === 'rampa');
     const comprimento = trechos.reduce((s, t) => s + compr(t.pontos), 0);
-    const r = { origem, destino, trechos, usaEscada, usaElevador, comprimento };
+    const r = { origem, destino, trechos, usaEscada, usaElevador, usaRampa, comprimento, nos: c.ids };
     r.passos = instrucoes(G, r);
     return r;
   }
@@ -260,7 +264,8 @@
   // como cada meio de troca de andar é dito nas instruções
   const MEIO = {
     elevador: ['o elevador', 'do elevador'], escada_rolante: ['a escada rolante', 'da escada rolante'],
-    escada: ['a escada', 'da escada'], plataforma: ['a plataforma elevatória', 'da plataforma elevatória']
+    escada: ['a escada', 'da escada'], plataforma: ['a plataforma elevatória', 'da plataforma elevatória'],
+    rampa: ['a rampa', 'da rampa']
   };
   const meio = t => MEIO[t.saidaRotulo] || MEIO[t.saida === 'elevador' ? 'elevador' : 'escada_rolante'];
 

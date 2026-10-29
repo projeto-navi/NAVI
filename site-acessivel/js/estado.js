@@ -1,5 +1,5 @@
 /* Navi — preferências, perfis e parâmetros entre as duas páginas.
-   Preferências combináveis (RN06): ouvir instruções, evitar escadas, Libras, texto maior, tema e
+   Preferências combináveis (RN06): ouvir instruções, evitar escadas, preferir piso tátil, Libras, texto maior, tema e
    "uso leitor de tela". O perfil é só um atalho que liga um conjunto delas; depois cada uma muda sozinha.
    Tudo fica no próprio aparelho (chaves navi-*, RN07), sem cadastro nem envio de dados (RN55). */
 (function (raiz) {
@@ -7,15 +7,15 @@
   const CHAVES = {
     perfil: 'navi-perfil', voz: 'navi-voz', tema: 'navi-tema', texto: 'navi-texto', escadas: 'navi-escadas',
     libras: 'navi-libras', leitor: 'navi-leitor', velocidade: 'navi-velocidade', vista: 'navi-vista',
-    avisos: 'navi-avisos', boasVindas: 'navi-boas-vindas', contraste: 'navi-contraste'
+    avisos: 'navi-avisos', boasVindas: 'navi-boas-vindas', contraste: 'navi-contraste', pisoTatil: 'navi-piso-tatil'
   };
   const TEMAS = ['claro', 'contraste', 'daltonismo'];
   const TEXTOS = [100, 125, 150, 175, 200];
   const VELOCIDADES = { devagar: 0.8, normal: 1, rapido: 1.25 };
 
   const PERFIS = {
-    visual: { nome: 'Deficiência visual', icone: 'i-visual', desc: 'Letras maiores, alto contraste e instruções faladas, um passo de cada vez.' },
-    mobilidade: { nome: 'Mobilidade reduzida', icone: 'i-mobilidade', desc: 'Rotas sem escadas. Para mudar de andar, o caminho passa pelo elevador.' },
+    visual: { nome: 'Deficiência visual', icone: 'i-visual', desc: 'Letras maiores, alto contraste, instruções faladas e rotas pelo piso tátil e pelas escadas com braille.' },
+    mobilidade: { nome: 'Mobilidade reduzida', icone: 'i-mobilidade', desc: 'Rotas sem escadas. Para mudar de andar, o caminho passa pelo elevador; sem elevador, pela rampa.' },
     auditiva: { nome: 'Deficiência auditiva', icone: 'i-auditiva', desc: 'Tradutor de Libras e todas as orientações por escrito, sem depender de som.' },
     geral: { nome: 'Sem adaptações', icone: 'i-geral', desc: 'Mapa e passo a passo, sem mudanças.' }
   };
@@ -37,6 +37,7 @@
       voz: !leitor && ler('voz') === '1',
       leitorDeTela: leitor,
       evitarEscadas: ler('escadas') === '1',
+      preferirPisoTatil: ler('pisoTatil') === '1',
       libras: ler('libras') === '1',
       tema, texto,
       velocidade: VELOCIDADES[ler('velocidade')] ? ler('velocidade') : 'normal'
@@ -48,6 +49,7 @@
     if ('voz' in p) guardar('voz', p.voz ? '1' : '0');
     if ('leitorDeTela' in p) guardar('leitor', p.leitorDeTela ? '1' : '0');
     if ('evitarEscadas' in p) guardar('escadas', p.evitarEscadas ? '1' : '0');
+    if ('preferirPisoTatil' in p) guardar('pisoTatil', p.preferirPisoTatil ? '1' : '0');
     if ('libras' in p) guardar('libras', p.libras ? '1' : '0');
     if ('tema' in p && TEMAS.includes(p.tema)) { guardar('tema', p.tema); apagar('contraste'); }
     if ('texto' in p && TEXTOS.includes(+p.texto)) guardar('texto', p.texto);
@@ -59,7 +61,7 @@
   function aplicarPerfil(perfil) {
     const atual = preferencias();
     const p = { perfil };
-    if (perfil === 'visual') { p.tema = 'contraste'; p.texto = Math.max(atual.texto, 125); if (!atual.leitorDeTela) p.voz = true; }
+    if (perfil === 'visual') { p.tema = 'contraste'; p.texto = Math.max(atual.texto, 125); if (!atual.leitorDeTela) p.voz = true; p.preferirPisoTatil = true; }
     if (perfil === 'mobilidade') p.evitarEscadas = true;
     if (perfil === 'auditiva') p.libras = true;
     return salvar(p);

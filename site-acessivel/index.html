@@ -32,8 +32,10 @@
    padrão (um local em preparação não tem dados.js nem grafo.js). PADRAO é o local padrão de
    locais/indice.js (se mudar lá, mude aqui e no mapa.html; o teste de dados confere). */
 (function () { try {
-  var PADRAO = 'shopping-estacao';
+  var PADRAO = 'predio-teste';
   var m = /[?&]local=([a-z0-9-]{1,40})(?:&|$)/i.exec(location.search), slug = m ? m[1].toLowerCase() : PADRAO;
+  // links antigos do Shopping Estação, sem ?local= (codigosAntigos em locais/indice.js)
+  if (!m && /[?&](origem|destino)=(SHE_|\d+-\d+(&|$))/.test(location.search)) slug = 'shopping-estacao';
   ['config.js', 'avisos.js'].concat(slug === PADRAO ? ['dados.js', 'grafo.js'] : []).forEach(function (f) {
     var l = document.createElement('link'); l.rel = 'preload'; l.as = 'script'; l.href = 'locais/' + slug + '/' + f;
     document.head.appendChild(l);
@@ -88,6 +90,7 @@
 <script src="js/ui.js" defer></script>
 <script src="js/local.js" defer></script>
 <script src="js/rotas.js" defer></script>
+<script src="js/preferencias-rota.js" defer></script>
 <script src="js/interdicoes.js" defer></script>
 <script src="js/avisos-ui.js" defer></script>
 <script src="js/pwa.js" defer></script>

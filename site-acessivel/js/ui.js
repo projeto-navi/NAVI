@@ -76,7 +76,8 @@
           <div style="padding-top:var(--e3)"><button type="button" class="btn" data-cartao>${svg('i-cartao')}Mostrar cartão para o atendente</button></div>
         </section>
         <section aria-labelledby="pref-rotas"><h3 id="pref-rotas">Rotas</h3>
-          ${opcao('escadas', 'Evitar escadas', 'Inclui escadas rolantes. A troca de andar é pelo elevador.', p.evitarEscadas)}
+          ${opcao('escadas', 'Evitar escadas', 'Inclui escadas rolantes. A troca de andar é pelo elevador; sem elevador, pela rampa.', p.evitarEscadas)}
+          ${opcao('pisoTatil', 'Preferir piso tátil e braille', 'A rota segue o piso tátil e usa a escada com braille no corrimão, mesmo que seja mais longa.', p.preferirPisoTatil)}
         </section>
         ${radios('texto', 'Tamanho do texto', E().TEXTOS.map(v => [v, v + '%', v === 100 ? 'Padrão' : '']), p.texto)}
         ${radios('tema', 'Cores', [['claro', 'Claro', 'Padrão'], ['contraste', 'Alto contraste', 'Azul-marinho e amarelo'], ['daltonismo', 'Cores distintas', 'Para daltonismo']], p.tema)}
@@ -85,8 +86,8 @@
           <p class="texto-2 pequeno">Volta tudo ao padrão neste aparelho, inclusive a pergunta sobre a voz. Seus avisos de interdição continuam.</p>
         </section>`;
     }
-    const NOMES_OP = { voz: 'Voz do site', leitor: 'Uso de leitor de tela', libras: 'Tradutor de Libras', escadas: 'Evitar escadas' };
-    const CAMPO_OP = { voz: 'voz', leitor: 'leitorDeTela', libras: 'libras', escadas: 'evitarEscadas' };
+    const NOMES_OP = { voz: 'Voz do site', leitor: 'Uso de leitor de tela', libras: 'Tradutor de Libras', escadas: 'Evitar escadas', pisoTatil: 'Preferir piso tátil e braille' };
+    const CAMPO_OP = { voz: 'voz', leitor: 'leitorDeTela', libras: 'libras', escadas: 'evitarEscadas', pisoTatil: 'preferirPisoTatil' };
     function aplicar(mudanca, nome) {
       const p = E().salvar(mudanca);
       E().aplicarNaPagina(p);

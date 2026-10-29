@@ -1,13 +1,15 @@
-/* Navi — vista 3D procedural (usada pelo adaptador js/mapa3d-renderer.js, só quando o 3D é pedido).
+/* Navi — vista 3D (usada pelo adaptador js/mapa3d-renderer.js, só quando o 3D é pedido).
    Geometria construída com as MESMAS coordenadas do mapa 2D (plantas, quiosques, malha de corredores),
    então lugares, rotas e marcadores ficam exatamente no mesmo lugar nas duas vistas.
+   Local com modelo (.glb, opcoes.modelo): o prédio vem do modelo, colocado na escala da planta, e as
+   salas viram peças finas e invisíveis sobre o piso, que só aparecem para realçar (clique, destino, aviso).
    Alturas e materiais são ilustrativos. As cores vêm dos tokens do tema ativo (css/tokens.css).
    Desempenho (Marco 1): pixel ratio até 1,5, sem preserveDrawingBuffer, materiais simples e sem sombras,
    e o quadro só é desenhado quando algo muda (nada se move sozinho). */
 (function () {
   'use strict';
   const T = window.THREE;
-  const ALT_PISO = 120;      // distância vertical entre Piso 1 e Piso 2 (unidades da planta)
+  const ALT_PISO_PADRAO = 120; // distância vertical entre Piso 1 e Piso 2 (unidades da planta)
   const ALT_LOJA = 34, ALT_QUIOSQUE = 12, ESP_LAJE = 6;
   const AFASTAR = 170;       // separação extra entre os pisos no modo "ver os dois pisos"
 
@@ -35,7 +37,8 @@
    * @param {{places: object[], plantas: object, pisos: object}} D geometria por andar (local.legado)
    * @param {object} G grafo do motor
    * @param {{selecionar?: Function, anunciar?: Function, saiuPrimeiraPessoa?: Function}} ao
-   * @param {{lajes?: object, nomeAndar?: (piso: number) => string, textos?: object, corEntrada?: (lugar: object) => string|null}} [opcoes]
+   * @param {{lajes?: object, nomeAndar?: (piso: number) => string, textos?: object, corEntrada?: (lugar: object) => string|null,
+   *   modelo?: {cena: Promise<object>, unidadesPorMetro: number, deslocamento: number[], alturaAndar: number}}} [opcoes]
    */
   function iniciar(container, D, G, ao, opcoes = {}) {
     if (!T || !suportaWebGL()) return null;
@@ -43,6 +46,11 @@
     const nomeAndar = opcoes.nomeAndar || (p => 'Piso ' + p);
     const txt = opcoes.textos || {};
     const corEntrada = opcoes.corEntrada || (() => null);
+    const MOD = opcoes.modelo || null;
+    const ALT_PISO = MOD ? MOD.alturaAndar * MOD.unidadesPorMetro : ALT_PISO_PADRAO;
+    const SOBRE = 1.4;   // espessura das peças de realce sobre o piso do modelo
+    // lugares desenhados como forma (sala, loja…); os outros viram ícone (mesma regra do 2D)
+    const comoForma = cat => ['loja', 'quiosque', 'entrada', 'administracao', 'sala', 'laboratorio'].includes(cat);
     const PISOS = Object.keys(D.pisos).map(Number).sort((a, b) => a - b);
     const TOPO = PISOS[PISOS.length - 1];
     // centro da planta → origem do mundo
@@ -124,7 +132,8 @@
         seta: new T.MeshBasicMaterial({ color: rota }),
         setaBorda: new T.MeshBasicMaterial({ color: cssVar('--mapa-rota-contorno', '#FFFFFF') }),
         setaRota: new T.MeshBasicMaterial({ color: cssVar('--mapa-rota-contorno', '#FFFFFF') }),
-        vidro: L({ color: '#9CC3E6', transparent: true, opacity: 0.35, depthWrite: false })
+        vidro: L({ color: '#9CC3E6', transparent: true, opacity: 0.35, depthWrite: false }),
+        invisivel: new T.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
       };
       for (const k in novo) { if (M[k]) { M[k].dispose(); } M[k] = novo[k]; }
       for (const k of Object.keys(M)) if (k.startsWith('entrada-')) { M[k].dispose(); delete M[k]; }
@@ -170,6 +179,13 @@
       lugaresPiso.forEach(p => { if (p.poly >= 0 && !porPoly[p.poly]) porPoly[p.poly] = p; });
       (D.plantas[piso] || []).forEach((poly, i) => {
         const lugar = porPoly[i] || null;
+        if (MOD) {
+          if (!lugar) return;
+          const m = new T.Mesh(extrudar(forma(poly), SOBRE, base + 0.3), M.invisivel);
+          m.userData = { tipo: 'loja', lugar, sobre: true };
+          grupos[piso].add(m); lojas.push(m); (porLugar[lugar.id] = porLugar[lugar.id] || []).push(m);
+          return;
+        }
         const historico = !!(museu && museu.piso === piso && dentro(museu.x, museu.y, poly));
         const alt = historico ? ALT_LOJA + 6 : ALT_LOJA;
         const m = new T.Mesh(extrudar(forma(poly), alt, base), historico ? [M.historicoTeto, M.historico] : [M.teto, M.parede]);
@@ -191,6 +207,15 @@
         }
       });
       // quiosques, entradas e lojas sem contorno na planta
+      if (MOD) {
+        lugaresPiso.filter(p => p.poly < 0 && comoForma(p.cat) && p.w && p.h).forEach(p => {
+          const m = new T.Mesh(new T.BoxGeometry(p.w, SOBRE, p.h), M.invisivel);
+          m.position.copy(P(p.x, p.y, piso, 0.3 + SOBRE / 2)); m.rotation.y = -(p.r || 0) * Math.PI / 180;
+          m.userData = { tipo: 'loja', lugar: p, sobre: true };
+          grupos[piso].add(m); lojas.push(m); (porLugar[p.id] = porLugar[p.id] || []).push(m);
+        });
+        continue;
+      }
       lugaresPiso.filter(p => p.cat === 'quiosque' || p.cat === 'entrada' || (p.cat === 'loja' && p.poly < 0)).forEach(p => {
         const ent = p.cat === 'entrada';
         const alt = ent ? 3 : p.cat === 'quiosque' ? ALT_QUIOSQUE : ALT_LOJA * 0.6;
@@ -209,13 +234,57 @@
       });
     }
     // poço do elevador (vidro) ligando os pisos, na posição usada pelas rotas
-    const elev = G.conexoes.find(c => c.tipo === 'elevador');
+    const elev = MOD ? null : G.conexoes.find(c => c.tipo === 'elevador');
     let poco = null;
     if (elev) {
       const n = G.nos[elev.b];
       poco = new T.Mesh(new T.BoxGeometry(30, ALT_PISO + ALT_LOJA, 30), M.vidro);
       poco.position.copy(P(n.x, n.y, PISOS[0], (ALT_PISO + ALT_LOJA) / 2));
       cena.add(poco);
+    }
+
+    // ---------- modelo .glb do local (quando há) ----------
+    // As paredes do modelo são cortadas um pouco acima da cintura (como numa maquete aberta), para a rota
+    // aparecer de qualquer ângulo; na primeira pessoa elas voltam inteiras.
+    const CORTAVEIS = new Set(['parede', 'parede_externa', 'vidro', 'caixilho', 'porta', 'porta_corta_fogo']);
+    const planosCorte = {};
+    function cortarParedes() {
+      if (!MOD) return;
+      for (const piso of PISOS) {
+        const pl = planosCorte[piso];
+        if (pl) pl.constant = fp ? 1e6 : grupos[piso].position.y + (piso - 1) * ALT_PISO + 1.4 * MOD.unidadesPorMetro;
+      }
+    }
+    if (MOD) {
+      renderer.localClippingEnabled = true;
+      const k = MOD.unidadesPorMetro, desl = MOD.deslocamento || [0, 0];
+      Promise.resolve(MOD.cena).then(modelo => {
+        const andares = [];
+        modelo.traverse(o => { if (o.userData && o.userData.tipo === 'andar') andares.push(o); });
+        for (const a of andares) {
+          const piso = MOD.piso(a.userData.andar);
+          if (!grupos[piso]) continue;
+          // metros do modelo → unidades da planta, com a mesma origem do resto da cena
+          const suporte = new T.Group();
+          suporte.scale.setScalar(k);
+          suporte.position.set(desl[0] * k - cx, 0, desl[1] * k - cz);
+          suporte.userData.glb = true;
+          suporte.add(a);
+          const plano = planosCorte[piso] = new T.Plane(new T.Vector3(0, -1, 0), 1e6);
+          const proprios = {};
+          a.traverse(o => {
+            if (!o.isMesh || !CORTAVEIS.has(o.material.name)) return;
+            const n = o.material.name;
+            if (!proprios[n]) { proprios[n] = o.material.clone(); proprios[n].clippingPlanes = [plano]; }
+            o.material = proprios[n];
+          });
+          grupos[piso].add(suporte);
+        }
+        // o piso do modelo substitui as lajes desenhadas
+        for (const piso of PISOS) grupos[piso].children.forEach(o => { if (o.userData.tipo === 'laje') o.visible = false; });
+        cortarParedes();
+        pedirRender();
+      }).catch(e => { console.warn('[Navi] 3D sem o modelo do local:', e && e.message); });
     }
 
     // ---------- pictogramas dos serviços (mesmos símbolos do 2D) ----------
@@ -247,7 +316,7 @@
       pintarIcone(cat, c, t);
       return t;
     }
-    D.places.filter(p => !['loja', 'quiosque', 'entrada', 'administracao'].includes(p.cat)).forEach(p => {
+    D.places.filter(p => MOD ? !comoForma(p.cat) : !['loja', 'quiosque', 'entrada', 'administracao'].includes(p.cat)).forEach(p => {
       const s = new T.Sprite(new T.SpriteMaterial({ map: texturaIcone(p.cat), depthTest: true, transparent: true }));
       s.position.copy(P(p.x, p.y, p.piso, ALT_LOJA + 26));
       s.scale.set(30, 30, 1);
@@ -370,7 +439,7 @@
         g.visible = estado.ambos || piso === estado.piso;
         // no modo "ambos" o piso de cima fica translúcido para ver o de baixo
         g.traverse(o => {
-          if (!o.isMesh || o.userData.marcada) return;
+          if (!o.isMesh || o.userData.marcada || o.userData.glb) return;
           const mats = Array.isArray(o.material) ? o.material : [o.material];
           mats.forEach(m => { m.transparent = false; m.opacity = 1; });
         });
@@ -383,6 +452,7 @@
         grupos[piso].position.y = extra2 * (piso - PISOS[0]);
         grupos[piso].children.forEach(o => { if (o.userData.tipo === 'laje') o.material = estado.ambos ? [M.lajeVidro, M.lajeVidro] : [M.piso, M.borda]; });
       }
+      cortarParedes();
       if (poco) { poco.visible = estado.ambos || true; poco.scale.y = (ALT_PISO + extra2 + ALT_LOJA) / (ALT_PISO + ALT_LOJA); poco.position.y = (ALT_PISO + extra2 + ALT_LOJA) / 2; }
     }
 
@@ -566,7 +636,7 @@
     controles.addEventListener('change', () => { pedirRender(); atualizarRotulos(); });
 
     // ---------- primeira pessoa (estilo Street View: anda sobre a rota, arrasta para olhar) ----------
-    const OLHO = 12, PASSO_FP = 22;
+    const OLHO = MOD ? 1.55 * MOD.unidadesPorMetro : 12, PASSO_FP = 22;
     let fp = null;
     const SETA_HUD = { inicio: 'd-reto', reto: 'd-reto', esq: 'd-esq', dir: 'd-dir', 'leve-esq': 'd-leve-esq', 'leve-dir': 'd-leve-dir',
       volta: 'd-volta', chegada: 'd-chegada', elevador: 'c-elevador', escada: 'c-escada_rolante' };
@@ -767,8 +837,9 @@
       if (noFim && t.saida && t.conexao >= 0) { k = t.conexao; principal = passos[k]; }
       else if (noFim && fp.ti === fp.trechos.length - 1) { k = passos.length - 1; principal = passos[k]; }
       const prox = passos[k + 1];
-      $h('.fp-seta use').setAttribute('href', '#' + (SETA_HUD[principal.tipo] || 'd-reto'));
-      $h('.fp-seta').classList.toggle('destaque', ['elevador', 'escada', 'chegada'].includes(principal.tipo));
+      const meioIcone = ['elevador', 'escada', 'escada_rolante', 'rampa', 'plataforma'].includes(principal.rotulo) ? 'c-' + principal.rotulo : null;
+      $h('.fp-seta use').setAttribute('href', '#' + (meioIcone || SETA_HUD[principal.tipo] || 'd-reto'));
+      $h('.fp-seta').classList.toggle('destaque', !!meioIcone || ['elevador', 'escada', 'chegada'].includes(principal.tipo));
       $h('.fp-meta').textContent = `${nomeAndar(t.piso)}, passo ${k + 1} de ${passos.length}`;
       $h('.fp-texto').textContent = principal.texto;
       $h('.fp-depois').textContent = prox && !noFim ? 'Depois: ' + prox.texto : '';
@@ -968,9 +1039,10 @@
 
     function reaplicarMateriais() {
       for (const piso of PISOS) grupos[piso].traverse(o => {
-        if (!o.isMesh) return;
+        if (!o.isMesh || o.userData.glb) return;
         const u = o.userData;
         if (u.tipo === 'laje') o.material = [M.piso, M.borda];
+        else if (u.sobre) o.material = M.invisivel;
         else if (u.tipo === 'loja') o.material = u.historico ? (o.geometry.type === 'ExtrudeGeometry' && Array.isArray(o.material) ? [M.historicoTeto, M.historico] : M.historicoTeto) : [M.teto, M.parede];
         else if (u.tipo === 'quiosque') o.material = M.quiosque;
         else if (u.tipo === 'entrada') o.material = materialEntrada(u.lugar);

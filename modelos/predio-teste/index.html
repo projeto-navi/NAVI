@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important} body{margin:0}</style>
+</head>
+<body>
+<title>Prédio de Testes Navi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=Atkinson+Hyperlegible+Mono:wght@500&display=swap">
+<style>
+/* Layout: ferramenta de uma tela — painel de testes à esquerda (no celular, embaixo) e o modelo 3D ocupando o resto. */
+:root {
+  --fundo: #F2F4F7;          /* página */
+  --superficie: #FFFFFF;     /* painel */
+  --superficie-2: #E8ECF1;   /* chips e linhas */
+  --tinta: #0D1B2A;
+  --tinta-2: #435366;
+  --borda: #74818F;
+  --divisor: #D3DAE2;
+  --acao: #0B4FA8;           /* azul do símbolo internacional de acesso: rotas e ações */
+  --acao-texto: #FFFFFF;
+  --acao-suave: #E3ECF8;
+  --tatil: #F2C200;          /* amarelo do piso tátil: destaque */
+  --alerta: #A8231B;
+  --alerta-fundo: #FCEBE9;
+  --cena: #DCE2E9;           /* fundo do 3D */
+  --fonte: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --raio: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fundo: #0B1520; --superficie: #111E2C; --superficie-2: #1A2A3B; --tinta: #EEF2F6; --tinta-2: #A9B6C4;
+    --borda: #7C8B9B; --divisor: #253547; --acao: #6FA8FF; --acao-texto: #06101B; --acao-suave: #16304F;
+    --tatil: #FFD23F; --alerta: #FF8A80; --alerta-fundo: #3A1715; --cena: #18222E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --fundo: #0B1520; --superficie: #111E2C; --superficie-2: #1A2A3B; --tinta: #EEF2F6; --tinta-2: #A9B6C4;
+  --borda: #7C8B9B; --divisor: #253547; --acao: #6FA8FF; --acao-texto: #06101B; --acao-suave: #16304F;
+  --tatil: #FFD23F; --alerta: #FF8A80; --alerta-fundo: #3A1715; --cena: #18222E; color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--fundo); color: var(--tinta); font-family: var(--fonte); font-size: 15px; line-height: 1.5; }
+.app { height: 100%; display: grid; grid-template-columns: minmax(300px, 380px) 1fr; }
+.painel {
+  background: var(--superficie); border-right: 1px solid var(--divisor); overflow-y: auto; min-width: 0;
+  padding-block: 18px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.palco { position: relative; min-width: 0; background: var(--cena); overflow: hidden; }
+#cena { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; outline-offset: -3px; }
+h1 { font-size: 1.35rem; line-height: 1.2; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+.sub { color: var(--tinta-2); margin: 4px 0 0; font-size: 0.93rem; }
+h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2); margin: 0 0 8px; font-weight: 700; }
+section { display: flex; flex-direction: column; }
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); border: 1.5px solid var(--borda); border-radius: var(--raio); overflow: hidden; }
+.seg button { border: 0; border-left: 1px solid var(--divisor); background: var(--superficie); color: var(--tinta); padding: 10px 4px; min-height: 44px; font: inherit; font-weight: 600; cursor: pointer; }
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"] { background: var(--acao); color: var(--acao-texto); }
+.linha { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--divisor); min-height: 44px; }
+.linha:last-child { border-bottom: 0; }
+.linha label, .linha .nome { flex: 1; min-width: 0; cursor: pointer; }
+.linha small { display: block; color: var(--tinta-2); font-size: 0.82rem; line-height: 1.35; }
+.chave { appearance: none; width: 46px; height: 28px; border-radius: 14px; background: var(--superficie-2); border: 1.5px solid var(--borda); position: relative; cursor: pointer; flex: none; margin: 0; }
+.chave::after { content: ""; position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: var(--tinta-2); transition: transform 160ms ease-out; }
+.chave:checked { background: var(--acao); border-color: var(--acao); }
+.chave:checked::after { transform: translateX(18px); background: var(--acao-texto); }
+.elev { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.elev button { font: inherit; text-align: left; padding: 10px 12px; min-height: 64px; border-radius: var(--raio); border: 1.5px solid var(--borda); background: var(--superficie); color: var(--tinta); cursor: pointer; }
+.elev button b { display: block; }
+.elev button span { font-size: 0.85rem; color: var(--tinta-2); }
+.elev button[aria-pressed="true"] { border-color: var(--alerta); background: var(--alerta-fundo); }
+.elev button[aria-pressed="true"] span { color: var(--alerta); font-weight: 700; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { font: inherit; font-size: 0.9rem; padding: 6px 12px; min-height: 40px; border-radius: 20px; border: 1.5px solid var(--borda); background: var(--superficie); color: var(--tinta); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.chips button i { width: 10px; height: 10px; border-radius: 50%; background: var(--cor, var(--acao)); flex: none; }
+.chips button[aria-pressed="true"] { background: var(--acao-suave); border-color: var(--acao); font-weight: 600; }
+.cenarios { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0; list-style: none; }
+.cenarios li { border-bottom: 1px solid var(--divisor); }
+.cenarios button { width: 100%; text-align: left; font: inherit; background: none; border: 0; color: var(--tinta); padding: 10px 0; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
+.cenarios button b { font-weight: 600; }
+.cenarios button small { grid-column: 1; color: var(--tinta-2); font-size: 0.84rem; line-height: 1.35; }
+.cenarios button .ir { grid-row: 1 / span 2; grid-column: 2; color: var(--acao); font-weight: 700; font-size: 0.85rem; }
+.botoes { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { font: inherit; font-weight: 600; padding: 8px 14px; min-height: 40px; border-radius: var(--raio); border: 1.5px solid var(--borda); background: var(--superficie); color: var(--tinta); cursor: pointer; }
+.btn:hover, .chips button:hover, .elev button:hover, .seg button:hover { border-color: var(--acao); }
+button:focus-visible, input:focus-visible, #cena:focus-visible { outline: 3px solid var(--acao); outline-offset: 2px; }
+.ficha { position: absolute; left: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); right: auto; max-width: min(420px, calc(100% - 24px)); background: var(--superficie); color: var(--tinta); border: 1.5px solid var(--borda); border-radius: var(--raio); padding: 12px 14px; box-shadow: 0 6px 24px rgb(0 0 0 / 0.18); }
+.ficha h3 { margin: 0 34px 4px 0; font-size: 1rem; line-height: 1.3; }
+.ficha p { margin: 0; font-size: 0.9rem; color: var(--tinta-2); }
+.ficha ul { margin: 8px 0 0; padding-left: 18px; font-size: 0.88rem; }
+.ficha code { font-family: var(--mono); font-size: 0.78rem; color: var(--tinta-2); display: block; margin-top: 8px; overflow-wrap: anywhere; }
+.ficha .fechar { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border: 0; border-radius: 8px; background: none; color: var(--tinta); font-size: 20px; cursor: pointer; }
+.dica { position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); background: var(--superficie); border: 1px solid var(--divisor); border-radius: 8px; padding: 6px 10px; font-size: 0.82rem; color: var(--tinta-2); max-width: 260px; }
+.rotulos { position: absolute; inset: 0; pointer-events: none; }
+.rotulo { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: rgb(255 255 255 / 0.92); color: #0D1B2A; border: 1px solid #74818F; }
+.rotulo.largura { background: #0D1B2A; color: #FFD23F; border-color: #0D1B2A; font-family: var(--mono); }
+.rotulo.andar { font-size: 14px; background: #0B4FA8; color: #fff; border-color: #0B4FA8; padding: 3px 10px; }
+.rotulo.obst { background: #F26B1D; color: #fff; border-color: #B8460B; }
+.carregando { position: absolute; inset: 0; display: grid; place-items: center; color: var(--tinta-2); font-weight: 600; }
+.legenda { font-size: 0.84rem; color: var(--tinta-2); margin: 0; }
+.obst-lista .linha { align-items: flex-start; }
+.obst-lista .chave { margin-top: 2px; }
+.contagem { font-family: var(--mono); font-size: 0.8rem; color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 56vh auto; height: auto; min-height: 100%; }
+  .palco { order: 1; height: 56vh; }
+  .painel { order: 2; border-right: 0; border-top: 1px solid var(--divisor); padding-right: max(16px, env(safe-area-inset-right, 0px)); overflow: visible; }
+  .dica { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .chave::after { transition: none; } }
+</style>
+
+<div class="app">
+  <aside class="painel" aria-label="Controles do modelo">
+    <header>
+      <h1>Prédio comercial de testes</h1>
+      <p class="sub">Modelo 3D com três andares para testar rotas acessíveis do Navi: piso tátil, rampa, elevadores, escadas com e sem braille, passagens estreitas e obstáculos.</p>
+    </header>
+
+    <section aria-labelledby="t-andar">
+      <h2 id="t-andar">Andar</h2>
+      <div class="seg" role="group" aria-labelledby="t-andar">
+        <button type="button" data-andar="todos" aria-pressed="true">Todos</button>
+        <button type="button" data-andar="P01" aria-pressed="false">1º</button>
+        <button type="button" data-andar="P02" aria-pressed="false">2º</button>
+        <button type="button" data-andar="P03" aria-pressed="false">3º</button>
+      </div>
+      <div class="linha"><label for="separar">Separar os andares<small>Mostra os três andares afastados, para ver todos de uma vez.</small></label><input class="chave" type="checkbox" id="separar" checked></div>
+      <div class="linha"><label for="cortar">Paredes baixas<small>Corta as paredes a 1,4 m para ver o andar por dentro.</small></label><input class="chave" type="checkbox" id="cortar" checked></div>
+      <div class="linha"><label for="nomes">Nomes no modelo</label><input class="chave" type="checkbox" id="nomes" checked></div>
+      <div class="botoes"><button type="button" class="btn" id="de-cima">Vista de cima</button><button type="button" class="btn" id="em-3d">Vista 3D</button></div>
+    </section>
+
+    <section aria-labelledby="t-cen">
+      <h2 id="t-cen">O que este prédio testa</h2>
+      <ul class="cenarios" id="cenarios"></ul>
+    </section>
+
+    <section aria-labelledby="t-elev">
+      <h2 id="t-elev">Elevadores (1º e 2º andar)</h2>
+      <div class="elev">
+        <button type="button" id="elev-1" aria-pressed="false"><b>Elevador 1</b><span>Funcionando</span></button>
+        <button type="button" id="elev-2" aria-pressed="false"><b>Elevador 2</b><span>Funcionando</span></button>
+      </div>
+      <p class="legenda" style="margin-top:8px">Fora de serviço: aparece a barreira e a tela vermelha nos dois andares. Sem os dois, o 2º andar sem degrau só pela rampa.</p>
+    </section>
+
+    <section aria-labelledby="t-obs">
+      <h2 id="t-obs">Obstáculos <span class="contagem" id="n-obs"></span></h2>
+      <div class="obst-lista" id="obstaculos"></div>
+      <div class="botoes" style="margin-top:8px"><button type="button" class="btn" id="obs-todos">Ligar todos</button><button type="button" class="btn" id="obs-nenhum">Desligar todos</button></div>
+    </section>
+
+    <section aria-labelledby="t-real">
+      <h2 id="t-real">Realçar</h2>
+      <div class="chips" id="realces"></div>
+    </section>
+
+    <p class="legenda">Medidas em metros; altura de andar 3,0 m. Os nomes dos objetos (por exemplo <span style="font-family:var(--mono)">PCTP02OBSTACULO_01</span>) são os mesmos que o app vai usar.</p>
+  </aside>
+
+  <main class="palco" id="palco">
+    <canvas id="cena" tabindex="0" aria-label="Modelo 3D do prédio de testes. Arraste para girar, use a roda ou a pinça para aproximar. Toque num objeto para ver o que ele é."></canvas>
+    <div class="rotulos" id="rotulos" aria-hidden="true"></div>
+    <div class="carregando" id="carregando">Carregando o modelo…</div>
+    <div class="dica">Arraste para girar · botão direito ou dois dedos para mover · toque num objeto para ver o que é</div>
+    <div class="ficha" id="ficha" hidden role="region" aria-live="polite" aria-label="Detalhes do objeto">
+      <button type="button" class="fechar" id="ficha-fechar" aria-label="Fechar detalhes">×</button>
+      <h3 id="ficha-titulo"></h3>
+      <p id="ficha-texto"></p>
+      <ul id="ficha-lista" hidden></ul>
+      <code id="ficha-nome"></code>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  // Three.js: o do próprio Navi (r186 com OrbitControls). Procura ao lado da página e, no repositório, no site.
+  const caminhos = ['three-navi.min.js', '../../site-acessivel/js/three-navi.min.js'];
+  function carregar(i) {
+    if (i >= caminhos.length) { document.getElementById('carregando').textContent = 'Não foi possível carregar o Three.js.'; return; }
+    const s = document.createElement('script');
+    s.src = caminhos[i];
+    s.onload = () => window.iniciarVisualizador();
+    s.onerror = () => carregar(i + 1);
+    document.head.appendChild(s);
+  }
+  window.addEventListener('DOMContentLoaded', () => carregar(0));
+})();
+
+window.iniciarVisualizador = async function () {
+  const THREE = window.THREE;
+  const $ = id => document.getElementById(id);
+  const GLB = 'predio-teste.glb';
+  const ESPACO = 4.2;   // afastamento entre andares no modo "separar"
+
+  /* ---------- leitor de .glb (o modelo usa só malhas, materiais PBR e texturas PNG) ---------- */
+  async function lerGLB(buf) {
+    const dv = new DataView(buf);
+    if (dv.getUint32(0, true) !== 0x46546C67) throw new Error('Arquivo não é .glb');
+    let off = 12, json = null, bin = null;
+    while (off < buf.byteLength) {
+      const len = dv.getUint32(off, true), tipo = dv.getUint32(off + 4, true);
+      if (tipo === 0x4E4F534A) json = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, off + 8, len)));
+      if (tipo === 0x004E4942) bin = buf.slice(off + 8, off + 8 + len);
+      off += 8 + len;
+    }
+    const acessor = i => {
+      const a = json.accessors[i], bv = json.bufferViews[a.bufferView];
+      const n = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 }[a.type] * a.count;
+      const T = a.componentType === 5126 ? Float32Array : a.componentType === 5125 ? Uint32Array : Uint16Array;
+      return new T(bin, (bv.byteOffset || 0) + (a.byteOffset || 0), n);
+    };
+    const texturas = await Promise.all((json.textures || []).map(async t => {
+      const img = json.images[t.source], bv = json.bufferViews[img.bufferView];
+      const blob = new Blob([new Uint8Array(bin, bv.byteOffset || 0, bv.byteLength)], { type: img.mimeType });
+      const bmp = await createImageBitmap(blob);
+      const tx = new THREE.Texture(bmp);
+      tx.flipY = false; tx.colorSpace = THREE.SRGBColorSpace; tx.anisotropy = 4; tx.needsUpdate = true;
+      return tx;
+    }));
+    const materiais = (json.materials || []).map(m => {
+      const pbr = m.pbrMetallicRoughness || {}, c = pbr.baseColorFactor || [1, 1, 1, 1];
+      const mat = new THREE.MeshStandardMaterial({ metalness: pbr.metallicFactor ?? 0, roughness: pbr.roughnessFactor ?? 1 });
+      mat.color.setRGB(c[0], c[1], c[2], THREE.LinearSRGBColorSpace);
+      if (m.alphaMode === 'BLEND') { mat.transparent = true; mat.opacity = c[3]; mat.depthWrite = false; }
+      if (m.doubleSided) mat.side = THREE.DoubleSide;
+      if (m.emissiveFactor) mat.emissive.setRGB(...m.emissiveFactor, THREE.LinearSRGBColorSpace);
+      if (pbr.baseColorTexture) mat.map = texturas[pbr.baseColorTexture.index];
+      if (m.emissiveTexture) mat.emissiveMap = texturas[m.emissiveTexture.index];
+      mat.name = m.name;
+      return mat;
+    });
+    const geos = (json.meshes || []).map(me => me.primitives.map(p => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(acessor(p.attributes.POSITION), 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(acessor(p.attributes.NORMAL), 3));
+      if (p.attributes.TEXCOORD_0 !== undefined) g.setAttribute('uv', new THREE.BufferAttribute(acessor(p.attributes.TEXCOORD_0), 2));
+      g.setIndex(new THREE.BufferAttribute(acessor(p.indices), 1));
+      return { g, m: p.material };
+    }));
+    function no(i) {
+      const n = json.nodes[i], grupo = new THREE.Group();
+      grupo.name = n.name || ''; grupo.userData = n.extras || {};
+      if (n.translation) grupo.position.fromArray(n.translation);
+      if (n.mesh !== undefined) for (const { g, m } of geos[n.mesh]) {
+        const malha = new THREE.Mesh(g, materiais[m].clone());   // um material por peça: dá para realçar só ela
+        malha.userData.no = grupo;
+        grupo.add(malha);
+      }
+      for (const f of n.children || []) grupo.add(no(f));
+      return grupo;
+    }
+    const raiz = new THREE.Group();
+    for (const i of json.scenes[json.scene || 0].nodes) raiz.add(no(i));
+    return raiz;
+  }
+
+  /* ---------- cena ---------- */
+  const canvas = $('cena'), palco = $('palco');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+  renderer.localClippingEnabled = true;
+  const cena = new THREE.Scene();
+  const corCena = () => getComputedStyle(document.documentElement).getPropertyValue('--cena').trim() || '#DCE2E9';
+  cena.background = new THREE.Color(corCena());
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { cena.background.set(corCena()); desenhar(); });
+  new MutationObserver(() => { cena.background.set(corCena()); desenhar(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  cena.add(new THREE.HemisphereLight(0xffffff, 0x8c97a3, 1.6));
+  const sol = new THREE.DirectionalLight(0xffffff, 1.6); sol.position.set(-20, 40, -10); cena.add(sol);
+  const sol2 = new THREE.DirectionalLight(0xffffff, 0.5); sol2.position.set(25, 20, 35); cena.add(sol2);
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 400);
+  const controles = new THREE.OrbitControls(camera, canvas);
+  controles.enableDamping = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  controles.maxPolarAngle = Math.PI * 0.495;
+  controles.addEventListener('change', desenhar);
+
+  // o .glb ao lado da página; onde só se publica texto, a mesma coisa em base64 (predio-teste-glb.txt)
+  async function buscarModelo() {
+    const r = await fetch(GLB).catch(() => null);
+    if (r && r.ok) return r.arrayBuffer();
+    const t = await fetch('predio-teste-glb.txt');
+    if (!t.ok) throw new Error(t.status);
+    const bin = atob((await t.text()).trim());
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+  let modelo;
+  try {
+    modelo = await lerGLB(await buscarModelo());
+  } catch (e) {
+    $('carregando').innerHTML = 'Não encontrei <b>predio-teste.glb</b> ao lado desta página.';
+    return;
+  }
+  $('carregando').remove();
+  cena.add(modelo);
+
+  const nos = {};
+  modelo.traverse(o => { if (o.name) nos[o.name] = o; });
+  const andares = ['P01', 'P02', 'P03'].map(a => nos['PCT' + a]);
+  const base = a => ({ P01: 0, P02: 3, P03: 6 })[a];
+  // começa escondido: obstáculos, elevadores fora de serviço e a cobertura
+  modelo.traverse(o => { if (o.userData.estado_inicial === 'oculto') o.visible = false; });
+
+  /* ---------- paredes baixas (corte) ---------- */
+  const CORTAVEIS = new Set(['parede', 'parede_externa', 'vidro', 'caixilho', 'porta', 'porta_corta_fogo']);
+  const planos = {};
+  for (const a of andares) {
+    const plano = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+    planos[a.userData.andar] = plano;
+    a.traverse(o => { if (o.isMesh && CORTAVEIS.has(o.material.name)) o.material.clippingPlanes = [plano]; });
+  }
+
+  /* ---------- estado ---------- */
+  const st = { andar: 'todos', separar: true, cortar: true, nomes: true, realce: new Set() };
+  function aplicarAndares() {
+    andares.forEach((a, i) => {
+      const id = a.userData.andar;
+      a.visible = st.andar === 'todos' || st.andar === id;
+      a.position.y = st.andar === 'todos' && st.separar ? i * ESPACO : 0;
+      const corte = st.cortar ? base(id) + 1.4 + a.position.y : 1e4;
+      planos[id].constant = corte;
+    });
+    document.querySelectorAll('[data-andar]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.andar === st.andar)));
+    $('separar').disabled = st.andar !== 'todos';
+    montarRotulos();
+    desenhar();
+  }
+
+  /* ---------- câmera ---------- */
+  const centro = new THREE.Vector3(7, 0, 14);
+  function enquadrar(deCima) {
+    const y = st.andar === 'todos' ? (st.separar ? ESPACO : 3) : base(st.andar);
+    controles.target.set(centro.x, y, centro.z);
+    const k = Math.max(1, 1.35 / camera.aspect);   // tela estreita (celular em pé): afasta para caber o prédio
+    if (deCima) camera.position.set(centro.x, y + 46 * k, centro.z + 0.01);
+    else camera.position.set(centro.x - 26 * k, y + 28 * k, centro.z + 30 * k);
+    controles.update(); desenhar();
+  }
+  function redimensionar() {
+    const r = palco.getBoundingClientRect();
+    renderer.setSize(r.width, r.height, false);
+    camera.aspect = r.width / Math.max(1, r.height);
+    camera.updateProjectionMatrix();
+    desenhar();
+  }
+  new ResizeObserver(redimensionar).observe(palco);
+
+  /* ---------- rótulos ---------- */
+  const caixaRot = $('rotulos');
+  let rotulos = [];
+  function montarRotulos() {
+    caixaRot.innerHTML = ''; rotulos = [];
+    if (!st.nomes) return;
+    modelo.traverse(o => {
+      const t = o.userData.rotulo;
+      if (!t || !o.name) return;
+      if (/OBSTACULO/.test(o.name) && !o.visible) return;
+      // com todos os andares, só o nome de cada andar (os outros rótulos se amontoam)
+      if ((st.andar === 'todos') !== (o.userData.tipo === 'rotulo_andar')) return;
+      let vis = true; for (let p = o; p; p = p.parent) if (!p.visible) vis = false;
+      if (!vis) return;
+      const el = document.createElement('div');
+      el.className = 'rotulo' + (o.userData.tipo === 'largura_minima' ? ' largura' : o.userData.tipo === 'rotulo_andar' ? ' andar' : '');
+      el.textContent = t;
+      caixaRot.appendChild(el);
+      let pos;
+      if (o.children.some(c => c.isMesh)) {
+        const b = new THREE.Box3().setFromObject(o);
+        pos = new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y + 0.2, (b.min.z + b.max.z) / 2);
+        rotulos.push({ el, o, local: pos.sub(o.getWorldPosition(new THREE.Vector3())) });
+      } else rotulos.push({ el, o, local: new THREE.Vector3() });
+    });
+    for (const n of Object.values(nos)) if (n.userData.tipo === 'obstaculo' && n.visible && n.parent.visible) {
+      const el = document.createElement('div');
+      el.className = 'rotulo obst'; el.textContent = 'Obstáculo ' + n.name.slice(-2);
+      caixaRot.appendChild(el);
+      const b = new THREE.Box3().setFromObject(n);
+      const pos = new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y + 0.25, (b.min.z + b.max.z) / 2);
+      rotulos.push({ el, o: n, local: pos.sub(n.getWorldPosition(new THREE.Vector3())) });
+    }
+  }
+  const tmp = new THREE.Vector3();
+  function posicionarRotulos() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    for (const r of rotulos) {
+      r.o.getWorldPosition(tmp).add(r.local).project(camera);
+      const fora = tmp.z > 1 || tmp.x < -1.1 || tmp.x > 1.1 || tmp.y < -1.1 || tmp.y > 1.1;
+      r.el.style.display = fora ? 'none' : '';
+      if (!fora) r.el.style.left = ((tmp.x + 1) / 2 * w) + 'px', r.el.style.top = ((1 - tmp.y) / 2 * h) + 'px';
+    }
+  }
+
+  /* ---------- desenho sob demanda ---------- */
+  let pedido = false;
+  function desenhar() {
+    if (pedido) return;
+    pedido = true;
+    requestAnimationFrame(() => { pedido = false; if (controles.update()) desenhar(); renderer.render(cena, camera); posicionarRotulos(); });
+  }
+
+  /* ---------- realces ---------- */
+  const REALCES = [
+    { id: 'tatil', nome: 'Piso tátil', cor: '#F2C200', teste: n => /PISOTATIL/.test(n) },
+    { id: 'rampa', nome: 'Rampa', cor: '#2E7D32', teste: n => /RAMPA_1$/.test(n) },
+    { id: 'elev', nome: 'Elevadores', cor: '#0B4FA8', teste: n => /ELEVADOR_\d$|CABINE_E/.test(n) },
+    { id: 'braille', nome: 'Escada B (braille)', cor: '#7B1FA2', teste: n => /ESCADA_B$/.test(n) },
+    { id: 'semBraille', nome: 'Escada A (sem braille)', cor: '#B8432F', teste: n => /ESCADA_A$/.test(n) },
+    { id: 'ref', nome: 'Pontos de referência', cor: '#00838F', teste: n => /REFERENCIA_/.test(n) },
+  ];
+  const chips = $('realces');
+  for (const r of REALCES) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.setAttribute('aria-pressed', 'false'); b.dataset.realce = r.id;
+    b.style.setProperty('--cor', r.cor);
+    b.innerHTML = `<i aria-hidden="true"></i>${r.nome}`;
+    b.onclick = () => alternarRealce(r.id);
+    chips.appendChild(b);
+  }
+  function aplicarRealces() {
+    modelo.traverse(o => {
+      if (!o.isMesh) return;
+      const nome = o.userData.no.name;
+      let ancestral = o.userData.no, achou = null;
+      for (; ancestral && !achou; ancestral = ancestral.parent) achou = REALCES.find(r => st.realce.has(r.id) && r.teste(ancestral.name || ''));
+      if (!o.userData.emissivoOriginal) o.userData.emissivoOriginal = o.material.emissive.clone();
+      if (achou) { o.material.emissive.set(achou.cor); o.material.emissiveIntensity = 0.55; }
+      else { o.material.emissive.copy(o.userData.emissivoOriginal); o.material.emissiveIntensity = 1; }
+      void nome;
+    });
+    chips.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(st.realce.has(b.dataset.realce))));
+    desenhar();
+  }
+  function alternarRealce(id, ligar) {
+    const on = ligar ?? !st.realce.has(id);
+    on ? st.realce.add(id) : st.realce.delete(id);
+    aplicarRealces();
+  }
+
+  /* ---------- elevadores ---------- */
+  function elevador(n, fora) {
+    for (const a of ['P01', 'P02']) { const no = nos[`PCT${a}INTERDICAO_E${n}`]; if (no) no.visible = fora; }
+    const b = $('elev-' + n);
+    b.setAttribute('aria-pressed', String(fora));
+    b.querySelector('span').textContent = fora ? 'Fora de serviço' : 'Funcionando';
+    desenhar();
+  }
+  for (const n of [1, 2]) $('elev-' + n).onclick = () => elevador(n, $('elev-' + n).getAttribute('aria-pressed') !== 'true');
+
+  /* ---------- obstáculos ---------- */
+  const obst = Object.values(nos).filter(n => n.userData.tipo === 'obstaculo').sort((a, b) => a.name.localeCompare(b.name));
+  const nomeAndar = { P01: '1º', P02: '2º', P03: '3º' };
+  const lista = $('obstaculos');
+  for (const o of obst) {
+    const a = o.name.slice(3, 6), id = 'ob-' + o.name;
+    const div = document.createElement('div');
+    div.className = 'linha';
+    div.innerHTML = `<label for="${id}">${nomeAndar[a]} andar · obstáculo ${o.name.slice(-2)}<small>${o.userData.descricao}</small></label><input class="chave" type="checkbox" id="${id}">`;
+    div.querySelector('input').onchange = ev => { o.visible = ev.target.checked; contarObst(); montarRotulos(); desenhar(); };
+    lista.appendChild(div);
+  }
+  function contarObst() { $('n-obs').textContent = `${obst.filter(o => o.visible).length} de ${obst.length} ligados`; }
+  function todosObst(v) { obst.forEach(o => { o.visible = v; $('ob-' + o.name).checked = v; }); contarObst(); montarRotulos(); desenhar(); }
+  $('obs-todos').onclick = () => todosObst(true);
+  $('obs-nenhum').onclick = () => todosObst(false);
+  contarObst();
+
+  /* ---------- cenários de teste ---------- */
+  const CENARIOS = [
+    { t: 'Rota tátil mais longa', d: '1º andar: da Entrada à Escada B o piso tátil contorna a Área central (cerca de 29 m); em linha reta são 21 m, e a Escada A, sem piso tátil, fica a 11 m.', andar: 'P01', realce: ['tatil', 'braille', 'semBraille'], cima: true },
+    { t: 'Obstáculos em tempo real', d: '10 obstáculos, quase todos sobre o piso tátil ou nas passagens estreitas. Ligue um e veja que caminho sobra.', andar: 'P01', obst: ['PCTP01OBSTACULO_01', 'PCTP01OBSTACULO_05'], cima: true },
+    { t: 'Elevadores fora de serviço', d: 'Os elevadores vão só até o 2º andar. Desligue os dois: para subir sem degrau, só a rampa.', andar: 'todos', realce: ['elev', 'rampa'], elev: true },
+    { t: 'Rampa entre os três andares', d: 'i = 8,33%, quatro trechos de 9 m por andar com patamares, corrimão duplo e piso de alerta no começo e no fim.', andar: 'todos', realce: ['rampa'] },
+    { t: 'Escadas com e sem braille', d: 'Escada A: corrimão simples, sem braille. Escada B: corrimão duplo com placas em braille, ligada ao piso tátil.', andar: 'P01', realce: ['braille', 'semBraille'] },
+    { t: 'Larguras mínimas', d: '1,20 m no refeitório; 0,90 m e 0,85 m no 2º andar, com a alternativa de 1,50 m pelos Escritórios; 1,80 m no terraço.', andar: 'P02', cima: true },
+    { t: 'Instruções visuais (surdez)', d: 'Recepção com Libras e luz de chamada, mapas com "Você está aqui", painel de senhas, avisos com luz de alarme.', andar: 'P01', realce: ['ref'] },
+  ];
+  const ul = $('cenarios');
+  for (const c of CENARIOS) {
+    const li = document.createElement('li');
+    li.innerHTML = `<button type="button"><b>${c.t}</b><small>${c.d}</small><span class="ir" aria-hidden="true">Ver</span></button>`;
+    li.querySelector('button').onclick = () => {
+      st.realce.clear(); (c.realce || []).forEach(r => st.realce.add(r)); aplicarRealces();
+      // cada cenário começa limpo: só os obstáculos e elevadores parados que ele usa
+      todosObst(false);
+      (c.obst || []).forEach(n => { nos[n].visible = true; $('ob-' + n).checked = true; });
+      contarObst();
+      elevador(1, !!c.elev); elevador(2, !!c.elev);
+      st.andar = c.andar; aplicarAndares(); enquadrar(!!c.cima);
+      if (matchMedia('(max-width: 760px)').matches) palco.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    ul.appendChild(li);
+  }
+
+  /* ---------- toque num objeto: ficha ---------- */
+  const ray = new THREE.Raycaster(), ponteiro = new THREE.Vector2();
+  let inicio = null;
+  canvas.addEventListener('pointerdown', ev => { inicio = [ev.clientX, ev.clientY]; });
+  canvas.addEventListener('pointerup', ev => {
+    if (!inicio || Math.hypot(ev.clientX - inicio[0], ev.clientY - inicio[1]) > 6) return;
+    const r = canvas.getBoundingClientRect();
+    ponteiro.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
+    ray.setFromCamera(ponteiro, camera);
+    const visiveis = [];
+    modelo.traverse(o => { if (o.isMesh) { let v = true; for (let p = o; p; p = p.parent) if (!p.visible) { v = false; break; } if (v) visiveis.push(o); } });
+    for (const h of ray.intersectObjects(visiveis, false)) {
+      const pl = h.object.material.clippingPlanes;
+      if (pl && pl[0] && h.point.y > pl[0].constant) continue;   // parte cortada não conta
+      for (let n = h.object.userData.no; n; n = n.parent) {
+        const u = n.userData;
+        if (u.info || u.descricao || (u.rotulo && u.tipo !== 'espaco')) { mostrarFicha(n); return; }
+        if (u.tipo === 'paredes' || u.tipo === 'laje' || u.tipo === 'mobiliario') break;
+      }
+    }
+    $('ficha').hidden = true;
+  });
+  function mostrarFicha(n) {
+    const u = n.userData;
+    $('ficha-titulo').textContent = u.rotulo || (u.tipo === 'obstaculo' ? 'Obstáculo ' + n.name.slice(-2) : u.nome || n.name);
+    $('ficha-texto').textContent = u.info || u.descricao || '';
+    const l = $('ficha-lista');
+    l.innerHTML = ''; l.hidden = !u.instrucoes;
+    (u.instrucoes || []).forEach(t => { const li = document.createElement('li'); li.textContent = t; l.appendChild(li); });
+    $('ficha-nome').textContent = n.name;
+    $('ficha').hidden = false;
+  }
+  $('ficha-fechar').onclick = () => { $('ficha').hidden = true; canvas.focus(); };
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape') $('ficha').hidden = true; });
+
+  /* ---------- controles do painel ---------- */
+  document.querySelectorAll('[data-andar]').forEach(b => b.onclick = () => { st.andar = b.dataset.andar; aplicarAndares(); enquadrar(st.andar !== 'todos'); });
+  $('separar').onchange = ev => { st.separar = ev.target.checked; aplicarAndares(); enquadrar(false); };
+  $('cortar').onchange = ev => { st.cortar = ev.target.checked; aplicarAndares(); };
+  $('nomes').onchange = ev => { st.nomes = ev.target.checked; montarRotulos(); desenhar(); };
+  $('de-cima').onclick = () => enquadrar(true);
+  $('em-3d').onclick = () => enquadrar(false);
+
+  redimensionar();
+  aplicarAndares();
+  enquadrar(false);
+  window.visualizador = { nos, st, aplicarAndares, enquadrar, elevador, alternarRealce, desenhar, camera, controles };
+};
+</script>
+
+</body>
+</html>

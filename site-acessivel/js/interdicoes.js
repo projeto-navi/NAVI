@@ -12,7 +12,7 @@
     danificado: { nome: 'Danificado', desc: 'Quebrado ou com defeito, como elevador parado ou piso solto' },
     obstaculo: { nome: 'Obstáculo no caminho', desc: 'Obra, materiais, mesas ou algo atrapalhando a passagem' }
   };
-  const EQUIPAMENTO = ['escada', 'escada_rolante', 'elevador', 'plataforma'];
+  const EQUIPAMENTO = ['escada', 'escada_rolante', 'elevador', 'plataforma', 'rampa'];
 
   function criar({ local, G, armazenamento }) {
     const arm = armazenamento || (typeof localStorage !== 'undefined' ? localStorage : null);

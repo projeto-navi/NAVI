@@ -29,7 +29,9 @@ const RN = [
     ['RN16', 'Local com aviso de interdição sai de todas as rotas; elevador com defeito bloqueia as portas de todos os pisos.', 'I'],
     ['RN17', 'Sem caminho acessível, o site não inventa rota: informa "Não encontramos caminho acessível confirmado", o motivo e o contato do SAC.', 'I'],
     ['RN18', 'A rota passa pelo meio dos corredores, sem atravessar quiosques nem encostar nas lojas.', 'I'],
-    ['RN19', 'Toda rota exibe o selo "Rota demonstrativa, não verificada no local", com a data da planta usada.', 'I']
+    ['RN19', 'Toda rota exibe o selo "Rota demonstrativa, não verificada no local", com a data da planta usada.', 'I'],
+    ['RN64', 'Para pessoas cegas (perfil visual ou "Preferir piso tátil" em Preferências), a rota prefere os caminhos com piso tátil e, entre as escadas, a que tem corrimão com braille, mesmo quando são mais longos. Se for preciso andar num trecho sem piso tátil, o passo a passo avisa onde o piso tátil acaba e onde recomeça.', 'X'],
+    ['RN65', 'Para pessoas com mobilidade reduzida (perfil de mobilidade ou "Evitar escadas"), o elevador é o caminho preferido para trocar de andar. A rampa entra quando não há elevador funcionando até o andar de destino (elevador interditado ou que não chega a esse andar). Entre caminhos parecidos, a rota prefere as passagens mais largas.', 'X']
   ]],
   ['Instruções', [
     ['RN20', 'Toda rota tem uma versão completa só em texto, passo a passo, que pode ser seguida sem o mapa.', 'I'],
@@ -99,18 +101,20 @@ const todas = RN.flatMap(g => g[1]);
 const conta = k => todas.filter(r => r[2] === k).length;
 
 const doc4 = [
-  capa('04', 'Regras de negócio', 'O que o protótipo base do Navi deve sempre cumprir', 'listar as regras que valem para qualquer local onde o Navi for implantado, com a situação de cada uma no site atual. Toda mudança no produto deve respeitar ou atualizar esta lista.', '1.2 — 27/10/2026'),
+  capa('04', 'Regras de negócio', 'O que o protótipo base do Navi deve sempre cumprir', 'listar as regras que valem para qualquer local onde o Navi for implantado, com a situação de cada uma no site atual. Toda mudança no produto deve respeitar ou atualizar esta lista.', '1.3 — 29/10/2026'),
   h1('Resumo'),
-  p(`São **${todas.length} regras** em ${RN.length} grupos. No site do Marco 1 (duas páginas e nova identidade, branch m1/site-novo, conferido pela suíte de testes em 27/10/2026, ainda não publicado):`),
+  p(`São **${todas.length} regras** em ${RN.length} grupos. No site do Marco 1 com o prédio comercial de testes (branch kaizen/predio-teste, conferido pela suíte de testes em 29/10/2026, ainda não publicado):`),
   ...tabela([2, 1], ['Situação', 'Quantidade'], [
     ['Implementada', String(conta('I'))], ['Implementada, aguardando aprovação da regra', String(conta('X'))], ['Parcial', String(conta('P'))], ['A implementar', String(conta('A'))]
   ]),
   nota('**Como ler:** "Implementada" = funciona hoje em todos os perfis. "Parcial" = funciona em parte (por exemplo, só no celular ou só no perfil visual). "A implementar" = prevista no Plano de Melhorias e no portfólio.'),
   nota('**Duas páginas:** a Página de Rota (index.html) escolhe perfil, destino e partida e não tem mapa; a Página do Mapa (mapa.html) mostra o mapa e o passo a passo. A publicação no Netlify é do Líder Técnico.'),
-  nota('**Aguarda aprovação:** a RN63 (tema "Cores distintas") foi pedida pela equipe durante o Marco 1 e já está no site. Pela regra deste documento, Design e Negócios e o Líder Técnico precisam aprová-la; se não aprovarem, o tema sai de Preferências sem mudar o resto.'),
+  nota('**Aguardam aprovação:** a RN63 (tema "Cores distintas"), pedida durante o Marco 1, e as RN64 (piso tátil e braille) e RN65 (elevador antes da rampa), debatidas para os testes kaizen no prédio de testes. As três já estão no site. Pela regra deste documento, Design e Negócios e o Líder Técnico precisam aprová-las; se uma não for aprovada, ela sai sem mudar o resto.'),
+  nota('**Local de testes:** o site abre no prédio comercial de testes (três andares, com piso tátil, rampa, elevadores e escadas com e sem braille), criado para testar as rotas e coletar feedback pelo método kaizen. O Shopping Estação continua em ?local=shopping-estacao, e os links e QR Codes já impressos seguem abrindo o Shopping.'),
   ...RN.flatMap(([grupo, regras]) => [h2(grupo), ...tabela([0.6, 4.2, 1.1], ['ID', 'Regra', 'Situação'], regras.map(r => [`**${r[0]}**`, r[1], NOME[r[2]]]))]),
   h1('Histórico de versões'),
   ...tabela([0.8, 1.1, 4], ['Versão', 'Data', 'O que mudou'], [
+    ['1.3', '29/10/2026', 'Regras propostas para os testes kaizen no prédio comercial de testes: RN64 (pessoas cegas: piso tátil e braille preferidos, com aviso nos trechos sem piso tátil) e RN65 (mobilidade: elevador primeiro, rampa quando faltar elevador, passagens mais largas). As duas já estão no site e aguardam aprovação.'],
     ['1.2', '27/10/2026', 'Marco 1 (duas páginas, nova identidade, PWA). Passaram para Implementada, conferidas pela suíte de testes: RN01, RN06, RN07, RN09, RN10, RN17, RN19, RN20, RN25, RN27–RN30, RN32–RN34, RN36, RN39–RN43, RN53, RN54 e RN58–RN62. RN21 continua Parcial (metros só depois da escala medida). Regra nova proposta: RN63 (tema "Cores distintas"), aguardando aprovação.'],
     ['1.1', '27/10/2026', 'Fase 0 aprovada por Design e Negócios e pelo Líder Técnico. Texto novo em RN01, RN03, RN09, RN10, RN25, RN30, RN35, RN37, RN40, RN42, RN43, RN56 e RN58; regras novas RN59–RN62. Pela auditoria, RN01, RN30 e RN43 passaram de Implementada para Parcial; RN09, RN10 e RN58 também, porque o texto novo ainda não está no site; RN40 e RN42 passaram para A implementar.'],
     ['1.0', '26/10/2026', 'Primeira versão, com 58 regras.']

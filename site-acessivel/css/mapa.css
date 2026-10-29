@@ -21,6 +21,7 @@
 
 /* planta (cores do tema ativo) */
 .piso-forma { fill: var(--mapa-piso); stroke: var(--mapa-parede); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.piso-tatil { fill: none; stroke: var(--mapa-piso-tatil, #E8B400); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
 .loja-forma { fill: var(--mapa-loja); stroke: var(--mapa-parede); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .loja-forma.clicavel { cursor: pointer; }
 .quiosque-forma { fill: var(--mapa-quiosque); stroke: var(--mapa-quiosque-borda); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }

@@ -48,6 +48,7 @@
   /* cor — mapa */
   --mapa-fundo: #DCE2E9;                 /* fora do prédio */
   --mapa-piso: #FFFFFF;                  /* piso e corredores */
+  --mapa-piso-tatil: #D9A400;      /* linhas de piso tátil na planta */
   --mapa-loja: #C9D3DF;
   --mapa-parede: #6B7A8C;
   --mapa-quiosque: #E6EBF1;
@@ -156,6 +157,7 @@ html.contraste {
 
   --mapa-fundo: #000F22;
   --mapa-piso: #061A33;
+  --mapa-piso-tatil: #FFD400;      /* linhas de piso tátil na planta */
   --mapa-loja: #F2F5FA;
   --mapa-parede: #FFFFFF;
   --mapa-quiosque: #9FB4D8;
@@ -219,6 +221,7 @@ html.daltonismo {
 
   --mapa-fundo: #DEDEDE;
   --mapa-piso: #FFFFFF;
+  --mapa-piso-tatil: #E69F00;      /* linhas de piso tátil na planta */
   --mapa-loja: #C4C4C4;
   --mapa-parede: #5C5C5C;
   --mapa-quiosque: #F2F2F2;

@@ -60,7 +60,7 @@
     aoMudarPreferencias: (p, nome) => {
       if (nome === 'libras') p.libras ? window.NaviLibras.carregar() : window.NaviLibras.esconder();
       if (nome === 'voz' || nome === 'leitor') ui.renderBarraVoz($('barra-voz'));
-      if (nome === 'escadas' && st.etapa) render({ focar: false });
+      if ((nome === 'escadas' || nome === 'pisoTatil') && st.etapa) render({ focar: false });
     },
     aoTrocarPerfil: () => irPara('perfil'),
     temRotaAjuda: () => !!G && local.lugares.some(l => l.cat === cfg.categoriaAjuda),
@@ -89,7 +89,7 @@
   });
 
   /* ---------- rota ---------- */
-  const opcoesRota = () => { const p = NE.preferencias(); return { semEscadas: p.evitarEscadas, bloqueados: inter.bloqueados(), malha: false }; };
+  const opcoesRota = () => Object.assign(window.NaviPreferenciasRota.opcoes(NE.preferencias(), inter.bloqueados(), G), { malha: false });
   function verRota(origem, destino) {
     voz.cancelar();
     location.href = NE.urlMapa({ local: slugUrl, origem: origem.id, destino: destino.id, perfil: NE.preferencias().perfil });
