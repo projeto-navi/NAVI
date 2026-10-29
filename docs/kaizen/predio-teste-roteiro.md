@@ -38,7 +38,7 @@ Todos partem da **Entrada principal**. Os perfis ligam as preferências sozinhos
 | 6 | Mobilidade reduzida | Sala de reunião (2º) | Elevador 1 e Elevador 2: danificados | **Pela rampa** |
 | 7 | Mobilidade reduzida | Sala de eventos (3º) | — | Pelo elevador até o 2º e pela rampa até o 3º |
 | 8 | Mobilidade reduzida | Sala de eventos (3º) | Rampa: interditada | Sem caminho sem escada. O site explica o motivo e oferece ajuda. |
-| 9 | Qualquer um | Qualquer destino | Obstáculo num corredor | A rota desvia quando há outro caminho |
+| 9 | Qualquer um | Qualquer destino | Obstáculo num lugar do caminho | O aviso aparece no mapa, mas a rota não muda: hoje só "Interditado" e "Danificado" num elevador, escada ou rampa tiram trechos da rota |
 | 10 | Qualquer um | Qualquer destino, no 3D | — | O modelo do prédio aparece com a rota. "Ver em primeira pessoa" percorre a rota. |
 | 11 | Link antigo do Shopping (`mapa.html?origem=1-1401928&destino=1-2482759`) | — | — | Abre o Shopping Estação, como antes |
 

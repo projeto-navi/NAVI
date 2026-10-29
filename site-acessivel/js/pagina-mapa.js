@@ -223,8 +223,9 @@
       if (a) h += `<div class="faixa-aviso">${svg('i-aviso')}<p>${papel}, ${esc(lugar.nome)}, tem aviso: <b>${esc(window.NaviInterdicoes.TIPOS[a.tipo].nome.toLowerCase())}</b>` +
         `${a.detalhe ? ` (${esc(a.detalhe)})` : ''}. ${a.oficial ? 'Confirmado pela equipe.' : 'Aviso feito neste aparelho, ainda não confirmado.'}</p></div>`;
     }
-    const desvios = [...inter.bloqueados()].map(id => G.lugarPorId[id]).filter(l => l && NC.ehEquipamento(l.cat));
-    if (desvios.length) h += `<p class="nota">Esta rota evita ${[...new Set(desvios.map(l => NC.ehEscada(l.cat) ? 'uma escada rolante' : 'o elevador'))].join(' e ')} com aviso de interdição ou defeito.</p>`;
+    const desvios = [...inter.bloqueados()].map(id => G.lugarPorId[id]).filter(l => l && (NC.ehEquipamento(l.cat) || l.cat === 'rampa'));
+    const NOME_DESVIO = { escada_rolante: 'uma escada rolante', escada: 'uma escada', rampa: 'a rampa', plataforma: 'a plataforma elevatória' };
+    if (desvios.length) h += `<p class="nota">Esta rota evita ${[...new Set(desvios.map(l => NOME_DESVIO[l.cat] || 'o elevador'))].join(' e ')} com aviso de interdição ou defeito.</p>`;
     return h;
   }
   function renderMedio() {
