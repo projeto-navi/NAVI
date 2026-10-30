@@ -1,6 +1,6 @@
 /* Navi — painel do passo a passo (bottom sheet) da Página do Mapa.
    Celular em pé: três estados — recolhido (passo atual e Anterior/Próximo/Repetir), médio (selo e os
-   próximos passos) e expandido (passo a passo inteiro e as ações).
+   próximos passos) e expandido (as ações e, num botão, a lista com todos os passos).
    - A alça é um botão de verdade (aria-expanded, aria-controls): um toque troca o estado. Arrastar é
      só um atalho (WCAG 2.5.7). Esc recolhe. Não prende o foco.
    - O que fica abaixo da borda da tela no estado atual recebe "inert": o foco nunca vai parar num
@@ -13,7 +13,7 @@
   const ESTADOS = ['recolhido', 'medio', 'expandido'];
   const ROTULO = {
     recolhido: 'Mostrar mais do passo a passo',
-    medio: 'Mostrar o passo a passo inteiro',
+    medio: 'Mostrar as opções do passo a passo',
     expandido: 'Recolher o passo a passo'
   };
   const VELOCIDADE_MIN = 0.11; // px/ms: um peteleco basta, sem precisar arrastar até o fim

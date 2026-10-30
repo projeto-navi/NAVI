@@ -66,6 +66,12 @@ test.describe('Página do Mapa: passo a passo (RN25, RN35, RN42)', () => {
   test('RN20 — a rota inteira existe só em texto, passo a passo', async ({ page }) => {
     await N.planejarRota(page);
     await N.expandirPainel(page);
+    // a lista inteira fica recolhida: o painel mostra o passo atual; um botão abre todos
+    const ver = page.getByRole('button', { name: /^Ver todos os passos/ });
+    await expect(ver).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByRole('button', { name: /^Passo 2/ })).toHaveCount(0);
+    await ver.click();
+    await expect(ver).toHaveAttribute('aria-expanded', 'true');
     const lista = page.getByRole('list').filter({ has: page.getByRole('button', { name: /^Passo 1/ }) });
     await expect(lista.getByRole('button', { name: /^Passo \d/ }).first()).toBeVisible();
     expect(await lista.getByRole('button').count()).toBeGreaterThan(2);
@@ -108,7 +114,7 @@ test.describe('Página do Mapa: passo a passo (RN25, RN35, RN42)', () => {
     test.skip(info.project.name !== 'computador', 'layout do computador');
     await N.planejarRota(page);
     await expect(N.alca(page)).toBeHidden();
-    await expect(page.getByRole('heading', { name: 'Passo a passo' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Ver todos os passos/ })).toBeVisible();
     const box = await N.painel(page).boundingBox();
     expect(box.x).toBeLessThan(10);
     expect(box.width).toBeLessThanOrEqual(401);
@@ -120,6 +126,9 @@ test.describe('Página do Mapa: passo a passo (RN25, RN35, RN42)', () => {
     await page.getByRole('button', { name: /^Esconder mapa/ }).click();
     await expect(page.getByRole('region', { name: 'Mapa' })).toBeHidden();
     await expect(page.getByRole('button', { name: /^Mostrar mapa/ }).first()).toBeVisible();
+    // sem mapa, a lista é a página: todos os passos à vista, sem botão para abrir
+    await expect(page.getByRole('heading', { name: 'Passo a passo' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Passo 2/ })).toBeVisible();
   });
 });
 
@@ -168,7 +177,7 @@ test.describe('Mobilidade e interdições (RN04, RN15, RN16, RN17)', () => {
   test('RN04 / RN15 — com mobilidade, a troca de piso é pelo elevador, nunca pela escada rolante', async ({ page }) => {
     await N.planejarRota(page, { perfil: 'Mobilidade reduzida' });
     await expect(N.painel(page)).toContainText('pelo elevador');
-    await N.expandirPainel(page);
+    await N.verTodosOsPassos(page);
     const texto = await N.textoDoPainel(page);
     expect(texto).toMatch(/Pegue o elevador/);
     expect(texto).not.toMatch(/Pegue a escada rolante/);

@@ -62,8 +62,8 @@ PÁGINA DO MAPA
   e centralizar, e o teclado (setas, + e −) também funciona. O andar visível aparece
   por escrito, com o selo "Rota demonstrativa" e a data da planta.
 - Painel do passo a passo (celular em pé): recolhido (passo atual, Anterior, Repetir,
-  Próximo), médio (selo e próximos passos) e expandido (passo a passo inteiro, Alterar
-  destino, Inverter, Recalcular, Esconder mapa, Avisar sobre um local, Preferências,
+  Próximo), médio (selo e próximos passos) e expandido ("Ver todos os passos", que abre
+  a lista inteira ali mesmo, Alterar destino, Inverter, Recalcular, Esconder mapa, Avisar sobre um local, Preferências,
   lista de lugares do andar). A alça é um botão: um toque troca o estado; Esc recolhe.
   Celular deitado e computador: o mesmo conteúdo num painel à esquerda.
 - "Pedir ajuda" fica no topo do painel (um toque).

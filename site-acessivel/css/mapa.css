@@ -232,7 +232,7 @@ html.contraste .folha { box-shadow: none; }
 @container atual (max-width: 400px) { #passo-ant .ico, #repetir .ico { display: none; } }
 @container atual (max-width: 250px) { .folha-nav .ico { display: none; } }
 
-/* estado médio: selo e próximos passos; expandido: o passo a passo inteiro e as ações */
+/* estado médio: selo e próximos passos; expandido: as ações e, num botão, todos os passos */
 .folha-mais { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--e5); }
 .folha-medio, .folha-expandido { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--e4); align-content: start; }
 .folha[data-estado="expandido"] #sec-proximos, .folha[data-estado="painel"] #sec-proximos { display: none; }
@@ -247,6 +247,28 @@ html.contraste .folha { box-shadow: none; }
 .proximos .ico { width: 22px; height: 22px; color: var(--cor-texto-2); margin-top: 1px; }
 .proximos small { display: block; color: var(--cor-texto-2); font-size: var(--t-1); font-weight: var(--peso-forte); }
 .passos .passo { min-height: 56px; }
+
+/* "Ver todos os passos": a lista inteira fica recolhida sob um botão (o passo atual já está no topo do
+   painel) e abre ali mesmo, empurrando o resto para baixo. Sem mapa, ela é a página e fica sempre aberta (RN20). */
+.todos-passos { display: grid; border-top: 1px solid var(--cor-divisor); }
+.todos-passos > h2 { font-size: var(--t0); font-weight: var(--peso-titulo); letter-spacing: 0; padding: var(--e3) 0 var(--e2); }
+.todos-passos-seta {
+  flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+  background: var(--cor-superficie-2); color: var(--cor-texto-2);
+  transition: transform var(--dur-curta) var(--curva-saida);
+}
+.todos-passos-seta .ico { width: 20px; height: 20px; }
+.todos-passos-botao[aria-expanded="true"] .todos-passos-seta { transform: rotate(180deg); }
+.lista-todos {
+  display: grid; grid-template-rows: 0fr; visibility: hidden;
+  transition: grid-template-rows var(--dur-gaveta) var(--curva-saida), visibility 0s linear var(--dur-gaveta);
+}
+.todos-passos[data-aberta="true"] .lista-todos {
+  grid-template-rows: 1fr; visibility: visible;
+  transition: grid-template-rows var(--dur-gaveta) var(--curva-saida), visibility 0s;
+}
+.lista-todos-dentro { min-height: 0; overflow: hidden; }
+.lista-todos-dentro > .nota { padding-top: var(--e3); }
 .nota { color: var(--cor-texto-2); font-size: var(--t-1); }
 
 /* ações do estado expandido, em linhas largas com ícone */

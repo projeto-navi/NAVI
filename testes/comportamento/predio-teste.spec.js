@@ -30,7 +30,7 @@ test.describe('Prédio de testes', () => {
     await N.abrir(page, { caminho: ATE_SALA_DE_REUNIAO, armazenamento: CEGO });
     await expect(N.tituloDaRota(page)).toBeVisible();
     await expect(resumo(page)).toContainText('pela escada');
-    await N.expandirPainel(page);
+    await N.verTodosOsPassos(page);
     await expect(page.getByRole('main')).toContainText('Pegue a Escada B e suba para o 2º andar. O corrimão tem braille.');
   });
 

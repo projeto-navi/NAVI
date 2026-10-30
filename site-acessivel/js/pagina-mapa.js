@@ -56,7 +56,7 @@
   const quemAjuda = contatos.ajudaNome === 'SAC' ? 'o SAC' : contatos.ajudaNome ? 'a ' + contatos.ajudaNome : 'a equipe';
   const dataBR = iso => (iso && /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso.split('-').reverse().join('/') : '');
 
-  const st = { origem: origem0, destino: destino0, rota: null, passo: 0, andar: origem0.piso, vista: '2d', nomes: false, semMapa: false, mudouAqui: false };
+  const st = { origem: origem0, destino: destino0, rota: null, passo: 0, andar: origem0.piso, vista: '2d', nomes: false, semMapa: false, todosPassos: false, mudouAqui: false };
 
   /* ---------- rota ---------- */
   // preferências que mudam o caminho (RN15, RN64, RN65): js/preferencias-rota.js
@@ -268,12 +268,20 @@
     const aberto = !!($('lugares-andar') && $('lugares-andar').open);
     let h = '';
     if (st.rota) {
-      h += `<div class="secao-folha"><h2>Passo a passo</h2><ol class="passos" id="lista-passos">` +
+      // a lista inteira fica recolhida atrás de um botão (o passo atual já está no topo); sem mapa, ela é a página (RN20)
+      const aberta = st.todosPassos || st.semMapa, n = st.rota.passos.length;
+      h += `<div class="todos-passos" data-aberta="${aberta}">` +
+        (st.semMapa ? `<h2>Passo a passo</h2>` :
+          `<button type="button" class="acao todos-passos-botao" data-acao="todos-passos" aria-expanded="${aberta}" aria-controls="lista-todos">` +
+          `${svg('i-lista')}<span class="acao-texto">Ver todos os passos<small>A rota inteira, em ${n} passos.</small></span>` +
+          `<span class="todos-passos-seta" aria-hidden="true">${svg('i-para-baixo')}</span></button>`) +
+        `<div class="lista-todos" id="lista-todos"><div class="lista-todos-dentro"><ol class="passos" id="lista-passos">` +
         st.rota.passos.map((q, i) => `<li><button type="button" class="passo" data-passo="${i}"${i === st.passo ? ' aria-current="step"' : ''}>` +
           `<span class="tile" aria-hidden="true">${svg(iconePasso(q))}</span><span class="passo-texto"><small>Passo ${i + 1}${multiAndar() ? ', ' + esc(nomeAndar(q.piso)) : ''}</small>${esc(q.texto)}</span></button></li>`).join('') +
-        `</ol></div>`;
-      if (st.rota.usaElevador && txt.elevadorEstimado) h += `<p class="nota">${esc(txt.elevadorEstimado)}</p>`;
-      h += `<p class="nota">As distâncias são aproximadas e usam ${local.config.tipo === 'shopping' ? 'lojas' : 'lugares'} próximos como referência.</p>`;
+        `</ol>` +
+        (st.rota.usaElevador && txt.elevadorEstimado ? `<p class="nota">${esc(txt.elevadorEstimado)}</p>` : '') +
+        `<p class="nota">As distâncias são aproximadas e usam ${local.config.tipo === 'shopping' ? 'lojas' : 'lugares'} próximos como referência.</p>` +
+        `</div></div></div>`;
     }
     h += `<div class="secao-folha"><h2>Rota</h2><div class="acoes">` +
       acao('alterar-destino', 'i-alterar', 'Alterar destino', { href: NE.urlRota({ local: slugUrl, origem: st.origem.id }) }) +
@@ -321,6 +329,7 @@
     if (a === 'inverter') inverter();
     else if (a === 'recalcular') recalcular({ anunciar: true, focar: true });
     else if (a === 'esconder-mapa') alternarMapa();
+    else if (a === 'todos-passos') alternarTodosPassos(b);
     else if (a === 'nomes') { st.nomes = !st.nomes; b.setAttribute('aria-pressed', String(st.nomes)); aplicarPreferenciasNoMapa(); voz.anunciar(st.nomes ? 'Mostrando todos os nomes no mapa.' : 'Nomes só ao aproximar.', { visual: false }); }
     else if (a === 'primeira-pessoa') abrirPrimeiraPessoa();
     else if (a === 'vista-cima' && mapa3d) { if (!folha.emPainel()) folha.definir('recolhido'); mapa3d.vistaDeCima(); }
@@ -334,6 +343,19 @@
   });
 
   /* ---------- passos ---------- */
+  /** Abre ou fecha a lista com todos os passos, sem refazer o painel (o foco fica no botão). */
+  function alternarTodosPassos(b) {
+    st.todosPassos = !st.todosPassos;
+    b.setAttribute('aria-expanded', String(st.todosPassos));
+    b.closest('.todos-passos').dataset.aberta = String(st.todosPassos);
+    if (st.todosPassos) {
+      // ao abrir, o passo atual aparece na lista (sem pular a página quando ele já está à vista)
+      const atual = document.querySelector('#lista-passos [aria-current="step"]');
+      const reduzir = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+      if (atual && st.passo > 2) setTimeout(() => atual.scrollIntoView({ block: 'nearest', behavior: reduzir ? 'auto' : 'smooth' }), reduzir ? 0 : 240);
+    }
+    folha.atualizar();
+  }
   function irParaPasso(i, opcoes = {}) {
     const r = st.rota;
     if (!r) return;

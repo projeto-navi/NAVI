@@ -24,6 +24,8 @@ async function percorrerTelas(page, verificar, armazenamento = {}) {
   await verificar('mapa');
   await N.expandirPainel(page);
   await verificar('mapa expandido');
+  await N.verTodosOsPassos(page);
+  await verificar('todos os passos');
   await page.getByRole('button', { name: /^Avisar sobre um local/ }).first().click();
   // mede depois da animação de abertura do diálogo (durante ela, os botões ficam um pouco menores)
   await page.waitForFunction(() => document.getAnimations().every(a => a.playState !== 'running'));

@@ -81,7 +81,7 @@ const tituloDaRota = page => page.getByRole('heading', { level: 1, name: /^Rota 
 const painel = page => page.getByRole('main');
 /** Texto todo do painel, numa linha. */
 async function textoDoPainel(page) { return (await painel(page).innerText()).replace(/\s+/g, ' '); }
-/** Alça do painel (só existe no celular em pé): "Mostrar mais…", "Mostrar o passo a passo inteiro", "Recolher…". */
+/** Alça do painel (só existe no celular em pé): "Mostrar mais…", "Mostrar as opções do passo a passo", "Recolher…". */
 const alca = page => page.getByRole("button", { name: /^(Mostrar|Recolher) .*passo a passo/ });
 
 /** Abre o painel até o estado expandido (no computador ele já é um painel lateral inteiro). */
@@ -92,6 +92,17 @@ async function expandirPainel(page) {
     await a.click();
     await page.waitForTimeout(350);
   }
+}
+
+/** Abre a lista com todos os passos (no painel ela fica recolhida atrás de "Ver todos os passos"). */
+async function verTodosOsPassos(page) {
+  await expandirPainel(page);
+  const ver = page.getByRole('button', { name: /^Ver todos os passos/ });
+  // sem mapa (ex.: tela pequena com texto grande), a lista já é a página e não há botão
+  if (!(await ver.count())) { await expect(page.getByRole('heading', { name: 'Passo a passo' })).toBeVisible(); return; }
+  if ((await ver.getAttribute('aria-expanded')) !== 'true') await ver.click();
+  await expect(ver).toHaveAttribute('aria-expanded', 'true');
+  await page.waitForTimeout(350); // a lista abre com uma transição curta
 }
 
 /** Sem rolagem lateral na página. */
@@ -105,5 +116,5 @@ const errosReais = erros => erros.filter(e => !/vlibras|fonts\.g|Failed to load 
 
 module.exports = {
   abrir, JA_VISITOU, dialogoVoz, responderVoz, opcaoPerfil, escolherPerfil, campoBusca, buscarEEscolher, botaoEntrada,
-  DESTINO_PISO_2, planejarRota, tituloDaRota, painel, textoDoPainel, alca, expandirPainel, semRolagemLateral, errosReais
+  DESTINO_PISO_2, planejarRota, tituloDaRota, painel, textoDoPainel, alca, expandirPainel, verTodosOsPassos, semRolagemLateral, errosReais
 };
