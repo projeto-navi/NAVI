@@ -28,8 +28,6 @@
 (function () { try {
   var PADRAO = 'predio-teste';
   var m = /[?&]local=([a-z0-9-]{1,40})(?:&|$)/i.exec(location.search), slug = m ? m[1].toLowerCase() : PADRAO;
-  // links antigos do Shopping Estação, sem ?local= (codigosAntigos em locais/indice.js)
-  if (!m && /[?&](origem|destino)=(SHE_|\d+-\d+(&|$))/.test(location.search)) slug = 'shopping-estacao';
   ['config.js', 'avisos.js', 'dados.js', 'grafo.js', 'malha.js', 'dados3d.js'].forEach(function (f) {
     var l = document.createElement('link'); l.rel = 'preload'; l.as = 'script'; l.href = 'locais/' + slug + '/' + f;
     document.head.appendChild(l);

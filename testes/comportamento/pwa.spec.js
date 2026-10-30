@@ -25,17 +25,17 @@ test('RN62 — depois da primeira visita: abre, busca, calcula a rota e mostra o
   await page.reload();
   await expect(page.getByRole('heading', { level: 1, name: 'Para onde você vai?' })).toBeVisible();
   await expect(page.getByText(/Sem internet/)).toBeVisible();
-  await N.buscarEEscolher(page, 'pasteis', '10 Pastéis');
-  await N.botaoEntrada(page, 'Acesso Azul').click();
+  await N.buscarEEscolher(page, 'loja a', 'Loja A');
+  await N.botaoEntrada(page, N.ENTRADA).click();
   await page.waitForURL(/mapa\.html/);
-  await expect(page.getByRole('heading', { level: 1, name: 'Rota até 10 Pastéis' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Rota até Loja A' })).toBeVisible();
   await expect(N.painel(page)).toContainText(/Passo 1 de \d+/);
   await expect(N.painel(page)).toContainText('Sem internet. A rota e o passo a passo continuam funcionando.');
   await context.setOffline(false);
 });
 
 test('RN62 — sem internet, Libras avisa por texto que precisa de conexão', async ({ page, context }) => {
-  await N.abrir(page, { caminho: 'mapa.html?origem=1-1401928&destino=1-2482759', armazenamento: { ...N.JA_VISITOU, 'navi-perfil': 'auditiva', 'navi-libras': '1' } });
+  await N.abrir(page, { caminho: 'mapa.html?origem=PCT_P01_L0001&destino=PCT_P01_L0003', armazenamento: { ...N.JA_VISITOU, 'navi-perfil': 'auditiva', 'navi-libras': '1' } });
   await context.setOffline(true);
   await N.expandirPainel(page);
   await page.getByRole('button', { name: 'Abrir tradutor de Libras' }).click();

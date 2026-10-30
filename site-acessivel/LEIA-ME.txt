@@ -7,9 +7,10 @@ O QUE MUDOU NO MARCO 1
   e Cores distintas (para daltonismo). Fonte Atkinson Hyperlegible Next, servida pelo site.
 - Funciona sem internet depois da primeira visita (PWA). Pode ser instalado na tela inicial.
 - Vários locais: cada local mora em locais/<nome>/ e é escolhido por ?local=<nome>.
-  Sem o parâmetro, abre o Prédio comercial de testes (testes kaizen, desde 29/10/2026).
-  O Shopping Estação continua em ?local=shopping-estacao, e os links e QR Codes antigos
-  do Shopping (sem ?local=) continuam abrindo o Shopping.
+  Sem o parâmetro, abre o Prédio comercial de testes (testes kaizen), hoje o único mapa
+  do site. O Shopping Estação saiu do site em 30/10/2026: os dados dele ficam em
+  ferramentas/dados/locais-fora-do-site/ (referência dos testes do motor). Links e QR
+  Codes antigos do Shopping caem na Página de Rota do prédio, com "Escolha para onde você vai".
 
 TESTES KAIZEN NO PRÉDIO DE TESTES (29/10/2026)
 - Prédio fictício de 3 andares, com piso tátil, Escada A (sem braille) e Escada B (com
@@ -24,7 +25,7 @@ TESTES KAIZEN NO PRÉDIO DE TESTES (29/10/2026)
     elevador funcionando até o andar, pela rampa. Entre caminhos parecidos, o mais largo.
 - O prédio começa sem nenhum lugar interditado. Para testar rotas alternativas, use
   "Avisar sobre um local" (ex.: Elevador 1 e Elevador 2 danificados -> a rota vai pela rampa).
-- Em locais sem piso tátil nem braille na planta (como o Shopping), nada muda nas rotas.
+- Em locais sem piso tátil nem braille na planta, nada muda nas rotas.
 - Gerar de novo: python3 ferramentas/modelo3d/gerar-local-predio.py (precisa de numpy
   e Pillow). Os testes estão em testes/dados/predio-teste.spec.js e
   testes/comportamento/predio-teste.spec.js.
@@ -110,16 +111,15 @@ LOCAIS
   dados.js, grafo.js, malha.js, dados3d.js -> gerados por ferramentas/dados/gerar-local.mjs
                  a partir da planta (não editar à mão)
 - Prédio comercial de testes (padrão): pronto, para os testes kaizen. Prédio fictício.
-- Shopping Estação (?local=shopping-estacao): pronto (planta oficial do Mapa Mall de 19/10/2026).
 - UniOpet — Campus Rebouças (?local=uniopet-reboucas): em preparação. Enquanto
   dadosProntos for false, o site mostra "O mapa do Campus Rebouças está em preparação".
   Quando a planta chegar: gerar os arquivos, validar (ferramentas/dados/validar-grafo.js)
   e mudar dadosProntos para true. As pendências estão no topo do config.js.
 
-LINKS E QR CODES (ids antigos, como 1-1401928, continuam valendo e abrem o Shopping)
-- Só a partida (QR Code numa entrada):  index.html?perfil=mobilidade&origem=1-1401928
+LINKS E QR CODES
+- Só a partida (QR Code numa entrada):  index.html?perfil=mobilidade&origem=PCT_P01_L0001
   -> a Página de Rota abre com a partida preenchida e pergunta só o destino.
-- Partida e destino:  mapa.html?origem=1-1401928&destino=1-2482759
+- Partida e destino:  mapa.html?origem=PCT_P01_L0001&destino=PCT_P02_L0007
   -> abre direto a Página do Mapa. O link antigo index.html?origem=…&destino=… também.
 - Outro local: acrescente &local=uniopet-reboucas.
 
@@ -138,7 +138,6 @@ ARQUIVOS
   ferramentas/identidade/gerar-icones.js)
 
 LIMITES
-- Planta e posições vêm do mapa oficial do shopping (Mapa Mall). A posição do elevador
-  no Piso 1 foi estimada a partir do Piso 2. Confirme com o SAC antes de uso real.
+- O prédio de testes é fictício: serve para testar as regras de rota, não para uso real.
 - Distâncias em palavras (trecho curto, médio, longo) até a escala da planta ser medida.
 - Rotas demonstrativas: ainda não foram verificadas no local.

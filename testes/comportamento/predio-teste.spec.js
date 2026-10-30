@@ -15,9 +15,9 @@ test.describe('Prédio de testes', () => {
     await expect(page.getByRole('button', { name: /^Sala de reunião/ }).first()).toBeVisible();
   });
 
-  test('links antigos do Shopping (sem ?local=) continuam abrindo o Shopping', async ({ page }) => {
-    await N.abrir(page, { caminho: 'mapa.html?origem=1-1401928&destino=1-1401929', armazenamento: CADEIRA });
-    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Acesso Vermelho' })).toBeVisible();
+  test('é o único mapa: ?local=shopping-estacao abre o prédio', async ({ page }) => {
+    await N.abrir(page, { caminho: 'mapa.html?local=shopping-estacao&origem=PCT_P01_L0001&destino=PCT_P01_L0003', armazenamento: CADEIRA });
+    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Loja A' })).toBeVisible();
   });
 
   test('começa sem avisos de interdição', async ({ page }) => {

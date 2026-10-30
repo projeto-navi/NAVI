@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { carregarLocalNode, carregarLegado } = require('../apoio/local-node');
+const { carregarLocalNode, carregarLegado, FORA_DO_SITE } = require('../apoio/local-node');
 
 function grafoSintetico({ sentido = 'ambos', rampa = null } = {}) {
   const no = (id, andar, x) => ({ id, andar, pos: [x, 0, 0], tipo: 'corredor', ref_modelo: null });
@@ -65,7 +65,7 @@ test('equivalência: sem as portas, o grafo 1.1 dá as mesmas rotas do motor atu
   test.setTimeout(120_000);
   const { gerar } = await import('../../ferramentas/dados/gerar-local.mjs');
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'navi-'));
-  for (const f of ['config.js', 'avisos.js']) fs.copyFileSync(path.join(__dirname, '../../site-acessivel/locais/shopping-estacao', f), path.join(tmp, f));
+  for (const f of ['config.js', 'avisos.js']) fs.copyFileSync(path.join(FORA_DO_SITE, 'shopping-estacao', f), path.join(tmp, f));
   gerar('shopping-estacao', { saida: tmp, semPortas: true, data: '2026-10-27' });
   const novo = carregarLocalNode('shopping-estacao', { pasta: tmp });
   const Gn = novo.R.criarGrafo11(novo.local.grafo, novo.local.lugares, { referencias: { museu: 'do Museu Ferroviário' } });

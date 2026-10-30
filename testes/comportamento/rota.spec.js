@@ -2,36 +2,38 @@
 const { test, expect } = require('@playwright/test');
 const N = require('../apoio/navi');
 
-const ELEVADOR_COM_DEFEITO = JSON.stringify([{ lugar: '2-22327', tipo: 'danificado', detalhe: 'teste automático', criado: '2026-10-27T10:00:00.000Z' }]);
+// os dois elevadores e a rampa com aviso: o 2º andar fica sem caminho sem escada
+const SEM_ELEVADOR_NEM_RAMPA = JSON.stringify(['PCT_P01_L0007', 'PCT_P01_L0008', 'PCT_P01_L0011']
+  .map(lugar => ({ lugar, tipo: 'danificado', detalhe: 'teste automático', criado: '2026-10-30T10:00:00.000Z' })));
 
 test.describe('Fluxo até o mapa (RN56, RN57, RN61)', () => {
   test('RN56 — destino primeiro, entrada depois, no máximo 3 toques até a Página do Mapa', async ({ page }) => {
     const toques = await N.planejarRota(page);
     expect(toques).toBeLessThanOrEqual(3);
     expect(page.url()).toMatch(/mapa\.html\?/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Atelier de Costura' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Sala de reunião' })).toBeVisible();
     // a Página do Mapa não tem barra de pesquisa
     await expect(page.getByRole('searchbox')).toHaveCount(0);
   });
 
   test('RN61 — digitar e mover o foco na lista nunca troca de página', async ({ page }) => {
     await N.abrir(page, { armazenamento: { ...N.JA_VISITOU, 'navi-perfil': 'geral' } });
-    await N.campoBusca(page).fill('atelier');
+    await N.campoBusca(page).fill('reuni');
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
     expect(page.url()).not.toMatch(/mapa\.html/);
     // o botão que decide a rota avisa no nome
-    await page.getByRole('button', { name: /^Atelier de Costura/ }).first().click();
-    await expect(page.getByRole('button', { name: 'Acesso Azul — ver a rota' })).toBeVisible();
+    await page.getByRole('button', { name: /^Sala de reunião/ }).first().click();
+    await expect(page.getByRole('button', { name: 'Entrada principal — ver a rota' })).toBeVisible();
   });
 
   test('RN57 — "mais próximo" sem partida pergunta a entrada e calcula sozinho', async ({ page }) => {
     await N.abrir(page, { armazenamento: { ...N.JA_VISITOU, 'navi-perfil': 'auditiva' } });
-    await page.getByRole('button', { name: 'Sanitário mais próximo' }).click();
+    await page.getByRole('button', { name: 'Sanitário acessível' }).click();
     await expect(page.getByRole('heading', { level: 1, name: /Por qual entrada/ })).toBeVisible();
-    await N.botaoEntrada(page, 'Acesso Verde').click();
+    await N.botaoEntrada(page, N.ENTRADA).click();
     await page.waitForURL(/mapa\.html/);
-    await expect(page.getByRole('heading', { level: 1, name: /^Rota até Sanitários/ })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /^Rota até Sanitário acessível/ })).toBeVisible();
   });
 
   test('Voltar do mapa leva à etapa anterior da Página de Rota', async ({ page }) => {
@@ -81,7 +83,7 @@ test.describe('Página do Mapa: passo a passo (RN25, RN35, RN42)', () => {
     await N.planejarRota(page);
     await N.expandirPainel(page);
     await expect(N.painel(page)).toContainText('Rota demonstrativa, não verificada no local.');
-    await expect(N.painel(page)).toContainText('19/10/2026');
+    await expect(N.painel(page)).toContainText('29/10/2026');
   });
 
   test('RN54 — aviso de que o Navi não serve para emergências', async ({ page }) => {
@@ -137,25 +139,25 @@ test.describe('Trocar a rota na Página do Mapa (RN09, RN10, RN13)', () => {
     await N.planejarRota(page);
     await N.expandirPainel(page);
     await page.getByRole('button', { name: 'Inverter partida e destino' }).click();
-    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Acesso Azul' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Entrada principal' })).toBeVisible();
     expect(page.url()).toMatch(/mapa\.html/);
   });
 
   test('RN10 — tocar num lugar abre o cartão com "Ir para cá"; o destino troca ali mesmo', async ({ page }) => {
-    await N.planejarRota(page, { destino: { termo: 'pasteis', nome: '10 Pastéis' } });
+    await N.planejarRota(page, { destino: { termo: 'loja a', nome: 'Loja A' } });
     await N.expandirPainel(page);
     // a lista de lugares do andar é a alternativa em texto ao toque no mapa (RN36)
-    await page.getByText(/^Lugares do Piso 1/).click();
-    await page.getByRole('button', { name: /^Loft\b/ }).click();
-    const cartao = page.getByRole('dialog', { name: 'Loft' });
+    await page.getByText(/^Lugares do 1º andar/).click();
+    await page.getByRole('button', { name: /^Loja B\b/ }).click();
+    const cartao = page.getByRole('dialog', { name: 'Loja B' });
     await expect(cartao).toBeVisible();
     await cartao.getByRole('button', { name: 'Ir para cá' }).click();
-    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Loft' })).toBeVisible();
-    expect(page.url()).toMatch(/mapa\.html.*destino=SHE_P01_L0082/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Loja B' })).toBeVisible();
+    expect(page.url()).toMatch(/mapa\.html.*destino=PCT_P01_L0004/);
   });
 
   test('RN10 — o toque na planta também abre o cartão (sem trocar de página)', async ({ page }) => {
-    await N.planejarRota(page, { destino: { termo: 'pasteis', nome: '10 Pastéis' } });
+    await N.planejarRota(page, { destino: { termo: 'loja a', nome: 'Loja A' } });
     const ponto = await page.evaluate(() => {
       const area = document.getElementById('mapa-area').getBoundingClientRect();
       const cobertos = ['mapa-topo', 'mapa-info', 'mapa-controles', 'conteudo'].map(id => document.getElementById(id).getBoundingClientRect());
@@ -166,7 +168,7 @@ test.describe('Trocar a rota na Página do Mapa (RN09, RN10, RN13)', () => {
       }
       return null;
     });
-    expect(ponto, 'alguma loja visível na planta').not.toBeNull();
+    expect(ponto, 'algum lugar visível na planta').not.toBeNull();
     await page.mouse.click(ponto.x, ponto.y);
     await expect(page.getByRole('dialog').getByRole('button', { name: 'Ir para cá' })).toBeVisible();
     expect(page.url()).toMatch(/mapa\.html/);
@@ -174,23 +176,22 @@ test.describe('Trocar a rota na Página do Mapa (RN09, RN10, RN13)', () => {
 });
 
 test.describe('Mobilidade e interdições (RN04, RN15, RN16, RN17)', () => {
-  test('RN04 / RN15 — com mobilidade, a troca de piso é pelo elevador, nunca pela escada rolante', async ({ page }) => {
+  test('RN04 / RN15 — com mobilidade, a troca de andar é pelo elevador, nunca pela escada', async ({ page }) => {
     await N.planejarRota(page, { perfil: 'Mobilidade reduzida' });
     await expect(N.painel(page)).toContainText('pelo elevador');
     await N.verTodosOsPassos(page);
     const texto = await N.textoDoPainel(page);
-    expect(texto).toMatch(/Pegue o elevador/);
-    expect(texto).not.toMatch(/Pegue a escada rolante/);
+    expect(texto).toMatch(/Pegue o Elevador [12]/);
+    expect(texto).not.toMatch(/Pegue a Escada/);
   });
 
-  test('RN16 / RN17 — elevador com defeito: sem caminho acessível, com o motivo e o contato do SAC', async ({ page }) => {
-    await N.planejarRota(page, { perfil: 'Mobilidade reduzida', armazenamento: { 'navi-avisos': ELEVADOR_COM_DEFEITO } });
+  test('RN16 / RN17 — elevadores e rampa com aviso: sem caminho acessível, com o motivo e onde pedir ajuda', async ({ page }) => {
+    await N.planejarRota(page, { perfil: 'Mobilidade reduzida', armazenamento: { 'navi-avisos': SEM_ELEVADOR_NEM_RAMPA } });
     const texto = await N.textoDoPainel(page);
     expect(texto).toContain('Não encontramos caminho acessível confirmado');
-    expect(texto).toMatch(/elevador está com aviso de interdição ou defeito/);
-    expect(texto).toMatch(/SAC/);
-    expect(texto).toMatch(/\(41\) 3094-5300/);
-    await expect(page.getByRole('link', { name: /Ligar para o SAC/ })).toBeVisible();
+    expect(texto).toMatch(/O elevador e a rampa estão com aviso de interdição ou defeito, e a rota sem escadas depende deles\./);
+    expect(texto).toMatch(/Procure a Recepção, no 1º andar, ao lado da entrada\./);
+    await expect(page.getByRole('button', { name: 'Pedir ajuda' }).first()).toBeVisible();
     // nenhuma rota inventada
     await expect(page.getByRole('button', { name: 'Próximo' })).toHaveCount(0);
   });

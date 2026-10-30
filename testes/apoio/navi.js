@@ -4,12 +4,8 @@ const { expect } = require('@playwright/test');
 
 const LOCAL = /^(127\.0\.0\.1|localhost)$/;
 
-/**
- * Abre o site com a rede externa bloqueada (VLibras vira resposta vazia).
- * A maior parte dos testes de comportamento usa o Shopping Estação, que deixou de ser o local padrão
- * (o padrão agora é o prédio de testes): sem caminho, abre ?local=shopping-estacao.
- */
-async function abrir(page, { caminho = '?local=shopping-estacao', armazenamento = {}, erros } = {}) {
+/** Abre o site (o prédio comercial de testes, único mapa) com a rede externa bloqueada (VLibras vira resposta vazia). */
+async function abrir(page, { caminho = '', armazenamento = {}, erros } = {}) {
   await page.route(url => !LOCAL.test(url.hostname), rota => rota.fulfill({ status: 200, body: '' }));
   if (Object.keys(armazenamento).length) {
     await page.addInitScript(itens => {
@@ -51,16 +47,17 @@ async function buscarEEscolher(page, termo, nomeResultado = termo) {
   await page.getByRole('button', { name: new RegExp('^' + nomeResultado, 'i') }).first().click();
 }
 
-/** Botão de uma entrada (ex.: "Acesso Azul — ver a rota"). */
+/** Botão de uma entrada (ex.: "Entrada principal — ver a rota"). */
 const botaoEntrada = (page, nome) => page.getByRole('button', { name: new RegExp('^' + nome) }).first();
 
-const DESTINO_PISO_2 = { termo: 'atelier', nome: 'Atelier de Costura' };
+const DESTINO_PISO_2 = { termo: 'reuni', nome: 'Sala de reunião' };
+const ENTRADA = 'Entrada principal';
 
 /**
  * Do zero até a Página do Mapa: voz, perfil, destino e entrada.
  * Conta os toques a partir da tela "Para onde você vai?" (digitar não conta).
  */
-async function planejarRota(page, { perfil = 'Mobilidade reduzida', destino = DESTINO_PISO_2, entrada = 'Acesso Azul', armazenamento = {} } = {}) {
+async function planejarRota(page, { perfil = 'Mobilidade reduzida', destino = DESTINO_PISO_2, entrada = ENTRADA, armazenamento = {} } = {}) {
   await abrir(page, { armazenamento });
   await responderVoz(page, false);
   await escolherPerfil(page, perfil);
@@ -116,5 +113,5 @@ const errosReais = erros => erros.filter(e => !/vlibras|fonts\.g|Failed to load 
 
 module.exports = {
   abrir, JA_VISITOU, dialogoVoz, responderVoz, opcaoPerfil, escolherPerfil, campoBusca, buscarEEscolher, botaoEntrada,
-  DESTINO_PISO_2, planejarRota, tituloDaRota, painel, textoDoPainel, alca, expandirPainel, verTodosOsPassos, semRolagemLateral, errosReais
+  DESTINO_PISO_2, ENTRADA, planejarRota, tituloDaRota, painel, textoDoPainel, alca, expandirPainel, verTodosOsPassos, semRolagemLateral, errosReais
 };

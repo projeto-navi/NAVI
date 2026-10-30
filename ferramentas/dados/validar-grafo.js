@@ -89,7 +89,8 @@ function validarGrafo(grafo, opcoes = {}) {
 }
 
 function carregarLocal(slug, pasta) {
-  const base = pasta || path.resolve(__dirname, '../../site-acessivel/locais', slug);
+  const noSite = path.resolve(__dirname, '../../site-acessivel/locais', slug);
+  const base = pasta || (fs.existsSync(noSite) ? noSite : path.resolve(__dirname, 'locais-fora-do-site', slug));
   const grafo = JSON.parse(fs.readFileSync(path.join(base, 'grafo.json'), 'utf8'));
   let dados = null;
   if (fs.existsSync(path.join(base, 'dados.js'))) {

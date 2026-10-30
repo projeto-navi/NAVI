@@ -1,7 +1,7 @@
 # Navi — Navegador Acessível de Vias Internas
 
 Mapa interno acessível para pessoas com deficiência visual, auditiva ou de mobilidade.
-Primeiro local: Shopping Estação (Curitiba). Próximo: UniOpet — Campus Rebouças (1º semestre de 2027).
+Mapa no site: prédio comercial de testes (testes kaizen das rotas acessíveis). O Shopping Estação, primeiro local, saiu do site em 30/10/2026; os dados ficam em `ferramentas/dados/locais-fora-do-site/`. Próximo: UniOpet — Campus Rebouças (1º semestre de 2027).
 
 - Site: https://navi-map.netlify.app/
 - Maquete com QR Code (apresentação): https://navi-qrcode.netlify.app/

@@ -13,11 +13,11 @@ async function percorrerTelas(page, verificar, armazenamento = {}) {
   await verificar('perfis');
   await N.escolherPerfil(page, 'Mobilidade reduzida');
   await verificar('destino');
-  await N.campoBusca(page).fill('atelier');
+  await N.campoBusca(page).fill('reuni');
   await verificar('busca');
-  await page.getByRole('button', { name: /^Atelier de Costura/ }).first().click();
+  await page.getByRole('button', { name: /^Sala de reunião/ }).first().click();
   await verificar('entrada');
-  await N.botaoEntrada(page, 'Acesso Azul').click();
+  await N.botaoEntrada(page, N.ENTRADA).click();
   await page.waitForURL(/mapa\.html/);
   await expect(N.tituloDaRota(page)).toBeVisible();
   await page.waitForTimeout(400);
@@ -49,7 +49,7 @@ test.describe('Celular estreito (RN43, WCAG 1.4.10)', () => {
   test('com o texto a 200%, o passo atual e os botões continuam ao alcance', async ({ page }, info) => {
     test.skip(info.project.name !== 'celular', 'largura de celular');
     await page.setViewportSize({ width: 320, height: 568 });
-    await N.abrir(page, { caminho: 'mapa.html?origem=1-1401928&destino=2-2482766', armazenamento: { ...N.JA_VISITOU, 'navi-texto': '200', 'navi-perfil': 'mobilidade', 'navi-escadas': '1' } });
+    await N.abrir(page, { caminho: 'mapa.html?origem=PCT_P01_L0001&destino=PCT_P02_L0007', armazenamento: { ...N.JA_VISITOU, 'navi-texto': '200', 'navi-perfil': 'mobilidade', 'navi-escadas': '1' } });
     const proximo = page.getByRole('button', { name: 'Próximo' });
     await proximo.scrollIntoViewIfNeeded();
     await expect(proximo).toBeInViewport();

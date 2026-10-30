@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { carregarLocalNode, SITE } = require('../apoio/local-node');
+const { carregarLocalNode, SITE, FORA_DO_SITE } = require('../apoio/local-node');
 
 const indice = [{ slug: 'shopping-estacao', padrao: true }, { slug: 'uniopet-reboucas' }];
 
@@ -15,7 +15,7 @@ test.describe('slugDaUrl', () => {
   for (const [entrada, esperado] of casos) test(`"${entrada}" → ${esperado}`, () => expect(NaviLocal.slugDaUrl(entrada, indice)).toBe(esperado));
 });
 
-test.describe('slugDaUrl com o prédio de testes como padrão e links antigos do Shopping', () => {
+test.describe('slugDaUrl com o prédio de testes como padrão e códigos antigos', () => {
   const { NaviLocal } = carregarLocalNode('shopping-estacao');
   const indice2 = [{ slug: 'predio-teste', padrao: true }, { slug: 'shopping-estacao', codigosAntigos: /^(SHE_|\d+-\d+$)/ }];
   const casos = [['', 'predio-teste'], ['?origem=PCT_P01_L0001', 'predio-teste'],
@@ -23,12 +23,15 @@ test.describe('slugDaUrl com o prédio de testes como padrão e links antigos do
     ['?destino=SHE_P01_L0012', 'shopping-estacao'], ['?local=predio-teste&origem=1-1401928', 'predio-teste'],
     ['?local=nao-existe&origem=1-1401928', 'predio-teste'], ['?origem=1-14x', 'predio-teste']];
   for (const [entrada, esperado] of casos) test(`"${entrada}" → ${esperado}`, () => expect(NaviLocal.slugDaUrl(entrada, indice2)).toBe(esperado));
-  test('o índice publicado tem o prédio como padrão e os códigos antigos do Shopping', () => {
+  test('o índice publicado só tem o prédio como mapa (o Shopping saiu do site)', () => {
     const ctx = { self: {} };
     require('node:vm').runInNewContext(fs.readFileSync(path.join(SITE, 'locais/indice.js'), 'utf8'), ctx);
     const lista = ctx.self.NAVI_LOCAIS_INDICE;
+    expect(lista.map(l => l.slug)).toEqual(['predio-teste', 'uniopet-reboucas']);
     expect(NaviLocal.slugDaUrl('', lista)).toBe('predio-teste');
-    expect(NaviLocal.slugDaUrl('?origem=1-1401928&destino=1-1401929', lista)).toBe('shopping-estacao');
+    expect(NaviLocal.slugDaUrl('?local=shopping-estacao', lista)).toBe('predio-teste');
+    expect(NaviLocal.slugDaUrl('?origem=1-1401928&destino=1-1401929', lista)).toBe('predio-teste');
+    expect(fs.existsSync(path.join(SITE, 'locais/shopping-estacao'))).toBe(false);
   });
 });
 
@@ -58,11 +61,11 @@ test('UniOpet Rebouças: local em preparação, sem lugares, com config completo
   expect(local.config.atalhos.map(a => a[1])).toEqual(expect.arrayContaining(['Sanitário acessível mais próximo', 'Secretaria', 'Biblioteca']));
 });
 
-test.describe('grafo gerado do Shopping', () => {
+test.describe('grafo gerado do Shopping (fora do site, referência do motor)', () => {
   const { local } = carregarLocalNode('shopping-estacao');
   const g = local.grafo;
   test('grafo.js e grafo.json têm o mesmo conteúdo', () => {
-    const json = JSON.parse(fs.readFileSync(path.join(SITE, 'locais/shopping-estacao/grafo.json'), 'utf8'));
+    const json = JSON.parse(fs.readFileSync(path.join(FORA_DO_SITE, 'shopping-estacao/grafo.json'), 'utf8'));
     expect(JSON.stringify(json)).toBe(JSON.stringify(g));
   });
   test('contagens', () => {
@@ -94,8 +97,8 @@ test.describe('grafo gerado do Shopping', () => {
 test('gerar de novo mantém os ids e só muda a data', async () => {
   const { gerar } = await import('../../ferramentas/dados/gerar-local.mjs');
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'navi-'));
-  fs.copyFileSync(path.join(SITE, 'locais/shopping-estacao/grafo.json'), path.join(tmp, 'grafo.json'));
+  fs.copyFileSync(path.join(FORA_DO_SITE, 'shopping-estacao/grafo.json'), path.join(tmp, 'grafo.json'));
   const r = gerar('shopping-estacao', { saida: tmp, data: '2030-01-01' });
-  const atual = JSON.parse(fs.readFileSync(path.join(SITE, 'locais/shopping-estacao/grafo.json'), 'utf8'));
+  const atual = JSON.parse(fs.readFileSync(path.join(FORA_DO_SITE, 'shopping-estacao/grafo.json'), 'utf8'));
   expect({ ...r.grafo, gerado: atual.gerado }).toEqual(atual);
 });

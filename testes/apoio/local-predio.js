@@ -9,7 +9,7 @@ function carregar(slug) {
   const ctx = { naviLocal: s => (reg[s] = reg[s] || {}), self: {}, window: {} };
   vm.createContext(ctx);
   for (const f of ['config', 'avisos', 'dados', 'grafo', 'malha', 'dados3d']) {
-    const p = path.join(SITE, 'locais', slug, f + '.js');
+    const p = path.join(require('./local-node').pastaDoLocal(slug), f + '.js');
     if (fs.existsSync(p)) vm.runInContext(fs.readFileSync(p, 'utf8'), ctx);
   }
   const local = NL.montar(slug, reg[slug]);

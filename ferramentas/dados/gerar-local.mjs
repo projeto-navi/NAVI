@@ -82,7 +82,8 @@ export function acharPorta(D, G, folga, p) {
 
 export function gerar(slug, opcoes = {}) {
   const ENTRADA = path.join(RAIZ, 'ferramentas/dados/entrada', slug);
-  const SAIDA = opcoes.saida || path.join(RAIZ, 'site-acessivel/locais', slug);
+  const noSite = path.join(RAIZ, 'site-acessivel/locais', slug), foraDoSite = path.join(RAIZ, 'ferramentas/dados/locais-fora-do-site', slug);
+  const SAIDA = opcoes.saida || (!fs.existsSync(noSite) && fs.existsSync(foraDoSite) ? foraDoSite : noSite);
   const cfg = JSON.parse(fs.readFileSync(path.join(ENTRADA, 'local.json'), 'utf8'));
   const correcoes = fs.existsSync(path.join(ENTRADA, 'correcoes.json')) ? JSON.parse(fs.readFileSync(path.join(ENTRADA, 'correcoes.json'), 'utf8')) : {};
   const D0 = carregarJs(path.join(ENTRADA, 'dados-legado.js')).NAVI_DADOS;

@@ -44,26 +44,35 @@ test.describe('Abertura (RN01, RN02, RN30)', () => {
 
 test.describe('Links e QR Codes (RN59, RN60)', () => {
   test('QR Code na entrada (?perfil=mobilidade&origem=…): partida preenchida, pergunta só o destino', async ({ page }) => {
-    await N.abrir(page, { caminho: '?perfil=mobilidade&origem=1-1401928' });
+    await N.abrir(page, { caminho: '?perfil=mobilidade&origem=PCT_P01_L0001' });
     if (await N.dialogoVoz(page).isVisible()) await N.responderVoz(page, false);
     await expect(page.getByRole('heading', { level: 1, name: 'Para onde você vai?' })).toBeVisible();
     await expect(page.getByRole('main')).toContainText('Partida');
-    await expect(page.getByRole('main')).toContainText('Acesso Azul');
+    await expect(page.getByRole('main')).toContainText('Entrada principal');
     // o perfil de mobilidade ligou "evitar escadas"
     expect(await page.evaluate(() => localStorage.getItem('navi-escadas'))).toBe('1');
   });
 
   test('RN59 — link com partida e destino abre direto a Página do Mapa', async ({ page }) => {
-    await N.abrir(page, { caminho: 'mapa.html?perfil=mobilidade&origem=1-1401928&destino=1-1401929' });
-    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Acesso Vermelho' })).toBeVisible();
+    await N.abrir(page, { caminho: 'mapa.html?perfil=mobilidade&origem=PCT_P01_L0001&destino=PCT_P01_L0003' });
+    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Loja A' })).toBeVisible();
     await expect(N.dialogoVoz(page)).toHaveCount(0); // nunca na Página do Mapa (RN01)
   });
 
   test('link antigo index.html?origem=…&destino=… continua funcionando', async ({ page }) => {
-    await N.abrir(page, { caminho: 'index.html?perfil=mobilidade&origem=1-1401928&destino=1-1401929', armazenamento: N.JA_VISITOU });
+    await N.abrir(page, { caminho: 'index.html?perfil=mobilidade&origem=PCT_P01_L0001&destino=PCT_P01_L0003', armazenamento: N.JA_VISITOU });
     await page.waitForURL(/mapa\.html\?/);
     expect(page.url()).toContain('origem=');
-    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Acesso Vermelho' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Rota até Loja A' })).toBeVisible();
+  });
+
+  test('links e QR Codes do Shopping Estação (fora do site) voltam para a Página de Rota do prédio', async ({ page }) => {
+    await N.abrir(page, { caminho: 'mapa.html?origem=1-1401928&destino=1-2482759', armazenamento: { ...N.JA_VISITOU, 'navi-perfil': 'geral' } });
+    await page.waitForURL(u => !/mapa\.html/.test(u.pathname));
+    await expect(page.getByRole('heading', { level: 1, name: 'Para onde você vai?' })).toBeVisible();
+    await N.abrir(page, { caminho: '?local=shopping-estacao', armazenamento: { ...N.JA_VISITOU, 'navi-perfil': 'geral' } });
+    await N.campoBusca(page).fill('reuni');
+    await expect(page.getByRole('button', { name: /^Sala de reunião/ }).first()).toBeVisible();
   });
 
   test('RN60 — Página do Mapa sem partida ou destino válidos volta para a Página de Rota', async ({ page }) => {
@@ -107,7 +116,7 @@ test.describe('Preferências lembradas (RN06, RN07, RN41)', () => {
   });
 
   test('RN07 — "Apagar minhas preferências" volta ao padrão e mantém os avisos', async ({ page }) => {
-    const avisos = JSON.stringify([{ lugar: '1-1401928', tipo: 'obstaculo', detalhe: '', criado: '2026-10-27T10:00:00.000Z' }]);
+    const avisos = JSON.stringify([{ lugar: 'PCT_P01_L0003', tipo: 'obstaculo', detalhe: '', criado: '2026-10-27T10:00:00.000Z' }]);
     await N.abrir(page, { armazenamento: { ...N.JA_VISITOU, 'navi-perfil': 'visual', 'navi-tema': 'contraste', 'navi-avisos': avisos } });
     await page.getByRole('button', { name: 'Preferências' }).click();
     await page.getByRole('button', { name: 'Apagar minhas preferências' }).click();

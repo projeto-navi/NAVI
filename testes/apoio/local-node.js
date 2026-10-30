@@ -5,6 +5,9 @@ const vm = require('node:vm');
 
 const SITE = path.resolve(__dirname, '../../site-acessivel');
 const ENTRADA = path.resolve(__dirname, '../../ferramentas/dados/entrada');
+// locais que saíram do site (o Shopping Estação) continuam como referência dos testes do motor
+const FORA_DO_SITE = path.resolve(__dirname, '../../ferramentas/dados/locais-fora-do-site');
+const pastaDoLocal = slug => (fs.existsSync(path.join(SITE, 'locais', slug)) ? path.join(SITE, 'locais', slug) : path.join(FORA_DO_SITE, slug));
 
 function contexto() {
   const ctx = { console, Buffer, URLSearchParams, atob: s => Buffer.from(s, 'base64').toString('binary') };
@@ -18,7 +21,7 @@ const rodar = (ctx, arquivo) => vm.runInContext(fs.readFileSync(arquivo, 'utf8')
 function carregarLocalNode(slug, { malha = false, pasta } = {}) {
   const ctx = contexto();
   for (const f of ['js/local.js', 'js/rotas.js', 'js/interdicoes.js', 'locais/indice.js']) rodar(ctx, path.join(SITE, f));
-  const base = pasta || path.join(SITE, 'locais', slug);
+  const base = pasta || pastaDoLocal(slug);
   for (const f of ['config.js', 'avisos.js', 'dados.js', 'grafo.js'].concat(malha ? ['malha.js'] : [])) {
     const p = path.join(base, f);
     if (fs.existsSync(p)) rodar(ctx, p);
@@ -50,4 +53,4 @@ function armazenamentoFalso(inicial = {}) {
   return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k), dados: m };
 }
 
-module.exports = { carregarLocalNode, grafoDoLocal, carregarLegado, armazenamentoFalso, SITE, ENTRADA };
+module.exports = { carregarLocalNode, grafoDoLocal, carregarLegado, armazenamentoFalso, pastaDoLocal, SITE, ENTRADA, FORA_DO_SITE };

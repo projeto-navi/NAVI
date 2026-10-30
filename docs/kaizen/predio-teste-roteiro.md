@@ -2,7 +2,7 @@
 
 Versão de 29/10/2026. Branch `kaizen/predio-teste`.
 
-O site abre no **Prédio comercial de testes**, um prédio fictício de 3 andares feito para testar as rotas acessíveis. O Shopping Estação continua em `?local=shopping-estacao`.
+O site abre no **Prédio comercial de testes**, um prédio fictício de 3 andares feito para testar as rotas acessíveis. Desde 30/10/2026 é o único mapa do site: o Shopping Estação saiu (os dados dele ficam em `ferramentas/dados/locais-fora-do-site/`).
 
 Cada rodada segue o ciclo PDCA:
 
@@ -40,7 +40,7 @@ Todos partem da **Entrada principal**. Os perfis ligam as preferências sozinhos
 | 8 | Mobilidade reduzida | Sala de eventos (3º) | Rampa: interditada | Sem caminho sem escada. O site explica o motivo e oferece ajuda. |
 | 9 | Qualquer um | Qualquer destino | Obstáculo num lugar do caminho | O aviso aparece no mapa, mas a rota não muda: hoje só "Interditado" e "Danificado" num elevador, escada ou rampa tiram trechos da rota |
 | 10 | Qualquer um | Qualquer destino, no 3D | — | O modelo do prédio aparece com a rota. "Ver em primeira pessoa" percorre a rota. |
-| 11 | Link antigo do Shopping (`mapa.html?origem=1-1401928&destino=1-2482759`) | — | — | Abre o Shopping Estação, como antes |
+| 11 | Link antigo do Shopping (`mapa.html?origem=1-1401928&destino=1-2482759`) | — | — | Volta para a Página de Rota do prédio, com "Escolha para onde você vai" |
 
 Os cenários 1 a 8 e 11 também rodam sozinhos:
 
