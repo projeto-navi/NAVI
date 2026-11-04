@@ -1,6 +1,7 @@
 *.zip
 .DS_Store
 .publicar/
+.superpowers/
 Thumbs.db
 __pycache__/
 node_modules/
