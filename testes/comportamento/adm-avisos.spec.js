@@ -126,3 +126,92 @@ test.describe('Avisos compartilhados (parte pública)', () => {
     await expect(link).toHaveAttribute('href', 'adm.html');
   });
 });
+
+test.describe('Área ADM — entrar, sair e cadastrar ADM', () => {
+  async function entrar(page, usuario = 'naviadm', senha = '12345678') {
+    await page.getByRole('textbox', { name: 'Usuário' }).fill(usuario);
+    await page.getByLabel('Senha', { exact: true }).fill(senha);
+    await page.getByRole('button', { name: 'Entrar' }).click();
+  }
+  const titulo = (page, nome) => page.getByRole('heading', { level: 1, name: nome });
+
+  test('senha errada mostra o erro e não abre o painel', async ({ page, context }) => {
+    await simularSupabase(context);
+    await N.abrir(page, { caminho: 'adm.html' });
+    await expect(titulo(page, 'Entrar na Área ADM')).toBeVisible();
+    await entrar(page, 'naviadm', 'errada123');
+    await expect(page.getByRole('alert')).toContainText('Usuário ou senha incorretos.');
+    await expect(titulo(page, 'Avisos')).toHaveCount(0);
+  });
+
+  test('naviadm / 12345678 abre o painel; recarregar mantém a sessão; Sair volta ao login', async ({ page, context }) => {
+    await simularSupabase(context);
+    await N.abrir(page, { caminho: 'adm.html' });
+    await entrar(page);
+    await expect(titulo(page, 'Avisos')).toBeVisible();
+    await expect(page.getByRole('banner')).toContainText('naviadm');
+    await page.reload();
+    await expect(titulo(page, 'Avisos')).toBeVisible();
+    await page.getByRole('button', { name: 'Sair' }).click();
+    await expect(titulo(page, 'Entrar na Área ADM')).toBeVisible();
+    expect(await page.evaluate(() => sessionStorage.getItem('navi-adm-sessao'))).toBeNull();
+    await page.reload();
+    await expect(titulo(page, 'Entrar na Área ADM')).toBeVisible();
+  });
+
+  test('cadastrar um ADM: aparece na lista e entra com a senha dele; repetir avisa que já existe', async ({ page, context }) => {
+    const sim = await simularSupabase(context);
+    await N.abrir(page, { caminho: 'adm.html' });
+    await entrar(page);
+    const lista = page.getByRole('list', { name: 'ADMs cadastrados' });
+    await expect(lista).toContainText('naviadm');
+    const form = page.getByRole('form', { name: 'Novo ADM' });
+    const preencher = async (u, s1, s2 = s1) => {
+      await form.getByRole('textbox', { name: 'Usuário' }).fill(u);
+      await form.getByLabel('Senha', { exact: true }).fill(s1);
+      await form.getByLabel('Confirmar senha').fill(s2);
+      await form.getByRole('button', { name: 'Cadastrar ADM' }).click();
+    };
+    await preencher('maria', 'senha-forte', 'senha-errada');
+    await expect(form.getByRole('alert')).toContainText('As senhas não são iguais.');
+    await preencher('maria', '1234567');
+    await expect(form.getByRole('alert')).toContainText('A senha precisa ter pelo menos 8 caracteres.');
+    expect(sim.adms).toHaveLength(1);
+    await preencher('maria', 'senha-forte');
+    await expect(lista).toContainText('maria');
+    await expect(page.getByRole('status').filter({ hasText: 'maria' }).first()).toContainText('ADM maria cadastrado');
+    expect(sim.adms.map(a => a.usuario)).toEqual(['naviadm', 'maria']);
+    await preencher('maria', 'outra-senha');
+    await expect(form.getByRole('alert')).toContainText('Esse usuário já existe.');
+    // a nova ADM entra com a própria senha
+    await page.getByRole('button', { name: 'Sair' }).click();
+    await entrar(page, 'maria', 'senha-forte');
+    await expect(titulo(page, 'Avisos')).toBeVisible();
+  });
+
+  test('sessão vencida: volta ao login com o aviso', async ({ page, context }) => {
+    const sim = await simularSupabase(context);
+    await N.abrir(page, { caminho: 'adm.html' });
+    await entrar(page);
+    await expect(titulo(page, 'Avisos')).toBeVisible();
+    sim.sessaoExpirada = true;
+    await page.reload();
+    await expect(titulo(page, 'Entrar na Área ADM')).toBeVisible();
+    await expect(page.getByText('Sua sessão terminou. Entre de novo.')).toBeVisible();
+  });
+
+  test('sem internet: avisa que a Área ADM precisa de conexão', async ({ page, context }) => {
+    const sim = await simularSupabase(context);
+    sim.offline = true;
+    await N.abrir(page, { caminho: 'adm.html' });
+    await entrar(page);
+    await expect(page.getByRole('alert')).toContainText('Sem internet. A Área ADM precisa de conexão.');
+  });
+
+  test('sem servidor configurado: explica e não mostra o formulário', async ({ page }) => {
+    await N.abrir(page, { caminho: 'adm.html' });
+    await expect(page.getByText('O servidor do Navi ainda não foi configurado.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Entrar' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /Voltar ao Navi/ })).toHaveAttribute('href', 'index.html');
+  });
+});

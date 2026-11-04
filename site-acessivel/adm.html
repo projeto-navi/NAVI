@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Navi ADM</title>
+<meta name="description" content="Área ADM do Navi: a equipe confere os avisos sobre locais interditados, danificados ou com obstáculo.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B4FA8">
+<link rel="icon" type="image/svg+xml" href="img/icone-navi.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
+<script>
+/* Aplica tema e tamanho do texto antes da primeira pintura (preferências do aparelho, RN07). */
+(function () { try {
+  var s = localStorage, h = document.documentElement, t = s.getItem('navi-tema'), x = s.getItem('navi-texto');
+  if (!t && s.getItem('navi-contraste') === '1') t = 'contraste';
+  if (t === 'contraste' || t === 'daltonismo') h.classList.add(t);
+  if (x === '1') x = '125';
+  if (['125', '150', '175', '200'].indexOf(x) >= 0) { h.setAttribute('data-texto', x); h.classList.add('texto-grande'); }
+} catch (e) {} })();
+</script>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/rota.css">
+<link rel="stylesheet" href="css/adm.css">
+</head>
+<body class="pagina-adm">
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+<header class="topo">
+  <a class="marca-navi" href="index.html">
+    <svg viewBox="0 0 128 128" aria-hidden="true" focusable="false"><use href="#navi-marca"/></svg>
+    <span class="marca-navi-texto"><b>Navi</b><span class="sr">, </span><span id="topo-local">Área ADM</span></span><span class="sr">, voltar ao início</span>
+  </a>
+  <div class="topo-acoes" id="topo-acoes"></div>
+</header>
+
+<main id="conteudo" class="adm-main" tabindex="-1">
+  <p class="texto-2">Carregando a Área ADM…</p>
+</main>
+
+<noscript>
+  <p class="noscript">A Área ADM precisa de JavaScript ligado.</p>
+</noscript>
+
+<div id="anuncio" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script src="js/icones.js"></script>
+<script src="locais/indice.js" defer></script>
+<script src="js/estado.js" defer></script>
+<script src="js/categorias.js" defer></script>
+<script src="js/local.js" defer></script>
+<script src="js/servidor-config.js" defer></script>
+<script src="js/servidor.js" defer></script>
+<script src="js/pagina-adm.js" defer></script>
+</body>
+</html>

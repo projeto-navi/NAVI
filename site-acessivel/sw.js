@@ -23,6 +23,7 @@ const PRECACHE = [
   'js/icones.js', 'js/estado.js', 'js/categorias.js', 'js/voz.js', 'js/libras.js', 'js/ui.js',
   'js/local.js', 'js/rotas.js', 'js/preferencias-rota.js', 'js/interdicoes.js', 'js/avisos-ui.js', 'js/pwa.js',
   'js/servidor-config.js', 'js/servidor.js', 'js/fila-avisos.js',
+  'adm.html', 'css/adm.css', 'js/pagina-adm.js',
   'js/pagina-rota.js', 'js/folha.js', 'js/mapa-renderer.js', 'js/mapa2d.js', 'js/pagina-mapa.js',
   'locais/indice.js'
 ];

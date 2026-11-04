@@ -12,10 +12,11 @@ test('todo arquivo da lista de precache do sw.js existe', () => {
   expect(faltando).toEqual([]);
 });
 
-test('as duas páginas só carregam scripts e estilos que estão no precache (ou são do 3D, carregado depois)', () => {
+test('as páginas só carregam scripts e estilos que estão no precache (ou são do 3D, carregado depois)', () => {
   const sw = fs.readFileSync(path.join(SITE, 'sw.js'), 'utf8');
   const lista = new Set(JSON.parse(sw.match(/const PRECACHE = (\[[\s\S]*?\]);/)[1].replace(/'/g, '"')));
-  for (const pagina of ['index.html', 'mapa.html']) {
+  expect(lista.has('adm.html'), 'adm.html no precache').toBe(true);
+  for (const pagina of ['index.html', 'mapa.html', 'adm.html']) {
     const html = fs.readFileSync(path.join(SITE, pagina), 'utf8');
     const usados = [...html.matchAll(/(?:src|href)="((?:js|css|fontes)\/[^"]+)"/g)].map(m => m[1]);
     expect(usados.filter(u => !lista.has(u)), pagina).toEqual([]);

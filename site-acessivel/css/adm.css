@@ -1,0 +1,46 @@
+/* Navi — Área ADM (adm.html). Usa os tokens e componentes de base.css e rota.css.
+   Ferramenta de trabalho: tudo em uma coluna, legível no celular, cada ação com alvo de 48 px. */
+
+.adm-main {
+  max-width: calc(760px + 2 * var(--e4));
+  margin: 0 auto;
+  padding: var(--e5) max(var(--e4), env(safe-area-inset-right)) calc(var(--e7) + env(safe-area-inset-bottom)) max(var(--e4), env(safe-area-inset-left));
+  display: grid; gap: var(--e6);
+}
+.adm-main:focus { outline: none; }
+.adm-main h1 { font-size: var(--t3); line-height: 1.2; }
+.adm-main h1:focus { outline: none; }
+.adm-main h2 { font-size: var(--t2); line-height: 1.25; }
+.adm-main h3 { font-size: var(--t1); }
+
+.adm-cartao {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-divisor);
+  border-radius: var(--raio-painel);
+  padding: var(--e5);
+}
+/* o login é um formulário curto: não precisa da largura toda */
+#titulo-entrar { scroll-margin-top: var(--e5); }
+.adm-cartao:has(#form-entrar) { max-width: 480px; }
+
+.adm-quem { display: inline-flex; align-items: center; gap: var(--e2); color: var(--cor-texto-2); min-height: var(--alvo); font-weight: var(--peso-forte); }
+.adm-quem .ico { width: 20px; height: 20px; }
+
+.adm-lista { display: grid; }
+.adm-lista li {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--e1) var(--e3);
+  padding: var(--e3) 0; border-bottom: 1px solid var(--cor-divisor);
+}
+.adm-lista li:last-child { border-bottom: 0; }
+
+#form-adm { border-top: 1px solid var(--cor-divisor); padding-top: var(--e5); }
+#form-adm .btn-primario { justify-self: start; }
+.adm-ok { color: var(--cor-sucesso); font-weight: var(--peso-forte); }
+.adm-ok:empty { display: none; }
+
+code { font-size: 0.92em; overflow-wrap: anywhere; }
+
+@media (max-width: 420px) {
+  .adm-cartao { padding: var(--e4); border-radius: var(--raio-controle); }
+  #form-adm .btn-primario { justify-self: stretch; }
+}
