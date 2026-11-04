@@ -97,7 +97,7 @@
   let pararAvisos = () => {};
   async function abrirPainel({ focar = false } = {}) {
     const s = servidor.sessao();
-    acoesTopo.innerHTML = `<span class="adm-quem">${svg('i-voce')}<span><span class="sr">Entrou como </span>${esc(s.usuario)}</span></span>
+    acoesTopo.innerHTML = `<span class="adm-quem"><span class="sr">Entrou como </span>${esc(s.usuario)}</span>
       <button type="button" class="btn btn-topo" id="btn-sair">Sair</button>`;
     $('btn-sair').onclick = () => sair();
     document.title = 'Navi ADM';
@@ -171,11 +171,205 @@
     };
   }
 
-  /* ---------- avisos (painel completo na próxima etapa) ---------- */
-  async function iniciarAvisos() {
-    const a = $('area-avisos');
+  /* ---------- avisos (RN69, RN70) ---------- */
+  const TIPOS = window.NaviInterdicoes ? window.NaviInterdicoes.TIPOS : {};
+  const nomeTipo = t => (TIPOS[t] && TIPOS[t].nome) || t;
+  const lugarDe = id => (local && local.lugar(id)) || null;
+  const nomeLugar = id => { const l = lugarDe(id); return l ? l.nome : String(id); };
+  const descLugar = id => { const l = lugarDe(id); return l && NC ? NC.descricao(l, local) : ''; };
+  const ABAS = [
+    { id: 'pendentes', nome: 'Pendentes', situacoes: ['pendente'], vazio: 'Nenhum aviso pendente. Quando alguém avisar sobre um local, ele aparece aqui.' },
+    { id: 'confirmados', nome: 'Confirmados', situacoes: ['confirmado'], vazio: 'Nenhum local confirmado como indisponível.' },
+    { id: 'outros', nome: 'Recusados e resolvidos', situacoes: ['recusado', 'resolvido'], vazio: 'Nada recusado ou resolvido ainda.' }
+  ];
+  const av = { lista: [], aba: 'pendentes', conhecidos: null, novos: [], timer: null, ocupado: false };
+
+  function haQuanto(iso) {
+    const ms = Date.now() - new Date(iso).getTime();
+    if (!isFinite(ms)) return '';
+    const min = Math.floor(ms / 60000);
+    if (min < 1) return 'há pouco';
+    if (min < 60) return `há ${min} min`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `há ${h} h`;
+    const d = Math.floor(h / 24);
+    return d === 1 ? 'há 1 dia' : `há ${d} dias`;
+  }
+  // avisos com o mesmo lugar, tipo e situação viram um cartão; a decisão vale para todos eles
+  function grupos(situacoes) {
+    const m = new Map();
+    for (const a of av.lista.filter(x => situacoes.includes(x.situacao))) {
+      const k = a.situacao + '|' + a.lugar + '|' + a.tipo;
+      if (!m.has(k)) m.set(k, { chave: k, lugar: a.lugar, tipo: a.tipo, situacao: a.situacao, avisos: [] });
+      m.get(k).avisos.push(a);
+    }
+    const lista = [...m.values()];
+    for (const g of lista) {
+      g.avisos.sort((x, y) => (x.criado_em < y.criado_em ? -1 : 1));
+      g.primeiro = g.avisos[0].criado_em;
+      g.decidido = g.avisos.map(a => a.decidido_em).filter(Boolean).sort().pop() || null;
+      g.quem = (g.avisos.find(a => a.decidido_por) || {}).decidido_por || '';
+    }
+    return lista.sort((x, y) => ((x.decidido || x.primeiro) < (y.decidido || y.primeiro) ? 1 : -1));
+  }
+
+  function htmlCartao(g, i) {
+    const nome = nomeLugar(g.lugar), desc = descLugar(g.lugar), id = `cartao-${i}`;
+    const detalhes = [...new Set(g.avisos.map(a => (a.detalhe || '').trim()).filter(Boolean))];
+    const n = g.avisos.length;
+    const etiqueta = g.situacao === 'pendente' ? 'etiqueta-alerta' : g.situacao === 'confirmado' ? 'etiqueta-alerta' : 'etiqueta-neutra';
+    let meta = '';
+    if (g.situacao === 'pendente') meta = (n > 1 ? `<b>${n} pessoas avisaram</b><br>` : '') + `Primeiro aviso ${esc(haQuanto(g.primeiro))}`;
+    else if (g.situacao === 'confirmado') meta = `Confirmado ${esc(haQuanto(g.decidido))}${g.quem ? ' por ' + esc(g.quem) : ''}`;
+    else meta = `${g.situacao === 'recusado' ? 'Recusado' : 'Resolvido'} ${esc(haQuanto(g.decidido))}${g.quem ? ' por ' + esc(g.quem) : ''}`;
+    const sr = `<span class="sr">: ${esc(nome)}</span>`;
+    const acoes = g.situacao === 'pendente'
+      ? `<button type="button" class="btn btn-primario" data-decidir="confirmado" data-grupo="${i}">Confirmar: local indisponível${sr}</button>
+         <button type="button" class="btn" data-decidir="recusado" data-grupo="${i}">Recusar${sr}</button>`
+      : g.situacao === 'confirmado'
+        ? `<button type="button" class="btn" data-decidir="resolvido" data-grupo="${i}">Marcar como resolvido${sr}</button>` : '';
+    return `<li><article class="adm-aviso adm-aviso-${g.situacao}" aria-labelledby="${id}">
+        <div class="adm-aviso-topo">
+          <h3 id="${id}">${esc(nome)}</h3>
+          <span class="etiqueta ${etiqueta}">${svg('i-aviso')}${esc(nomeTipo(g.tipo))}</span>
+        </div>
+        ${desc ? `<p class="texto-2">${esc(desc)}</p>` : ''}
+        ${detalhes.length ? `<ul class="adm-detalhes">${detalhes.map(d => `<li>“${esc(d)}”</li>`).join('')}</ul>` : ''}
+        <p class="adm-meta">${meta}</p>
+        ${acoes ? `<div class="adm-acoes">${acoes}</div>` : ''}
+      </article></li>`;
+  }
+
+  function renderAvisos({ focarPainel = false } = {}) {
+    const area = $('area-avisos');
+    if (!area) return;
+    const porAba = Object.fromEntries(ABAS.map(a => [a.id, grupos(a.situacoes)]));
+    const aba = ABAS.find(a => a.id === av.aba);
+    const lista = porAba[aba.id];
+    const novo = av.novos.length
+      ? `<div class="faixa-aviso adm-novo">${svg('i-aviso')}<p>${esc(textoNovos())}</p>
+           <button type="button" class="btn" id="btn-ver-novos">Ver avisos novos</button></div>` : '';
+    area.innerHTML = `<div id="faixa-novos">${novo}</div>
+      <div class="adm-abas" role="tablist" aria-label="Situação dos avisos">` +
+        ABAS.map(a => `<button type="button" role="tab" id="aba-${a.id}" aria-controls="painel-avisos" aria-selected="${a.id === av.aba}" tabindex="${a.id === av.aba ? 0 : -1}">` +
+          `${esc(a.nome)} <span class="adm-contador">${porAba[a.id].length}</span></button>`).join('') +
+      `</div>
+      <div id="painel-avisos" role="tabpanel" aria-labelledby="aba-${aba.id}" tabindex="-1" class="pilha">
+        ${lista.length ? `<ul class="adm-avisos">${lista.map(htmlCartao).join('')}</ul>` : `<p class="texto-2">${esc(aba.vazio)}</p>`}
+      </div>
+      ${notificacoesHtml()}`;
+    area.querySelectorAll('[role=tab]').forEach((b, i, todas) => {
+      b.onclick = () => trocarAba(ABAS[i].id);
+      b.onkeydown = ev => {
+        const d = ev.key === 'ArrowRight' ? 1 : ev.key === 'ArrowLeft' ? -1 : 0;
+        if (!d) return;
+        ev.preventDefault();
+        const j = (i + d + todas.length) % todas.length;
+        trocarAba(ABAS[j].id);
+        $('aba-' + ABAS[j].id).focus();
+      };
+    });
+    area.querySelectorAll('[data-decidir]').forEach(b => { b.onclick = () => decidir(lista[+b.dataset.grupo], b.dataset.decidir); });
+    const ver = $('btn-ver-novos');
+    if (ver) ver.onclick = () => { av.novos = []; atualizarTitulo(); trocarAba('pendentes'); $('painel-avisos').focus(); };
+    const perm = $('btn-notificacoes');
+    if (perm) perm.onclick = async () => { try { await Notification.requestPermission(); } catch (e) { /* recusado */ } renderAvisos(); };
+    if (focarPainel) $('painel-avisos').focus({ preventScroll: true });
+  }
+  function trocarAba(id) {
+    av.aba = id;
+    if (id === 'pendentes' && av.novos.length) { av.novos = []; atualizarTitulo(); }
+    renderAvisos();
+  }
+
+  function textoNovos() {
+    const [a] = av.novos;
+    const base = `Novo aviso: ${nomeLugar(a.lugar)} — ${nomeTipo(a.tipo)}`;
+    return av.novos.length > 1 ? `${base} e mais ${av.novos.length - 1}` : base;
+  }
+  const atualizarTitulo = () => { document.title = av.novos.length ? `(${av.novos.length}) Navi ADM` : 'Navi ADM'; };
+  function notificacoesHtml() {
+    if (!('Notification' in window)) return '';
+    if (Notification.permission === 'default') {
+      return `<div class="adm-notificacoes"><p class="texto-2">Quer saber de avisos novos mesmo com esta aba em segundo plano?</p>
+        <button type="button" class="btn" id="btn-notificacoes">Permitir notificações</button></div>`;
+    }
+    if (Notification.permission === 'denied') return `<p class="texto-2 pequeno adm-notificacoes">As notificações estão bloqueadas neste navegador. Avisos novos aparecem só nesta tela.</p>`;
+    return '';
+  }
+
+  async function decidir(g, situacao) {
+    if (!g || av.ocupado) return;
+    av.ocupado = true;
+    const nome = nomeLugar(g.lugar);
+    document.querySelectorAll('[data-decidir]').forEach(b => { b.disabled = true; });
+    try {
+      await comSessao(async () => {
+        await servidor.decidir(g.avisos.map(a => a.id), situacao);
+        await buscarAvisos({ silencioso: true });
+        renderAvisos({ focarPainel: true });
+        anunciar(situacao === 'confirmado' ? `${nome} confirmado como indisponível`
+          : situacao === 'recusado' ? `Aviso sobre ${nome} recusado` : `${nome} marcado como resolvido`);
+      });
+    } catch (e) {
+      renderAvisos();
+      const area = $('painel-avisos');
+      if (area) area.insertAdjacentHTML('afterbegin', `<div class="faixa-erro" role="alert">${faixaErro(mensagem(e))}</div>`);
+    } finally {
+      av.ocupado = false;
+    }
+  }
+
+  // busca a lista; avisos pendentes que não estavam na última busca são "novos" (RN70)
+  async function buscarAvisos({ silencioso = false } = {}) {
     const lista = await servidor.listarAvisos(slug);
-    if (a) a.innerHTML = `<p class="texto-2">${lista.length} ${lista.length === 1 ? 'aviso' : 'avisos'}.</p>`;
+    const pend = lista.filter(a => a.situacao === 'pendente');
+    if (av.conhecidos && !silencioso) {
+      const chegaram = pend.filter(a => !av.conhecidos.has(a.id));
+      if (chegaram.length) {
+        av.novos = av.novos.concat(chegaram);
+        atualizarTitulo();
+        anunciar(textoNovos() + '. Está na aba Pendentes.');
+        if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+          try { new Notification('Navi ADM', { body: textoNovos(), tag: 'navi-adm', icon: 'img/icone-192.png' }); } catch (e) { /* sem suporte */ }
+        }
+      }
+    }
+    av.conhecidos = new Set(lista.map(a => a.id));
+    av.lista = lista;
+  }
+
+  async function iniciarAvisos() {
+    await buscarAvisos();
+    renderAvisos();
+    const intervalo = Number(window.NAVI_ADM_INTERVALO_MS) || 30000;
+    const verificar = async () => {
+      if (av.ocupado) return;
+      try {
+        const antes = JSON.stringify(av.lista);
+        await comSessao(() => buscarAvisos());
+        if (!servidor.sessao()) return;
+        if (JSON.stringify(av.lista) !== antes) renderSemPerderFoco();
+        const r = $('rede-adm'); if (r) r.hidden = true;
+      } catch (e) {
+        const area = $('area-avisos');
+        if (area && !$('rede-adm')) area.insertAdjacentHTML('afterbegin', `<p class="texto-2 pequeno" id="rede-adm" role="status">Sem conexão com o servidor. A lista pode estar desatualizada; o Navi tenta de novo sozinho.</p>`);
+        else if ($('rede-adm')) $('rede-adm').hidden = false;
+      }
+    };
+    clearInterval(av.timer);
+    av.timer = setInterval(verificar, intervalo);
+    pararAvisos = () => { clearInterval(av.timer); av.timer = null; av.conhecidos = null; av.novos = []; av.lista = []; atualizarTitulo(); };
+  }
+  // a lista mudou sozinha: redesenha e devolve o foco ao mesmo controle, se ainda existir
+  function renderSemPerderFoco() {
+    const f = document.activeElement;
+    const chave = f && (f.id || (f.dataset && f.dataset.decidir && f.closest('article') && f.closest('article').getAttribute('aria-labelledby') + f.dataset.decidir));
+    const dentro = f && $('area-avisos') && $('area-avisos').contains(f);
+    renderAvisos();
+    if (!dentro || !chave) return;
+    const alvo = $(chave) || [...document.querySelectorAll('[data-decidir]')].find(b => b.closest('article').getAttribute('aria-labelledby') + b.dataset.decidir === chave);
+    if (alvo) alvo.focus({ preventScroll: true });
   }
 
   /* ---------- abertura ---------- */

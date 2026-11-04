@@ -215,3 +215,106 @@ test.describe('Área ADM — entrar, sair e cadastrar ADM', () => {
     await expect(page.getByRole('link', { name: /Voltar ao Navi/ })).toHaveAttribute('href', 'index.html');
   });
 });
+
+test.describe('Área ADM — painel de avisos', () => {
+  async function entrarNoPainel(page, { intervalo } = {}) {
+    if (intervalo) await page.addInitScript(ms => { window.NAVI_ADM_INTERVALO_MS = ms; }, intervalo);
+    await N.abrir(page, { caminho: 'adm.html' });
+    await page.getByRole('textbox', { name: 'Usuário' }).fill('naviadm');
+    await page.getByLabel('Senha', { exact: true }).fill('12345678');
+    await page.getByRole('button', { name: 'Entrar' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Avisos' })).toBeVisible();
+  }
+  const aba = (page, nome) => page.getByRole('tab', { name: new RegExp('^' + nome) });
+  const cartao = (page, nome) => page.getByRole('tabpanel').getByRole('article', { name: nome });
+  const PENDENTES = [
+    { lugar: ELEVADOR_1, tipo: 'danificado', detalhe: 'porta travada' },
+    { lugar: ELEVADOR_1, tipo: 'danificado', detalhe: '' },
+    { lugar: ELEVADOR_1, tipo: 'danificado', detalhe: 'não sobe' },
+    { lugar: 'PCT_P01_L0011', tipo: 'interditado', detalhe: 'obra' }
+  ];
+
+  test('avisos iguais viram um cartão; Confirmar vale para todos e o cartão vai para Confirmados', async ({ page, context }) => {
+    const sim = await simularSupabase(context, { avisos: PENDENTES });
+    await entrarNoPainel(page);
+    await expect(aba(page, 'Pendentes')).toHaveAttribute('aria-selected', 'true');
+    await expect(aba(page, 'Pendentes')).toContainText('2');
+    const elev = cartao(page, 'Elevador 1');
+    await expect(elev).toContainText('3 pessoas avisaram');
+    await expect(elev).toContainText('Danificado');
+    await expect(elev).toContainText('porta travada');
+    await expect(elev).toContainText('não sobe');
+    await expect(elev).toContainText(/há (\d+ min|pouco)/);
+    await expect(cartao(page, 'Rampa')).not.toContainText('pessoas avisaram');
+    await elev.getByRole('button', { name: /^Confirmar: local indisponível/ }).click();
+    await expect(page.locator('#anuncio')).toHaveText('Elevador 1 confirmado como indisponível');
+    await expect.poll(() => sim.avisos.filter(a => a.lugar === ELEVADOR_1).map(a => a.situacao)).toEqual(['confirmado', 'confirmado', 'confirmado']);
+    expect(sim.avisos.filter(a => a.lugar === ELEVADOR_1).every(a => a.decidido_por === 'naviadm' && a.decidido_em)).toBe(true);
+    await expect(cartao(page, 'Elevador 1')).toHaveCount(0);
+    await expect(aba(page, 'Pendentes')).toContainText('1');
+    await aba(page, 'Confirmados').click();
+    await expect(cartao(page, 'Elevador 1')).toBeVisible();
+    await expect(cartao(page, 'Elevador 1')).toContainText('naviadm');
+  });
+
+  test('Recusar e Marcar como resolvido', async ({ page, context }) => {
+    const sim = await simularSupabase(context, { avisos: PENDENTES });
+    sim.confirmar('PCT_P01_L0003', 'interditado');
+    await entrarNoPainel(page);
+    await cartao(page, 'Rampa').getByRole('button', { name: /^Recusar/ }).click();
+    await expect(page.locator('#anuncio')).toHaveText('Aviso sobre Rampa recusado');
+    await expect.poll(() => sim.avisos.find(a => a.lugar === 'PCT_P01_L0011').situacao).toBe('recusado');
+    await aba(page, 'Confirmados').click();
+    await cartao(page, 'Loja A').getByRole('button', { name: /^Marcar como resolvido/ }).click();
+    await expect(page.locator('#anuncio')).toHaveText('Loja A marcado como resolvido');
+    await expect.poll(() => sim.avisos.find(a => a.lugar === 'PCT_P01_L0003').situacao).toBe('resolvido');
+    await aba(page, 'Recusados e resolvidos').click();
+    await expect(cartao(page, 'Rampa')).toContainText('Recusado');
+    await expect(cartao(page, 'Loja A')).toContainText('Resolvido');
+    await expect(page.getByRole('tabpanel').getByRole('button', { name: /^(Confirmar|Recusar|Marcar)/ })).toHaveCount(0);
+  });
+
+  test('aviso novo aparece sem recarregar, com faixa, título e anúncio', async ({ page, context }) => {
+    const sim = await simularSupabase(context);
+    await entrarNoPainel(page, { intervalo: 300 });
+    await expect(page.getByRole('tabpanel')).toContainText('Nenhum aviso pendente');
+    sim.avisos.push({ id: 'novo-1', local: 'predio-teste', lugar: 'PCT_P01_L0003', tipo: 'obstaculo', detalhe: 'caixas', situacao: 'pendente', criado_em: new Date().toISOString(), decidido_em: null, decidido_por: null });
+    await expect(page.getByText('Novo aviso: Loja A — Obstáculo no caminho', { exact: true })).toBeVisible();
+    await expect(page.locator('#anuncio')).toHaveText('Novo aviso: Loja A — Obstáculo no caminho. Está na aba Pendentes.');
+    await expect(page).toHaveTitle('(1) Navi ADM');
+    await expect(cartao(page, 'Loja A')).toBeVisible();
+    await page.getByRole('button', { name: 'Ver avisos novos' }).click();
+    await expect(page).toHaveTitle('Navi ADM');
+    await expect(page.getByText('Novo aviso: Loja A — Obstáculo no caminho', { exact: true })).toHaveCount(0);
+  });
+
+  test('um aviso de outro local não aparece no painel deste local', async ({ page, context }) => {
+    await simularSupabase(context, { avisos: [{ local: 'uniopet-reboucas', lugar: 'Biblioteca', tipo: 'interditado' }, ...PENDENTES.slice(3)] });
+    await entrarNoPainel(page);
+    await expect(page.getByRole('tabpanel').getByRole('article')).toHaveCount(1);
+  });
+
+  test('a 360 px: sem rolagem lateral, alvos de 48 px e nomes acessíveis', async ({ page, context }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await simularSupabase(context, { avisos: PENDENTES });
+    await entrarNoPainel(page);
+    await expect(cartao(page, 'Elevador 1')).toBeVisible();
+    await N.semRolagemLateral(page);
+    const problemas = await page.evaluate(() => [...document.querySelectorAll('button, a[href], input, [role="tab"]')]
+      .filter(e => e.offsetParent !== null && !e.closest('[hidden]'))
+      .flatMap(e => {
+        const r = e.getBoundingClientRect(), p = [];
+        if (r.width < 47.5 || r.height < 47.5) p.push(`${Math.round(r.width)}×${Math.round(r.height)} ${e.outerHTML.slice(0, 70)}`);
+        const nome = e.getAttribute('aria-label') || (e.id && document.querySelector(`label[for="${e.id}"]`)) || (e.textContent || '').trim();
+        if (!nome) p.push('sem nome: ' + e.outerHTML.slice(0, 70));
+        return p;
+      }));
+    expect(problemas, '\n' + problemas.join('\n')).toEqual([]);
+    let AxeBuilder = null;
+    try { AxeBuilder = require('@axe-core/playwright').default; } catch { /* pacote não instalado */ }
+    if (AxeBuilder) {
+      const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+      expect(r.violations.filter(v => ['serious', 'critical'].includes(v.impact)).map(v => v.id)).toEqual([]);
+    }
+  });
+});

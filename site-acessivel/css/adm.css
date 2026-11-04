@@ -21,10 +21,9 @@
 }
 /* o login é um formulário curto: não precisa da largura toda */
 #titulo-entrar { scroll-margin-top: var(--e5); }
-.adm-cartao:has(#form-entrar) { max-width: 480px; }
+.adm-cartao:has(#form-entrar) { max-width: 480px; width: 100%; justify-self: center; }
 
 .adm-quem { display: inline-flex; align-items: center; gap: var(--e2); color: var(--cor-texto-2); min-height: var(--alvo); font-weight: var(--peso-forte); }
-.adm-quem .ico { width: 20px; height: 20px; }
 
 .adm-lista { display: grid; }
 .adm-lista li {
@@ -35,6 +34,7 @@
 
 #form-adm { border-top: 1px solid var(--cor-divisor); padding-top: var(--e5); }
 #form-adm .btn-primario { justify-self: start; }
+#form-adm .campo { max-width: 28rem; }
 .adm-ok { color: var(--cor-sucesso); font-weight: var(--peso-forte); }
 .adm-ok:empty { display: none; }
 
@@ -43,4 +43,53 @@ code { font-size: 0.92em; overflow-wrap: anywhere; }
 @media (max-width: 420px) {
   .adm-cartao { padding: var(--e4); border-radius: var(--raio-controle); }
   #form-adm .btn-primario { justify-self: stretch; }
+}
+
+/* ---------- painel de avisos ---------- */
+/* abas: um controle segmentado; a aba atual tem fundo de ação, as outras só a borda */
+.adm-abas {
+  display: flex; flex-wrap: wrap; gap: var(--e2);
+}
+.adm-abas [role="tab"] {
+  display: inline-flex; align-items: center; gap: var(--e2);
+  min-height: var(--alvo); padding: var(--e2) var(--e4);
+  border: 2px solid var(--cor-borda); border-radius: var(--raio-pilula);
+  background: var(--cor-superficie); color: var(--cor-texto);
+  font: inherit; font-weight: var(--peso-forte); cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease-out;
+}
+.adm-abas [role="tab"]:active { transform: scale(0.97); }
+.adm-abas [role="tab"][aria-selected="true"] { background: var(--cor-acao); border-color: var(--cor-acao); color: var(--cor-acao-texto); }
+.adm-contador {
+  min-width: 1.75em; padding: 0 var(--e2); border-radius: var(--raio-pilula);
+  background: var(--cor-superficie-2); color: var(--cor-texto); text-align: center; font-variant-numeric: tabular-nums;
+}
+[aria-selected="true"] > .adm-contador { background: var(--cor-acao-texto); color: var(--cor-acao); }
+#painel-avisos:focus { outline: none; }
+
+.adm-avisos { display: grid; gap: var(--e3); }
+/* cada cartão leva na borda esquerda a cor da situação: alerta (pendente), erro (indisponível), neutro */
+.adm-aviso {
+  display: grid; gap: var(--e2);
+  background: var(--cor-superficie); border: 1px solid var(--cor-divisor); border-left: 6px solid var(--cor-alerta-borda);
+  border-radius: var(--raio-controle); padding: var(--e4);
+}
+.adm-aviso-confirmado { border-left-color: var(--cor-erro); }
+.adm-aviso-recusado, .adm-aviso-resolvido { border-left-color: var(--cor-borda); }
+.adm-aviso-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--e2) var(--e3); }
+.adm-aviso h3 { font-size: var(--t1); line-height: 1.25; overflow-wrap: anywhere; }
+.adm-detalhes { display: grid; gap: var(--e1); padding-left: var(--e3); border-left: 2px solid var(--cor-divisor); }
+.adm-meta { color: var(--cor-texto-2); }
+.adm-meta b { color: var(--cor-texto); }
+.adm-acoes { display: flex; flex-wrap: wrap; gap: var(--e2); padding-top: var(--e1); }
+
+.adm-novo { align-items: center; flex-wrap: wrap; }
+.adm-novo p { flex: 1 1 14em; font-weight: var(--peso-forte); }
+.adm-notificacoes { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e2) var(--e3); }
+
+@media (max-width: 420px) {
+  .adm-acoes .btn { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .adm-abas [role="tab"] { transition: none; }
 }
