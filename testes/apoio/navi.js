@@ -6,8 +6,14 @@ const LOCAL = /^(127\.0\.0\.1|localhost)$/;
 
 /** Abre o site (o prédio comercial de testes, único mapa) com a rede externa bloqueada (VLibras vira resposta vazia). */
 async function abrir(page, { caminho = '', armazenamento = {}, erros } = {}) {
-  // *.supabase.co fica para o simulador (testes/apoio/supabase-falso.js), que é uma rota do contexto
-  await page.route(url => !LOCAL.test(url.hostname) && !/\.supabase\.co$/.test(url.hostname), rota => rota.fulfill({ status: 200, body: '' }));
+  // Os testes nunca falam com o servidor de verdade: com o simulador (testes/apoio/supabase-falso.js,
+  // rotas do contexto), *.supabase.co e o servidor-config.js ficam com ele; sem o simulador, a
+  // configuração vem vazia (o site funciona só no aparelho) e qualquer pedido externo é bloqueado.
+  const simulado = !!page.context().__naviSupabaseFalso;
+  await page.route(url => !LOCAL.test(url.hostname) && !(simulado && /\.supabase\.co$/.test(url.hostname)), rota => rota.fulfill({ status: 200, body: '' }));
+  if (!simulado) {
+    await page.route('**/js/servidor-config.js', rota => rota.fulfill({ status: 200, contentType: 'application/javascript', body: "self.NAVI_SERVIDOR = { url: '', chavePublica: '' };" }));
+  }
   if (Object.keys(armazenamento).length) {
     await page.addInitScript(itens => {
       // só na primeira carga: recarregar não deve apagar o que o site salvou

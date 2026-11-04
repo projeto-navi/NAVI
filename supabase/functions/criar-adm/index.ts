@@ -1,7 +1,7 @@
 // Navi — cadastra um novo ADM (RN67). Só quem já é ADM pode chamar.
 // Publicar com: supabase functions deploy criar-adm
 // Corpo: { usuario, senha }. Respostas: 201 {usuario}, 400 {erro}, 401, 403, 409 {erro:'existe'}.
-import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +9,15 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const USUARIO = /^[a-z0-9.-]{3,30}$/;
+
+// Chave secreta nova (SUPABASE_SECRET_KEYS, JSON por nome); a service_role antiga deixa de valer no fim de 2026.
+function chaveSecreta(): string {
+  try {
+    const nova = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}').default;
+    if (nova) return nova;
+  } catch { /* sem chaves novas: usa a antiga */ }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+}
 
 function resposta(status: number, corpo: unknown) {
   return new Response(JSON.stringify(corpo), {
@@ -21,11 +30,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return resposta(405, { erro: 'metodo' });
 
-  const admin = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  const admin = createClient(Deno.env.get('SUPABASE_URL')!, chaveSecreta(), {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
   // 1. Quem chama está logado?
   const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');

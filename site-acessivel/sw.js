@@ -8,7 +8,7 @@
    Versão nova: troque VERSAO. A Página de Rota oferece "Atualizar agora"; a Página do Mapa nunca
    recarrega no meio de uma rota (a versão nova entra no próximo carregamento). */
 'use strict';
-const VERSAO = '2026-11-04-adm';
+const VERSAO = '2026-11-04-adm-servidor';
 const APP = 'navi-app-' + VERSAO;
 const DADOS = 'navi-dados-' + VERSAO;
 const TRES_D = 'navi-3d-' + VERSAO;

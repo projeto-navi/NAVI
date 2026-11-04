@@ -4,6 +4,10 @@ O site continua estático (abre por `file://` e funciona offline). O Supabase s�
 
 Quem faz: o Líder Técnico (é a mesma pessoa que publica no Netlify). Leva uns 15 minutos.
 
+## Situação (04/11/2026)
+
+O projeto já existe: **navi** (`uulohopghibbiealqyoc`, região São Paulo), na organização "projeto-navi's Org". Já foram feitos os passos 1, 2, 5 e 6 (tabelas e regras, função `criar-adm` e `js/servidor-config.js` com a chave publishable). **Faltam os passos 3 e 4**, feitos no painel por quem tem acesso à organização.
+
 ## 1. Criar o projeto
 
 1. Entre em <https://supabase.com> e crie um projeto (o plano gratuito basta). Região: São Paulo (`sa-east-1`).
@@ -14,6 +18,8 @@ Quem faz: o Líder Técnico (é a mesma pessoa que publica no Netlify). Leva uns
 ## 2. Criar as tabelas e as regras
 
 Em **SQL Editor → New query**, cole todo o conteúdo de `supabase/migracao.sql` e clique em **Run**. Pode rodar de novo sem problema.
+
+Depois, em **Advisors → Security Advisor**, o único aviso esperado é que usuários logados podem chamar `eh_adm()`: é de propósito (as regras de acesso precisam dela, e ela só responde se quem pergunta é ADM).
 
 ## 3. Desligar o cadastro público
 
@@ -48,7 +54,7 @@ supabase link --project-ref <id-do-projeto>
 supabase functions deploy criar-adm
 ```
 
-A função já recebe `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` do próprio Supabase; não precisa configurar nada.
+A função já recebe a URL e a chave secreta do próprio Supabase (`SUPABASE_SECRET_KEYS`, ou a `SUPABASE_SERVICE_ROLE_KEY` antiga); não precisa configurar nada.
 
 Sem a CLI: em **Edge Functions → Deploy a new function → Via Editor**, dê o nome `criar-adm` e cole o conteúdo de `supabase/functions/criar-adm/index.ts`.
 

@@ -30,6 +30,7 @@ async function simularSupabase(context, { avisos = [], configurar = true } = {})
     }
   };
 
+  context.__naviSupabaseFalso = true; // testes/apoio/navi.js deixa o Supabase com o simulador
   if (configurar) {
     await context.route('**/js/servidor-config.js', r => r.fulfill({
       status: 200, contentType: 'application/javascript',
