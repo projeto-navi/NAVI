@@ -166,6 +166,31 @@
     return { configurado, enviarAviso, confirmados, confirmadosGuardados, entrar, sessao, sair, listarAvisos, decidir, listarAdms, criarAdm };
   }
 
-  const api = { criar, emailDe, USUARIO, CHAVE_CONFIRMADOS, CHAVE_SESSAO };
+  // Liga uma página pública ao servidor: confirmados nas interdições (cópia na hora, servidor depois)
+  // e envio de avisos com fila. `pronto` resolve quando a busca no servidor termina.
+  function ligar({ local, inter, aoMudar, ...op }) {
+    const s = criar(op);
+    if (!s.configurado()) return { configurado: false, enviar: async () => 'desligado', pronto: Promise.resolve() };
+    const Fila = raiz.NaviFilaAvisos || (typeof require === 'function' ? require('./fila-avisos.js') : null);
+    const fila = Fila.criar({ servidor: s, armazenamento: op.armazenamento });
+    const assinatura = l => JSON.stringify((l || []).map(a => [a.lugar, a.tipo, a.detalhe || '', a.desde || '']).sort());
+
+    const guardados = s.confirmadosGuardados(local);
+    inter.definirDoServidor(guardados);
+    let atual = assinatura(guardados);
+
+    const pronto = s.confirmados(local).then(lista => {
+      if (!lista || assinatura(lista) === atual) return;
+      atual = assinatura(lista);
+      inter.definirDoServidor(lista);
+      if (aoMudar) aoMudar();
+    });
+    fila.enviar();
+    if (typeof raiz.addEventListener === 'function') raiz.addEventListener('online', () => fila.enviar());
+
+    return { configurado: true, pronto, enviar: aviso => fila.adicionar({ ...aviso, local }) };
+  }
+
+  const api = { criar, ligar, emailDe, USUARIO, CHAVE_CONFIRMADOS, CHAVE_SESSAO };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else raiz.NaviServidor = api;
 })(typeof window !== 'undefined' ? window : globalThis);

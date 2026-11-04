@@ -25,7 +25,11 @@
       const l = a && local.lugar(a.lugar);
       return l && TIPOS[a.tipo] ? { ...a, lugar: l.id } : null;
     };
-    const oficiais = () => (local.avisos || []).map(normalizar).filter(Boolean).map(a => ({ ...a, oficial: true }));
+    let doServidor = []; // confirmados por um ADM (RN69): valem para todos
+    const oficiais = () => (local.avisos || []).concat(doServidor).map(normalizar).filter(Boolean).map(a => ({ ...a, oficial: true }));
+    function definirDoServidor(lista) {
+      doServidor = (Array.isArray(lista) ? lista : []).map(a => ({ ...a, origem: 'servidor' }));
+    }
     const meus = () => lerDoAparelho().map(normalizar).filter(Boolean);
     const todos = () => oficiais().concat(meus());
     const de = id => todos().find(a => a.lugar === id) || null;
@@ -63,7 +67,7 @@
       salvar(lista);
       return rem || null;
     }
-    return { todos, de, bloqueados, oficiais, meus, registrar, remover };
+    return { todos, de, bloqueados, oficiais, meus, registrar, remover, definirDoServidor };
   }
 
   const api = { criar, TIPOS, CHAVE };
