@@ -8,7 +8,7 @@
    Versão nova: troque VERSAO. A Página de Rota oferece "Atualizar agora"; a Página do Mapa nunca
    recarrega no meio de uma rota (a versão nova entra no próximo carregamento). */
 'use strict';
-const VERSAO = '2026-10-30-kaizen';
+const VERSAO = '2026-11-04-adm';
 const APP = 'navi-app-' + VERSAO;
 const DADOS = 'navi-dados-' + VERSAO;
 const TRES_D = 'navi-3d-' + VERSAO;
@@ -22,6 +22,7 @@ const PRECACHE = [
   'img/icone-navi.svg', 'img/icone-192.png', 'img/icone-512.png', 'img/icone-180.png',
   'js/icones.js', 'js/estado.js', 'js/categorias.js', 'js/voz.js', 'js/libras.js', 'js/ui.js',
   'js/local.js', 'js/rotas.js', 'js/preferencias-rota.js', 'js/interdicoes.js', 'js/avisos-ui.js', 'js/pwa.js',
+  'js/servidor-config.js', 'js/servidor.js', 'js/fila-avisos.js',
   'js/pagina-rota.js', 'js/folha.js', 'js/mapa-renderer.js', 'js/mapa2d.js', 'js/pagina-mapa.js',
   'locais/indice.js'
 ];

@@ -6,7 +6,8 @@ const LOCAL = /^(127\.0\.0\.1|localhost)$/;
 
 /** Abre o site (o prédio comercial de testes, único mapa) com a rede externa bloqueada (VLibras vira resposta vazia). */
 async function abrir(page, { caminho = '', armazenamento = {}, erros } = {}) {
-  await page.route(url => !LOCAL.test(url.hostname), rota => rota.fulfill({ status: 200, body: '' }));
+  // *.supabase.co fica para o simulador (testes/apoio/supabase-falso.js), que é uma rota do contexto
+  await page.route(url => !LOCAL.test(url.hostname) && !/\.supabase\.co$/.test(url.hostname), rota => rota.fulfill({ status: 200, body: '' }));
   if (Object.keys(armazenamento).length) {
     await page.addInitScript(itens => {
       // só na primeira carga: recarregar não deve apagar o que o site salvou

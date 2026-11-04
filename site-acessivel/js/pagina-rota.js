@@ -34,6 +34,12 @@
   if (slugUrl) $('marca').href = 'index.html?local=' + encodeURIComponent(slugUrl);
   const G = local.pendente ? null : R.criarGrafo11(local.grafo, local.lugares, { referencias: cfg.referencias });
   const inter = G ? window.NaviInterdicoes.criar({ local, G }) : null;
+  // avisos confirmados por um ADM (RN69): a cópia guardada vale na hora; a resposta do servidor
+  // chega depois, sem travar a página, e só redesenha a etapa se a lista mudou
+  let paginaPronta = false;
+  const servidor = inter && window.NaviServidor
+    ? window.NaviServidor.ligar({ local: local.slug, inter, aoMudar: () => { if (paginaPronta && st.etapa) render({ focar: false }); } })
+    : null;
 
   /* ---------- estado ---------- */
   const lugar = id => (id && local.lugar(id)) || null;
@@ -67,7 +73,7 @@
     irParaAjuda: () => maisProximo(cfg.categoriaAjuda),
     contexto: () => ({ destino: st.destino, origem: st.origem })
   });
-  const avisos = G ? window.NaviAvisosUI.criar({ local, G, inter, voz, ui, contexto: () => ({ origem: st.origem, destino: st.destino }), aoMudar: () => render({ focar: false }) }) : null;
+  const avisos = G ? window.NaviAvisosUI.criar({ local, G, inter, voz, ui, servidor, contexto: () => ({ origem: st.origem, destino: st.destino }), aoMudar: () => render({ focar: false }) }) : null;
   $('btn-preferencias').onclick = ev => ui.abrirPreferencias(ev.currentTarget);
   $('btn-ajuda').onclick = ev => ui.abrirAjuda(ev.currentTarget);
   if (NE.preferencias().libras) window.NaviLibras.carregar();
@@ -474,6 +480,7 @@
   st.etapa = inicial;
   history.replaceState(fotografia(), '', urlDaEtapa());
   render({ focar: false });
+  paginaPronta = true;
   if (NE.primeiraVisita()) {
     await perguntarVoz();
     const h1 = area.querySelector('h1'); if (h1) h1.focus({ preventScroll: true });

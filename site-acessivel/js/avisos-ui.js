@@ -13,6 +13,8 @@
    * @param {object} o.ui NaviUI.criar(...)
    * @param {() => {origem?: object, destino?: object, usaElevador?: boolean}} [o.contexto]
    * @param {() => void} [o.aoMudar] chamado depois de registrar ou remover um aviso
+   * @param {{configurado: boolean, enviar: (a: object) => Promise<'enviado'|'fila'|'desligado'>}} [o.servidor]
+   *   NaviServidor.ligar(...): com ele, o aviso também vai à equipe do Navi (RN68)
    */
   function criar(o) {
     const { local, inter, voz, ui } = o;
@@ -20,7 +22,10 @@
     const NC = raiz.NaviCategorias, R = raiz.NaviRotas, TIPOS = raiz.NaviInterdicoes.TIPOS;
     const svg = id => raiz.NaviIcones.svg(id);
     const esc = ui.esc;
-    const st = { lugar: null, tipo: 'interditado', detalhe: '', termo: '', enviado: null };
+    const st = { lugar: null, tipo: 'interditado', detalhe: '', termo: '', enviado: null, envio: null };
+    const comServidor = () => !!(o.servidor && o.servidor.configurado);
+    // aviso meu que a equipe já confirmou: mesmo lugar e mesmo tipo entre os confirmados do servidor
+    const confirmadoPelaEquipe = a => inter.oficiais().some(x => x.origem === 'servidor' && x.lugar === a.lugar && x.tipo === a.tipo);
     let dlg = null;
 
     const dataBR = iso => {
@@ -34,6 +39,14 @@
       const l = local.lugar(a.lugar);
       return `${txt.avisoTitulo || 'Aviso pelo Navi'}\nLocal: ${l.nome} (${NC.descricao(l, local)})\nSituação: ${TIPOS[a.tipo].nome}\n` +
         (a.detalhe ? `Detalhes: ${a.detalhe}\n` : '') + `Data: ${dataBR(a.criado)}`;
+    }
+
+    // situação do envio à equipe do Navi (RN68), num único lugar que o leitor de tela acompanha
+    function textoEnvio() {
+      if (st.envio === 'enviado') return 'Aviso enviado à equipe do Navi. Ele já vale neste aparelho e passa a valer para todos quando um ADM confirmar.';
+      if (st.envio === 'fila') return 'Sem internet: o aviso será enviado quando a conexão voltar.';
+      if (st.envio === 'enviando') return 'Enviando à equipe do Navi…';
+      return '';
     }
 
     /* ---------- partes do formulário ---------- */
@@ -67,7 +80,8 @@
       if (meus.length) {
         h += `<section class="pilha-curta" aria-labelledby="av-meus"><h3 id="av-meus">Seus avisos neste aparelho</h3><ul class="lista-avisos">` +
           meus.map((a, i) => { const l = local.lugar(a.lugar); return `<li><span><b>${esc(l.nome)}</b>: ${esc(TIPOS[a.tipo].nome.toLowerCase())}` +
-            ` <span class="texto-2">em ${esc(dataBR(a.criado))}</span></span>` +
+            ` <span class="texto-2">em ${esc(dataBR(a.criado))}</span>` +
+            (comServidor() ? `<span class="situacao-aviso">${confirmadoPelaEquipe(a) ? 'Confirmado pela equipe' : 'Aguardando confirmação'}</span>` : '') + `</span>` +
             `<button type="button" class="btn-texto" data-remover="${i}">Já foi resolvido<span class="sr">: ${esc(l.nome)}</span></button></li>`; }).join('') + `</ul></section>`;
       }
       return h;
@@ -95,10 +109,11 @@
       if (contatos.telefone) canais += `<a class="btn btn-largo" href="tel:${esc(contatos.telefoneLink || contatos.telefone)}">${svg('i-telefone')}Ligar: ${esc(contatos.telefone)}</a>`;
       canais += `<button type="button" class="btn btn-largo" data-copiar>${svg('i-copiar')}Copiar o texto do aviso</button>`;
       if (contatos.faleConosco) canais += `<a class="btn-texto" target="_blank" rel="noopener" href="${esc(contatos.faleConosco)}">${svg('i-externo')}Abrir o Fale Conosco ${esc(txt.doLocal || '')}</a>`;
-      return `<div class="faixa-info">${svg('i-ok')}<p><b>Aviso registrado.</b> ${esc(l.nome)} já aparece com aviso neste aparelho${desvia ? ', e as suas rotas desviam dele quando possível' : ''}.</p></div>
+      const envio = comServidor() ? `<p id="aviso-envio" role="status">${esc(textoEnvio())}</p>` : '';
+      return `<div class="faixa-info">${svg('i-ok')}<div><p><b>Aviso registrado.</b> ${esc(l.nome)} já aparece com aviso neste aparelho${desvia ? ', e as suas rotas desviam dele quando possível' : ''}.</p>${envio}</div></div>
         <section class="pilha-curta" aria-labelledby="av-enviar"><h3 id="av-enviar">Agora avise quem pode resolver</h3><div class="pilha-curta">${canais}</div></section>
         <pre class="texto-aviso" id="texto-aviso">${esc(texto)}</pre>
-        <p class="texto-2 pequeno">Para o aviso valer para todas as pessoas, a equipe confere e confirma. Até lá, ele vale só neste aparelho.</p>
+        ${comServidor() ? '' : `<p class="texto-2 pequeno">Para o aviso valer para todas as pessoas, a equipe confere e confirma. Até lá, ele vale só neste aparelho.</p>`}
         <button type="button" class="btn btn-largo" data-novo>Avisar sobre outro local</button>` + htmlListas();
     }
 
@@ -146,7 +161,16 @@
         }
         const a = inter.registrar({ lugar: st.lugar.id, tipo: st.tipo, detalhe: st.detalhe });
         st.enviado = a; st.detalhe = '';
+        st.envio = comServidor() ? 'enviando' : null;
         render();
+        if (comServidor()) {
+          o.servidor.enviar({ lugar: a.lugar, tipo: a.tipo, detalhe: a.detalhe }).then(r => {
+            if (st.enviado !== a) return; // a pessoa já fechou ou começou outro aviso
+            st.envio = r === 'enviado' ? 'enviado' : r === 'fila' ? 'fila' : null;
+            const alvo = dlg && dlg.querySelector('#aviso-envio');
+            if (alvo) alvo.textContent = textoEnvio();
+          });
+        }
         voz.anunciar(`Aviso registrado: ${st.lugar.nome}, ${TIPOS[a.tipo].nome.toLowerCase()}. Agora avise quem pode resolver.`);
         dlg.querySelector('h2').focus();
         if (o.aoMudar) o.aoMudar();

@@ -50,6 +50,12 @@
   const G = R.criarGrafo11(local.grafo, local.lugares, { referencias: cfg.referencias });
   R.usarMalha(local.malha);
   const inter = window.NaviInterdicoes.criar({ local, G });
+  // avisos confirmados por um ADM (RN69): a cópia guardada entra antes da primeira rota; a resposta
+  // do servidor chega depois e recalcula a rota (sem tirar o foco) só se a lista mudou
+  let paginaPronta = false, servidorMudou = false;
+  const servidor = window.NaviServidor
+    ? window.NaviServidor.ligar({ local: local.slug, inter, aoMudar: () => { if (paginaPronta) aposAvisosDoServidor(); else servidorMudou = true; } })
+    : null;
   const nomeAndar = piso => G.nomeDoAndar(piso);
   const andarIdDe = piso => { const a = local.andares.find(x => x.ordem === piso); return a ? a.id : null; };
   const palavraAndar = /^piso/i.test((local.andares[0] || {}).nome || '') ? 'pisos' : 'andares';
@@ -126,7 +132,7 @@
     contexto: () => ({ destino: st.destino, origem: st.origem, passo: st.rota ? st.rota.passos[st.passo].texto : '' })
   });
   const avisos = window.NaviAvisosUI.criar({
-    local, G, inter, voz, ui,
+    local, G, inter, voz, ui, servidor,
     contexto: () => ({ origem: st.origem, destino: st.destino }),
     aoMudar: () => recalcular({ anunciar: false, focar: false })
   });
@@ -413,6 +419,13 @@
   }
   function recalcular(o = {}) {
     aposMudarRota({ anunciar: o.anunciar, focar: o.focar, manterPainel: !o.focar, prefixo: 'Rota recalculada' });
+  }
+  /** Chegaram avisos confirmados novos: recalcula e só anuncia se o caminho mudou. */
+  function aposAvisosDoServidor() {
+    const antes = st.rota ? st.rota.passos.map(p => p.texto).join('|') : '';
+    recalcular({ anunciar: false, focar: false });
+    const depois = st.rota ? st.rota.passos.map(p => p.texto).join('|') : '';
+    if (antes !== depois) anunciarRota('Um aviso confirmado pela equipe mudou a rota. Rota recalculada');
   }
   /** Diálogo aberto cujo botão de origem foi refeito: o foco volta para o botão equivalente. */
   function reapontarGatilhos() {
@@ -763,6 +776,9 @@
   $('folha-cabeca').appendChild(rede);
   window.NaviPWA.indicadorRede(rede, 'Sem internet. A rota e o passo a passo continuam funcionando.');
   window.NaviPWA.iniciar({ oferecerAtualizacao: false });
+
+  paginaPronta = true;
+  if (servidorMudou) aposAvisosDoServidor();
 
   window.NaviMapaPagina = { st, local, G, irParaPasso, definirVista, folha: () => folha, mapa: () => mapa };
 })();

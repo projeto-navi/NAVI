@@ -130,6 +130,13 @@ html.contraste .entrada-btn .tile, html.daltonismo .entrada-btn .tile { backgrou
 
 .noscript { max-width: 640px; margin: var(--e5) auto; padding: 0 var(--e4); }
 
+/* rodapé: só o acesso à Área ADM, discreto e fora do caminho de quem procura uma rota */
+.rodape-site {
+  max-width: calc(var(--largura-leitura) + 2 * var(--e4)); margin: 0 auto;
+  padding: var(--e3) max(var(--e4), env(safe-area-inset-right)) calc(var(--e5) + env(safe-area-inset-bottom)) max(var(--e4), env(safe-area-inset-left));
+}
+.rodape-site .btn-texto { color: var(--cor-texto-2); font-weight: var(--peso-normal); }
+
 /* diálogo da pergunta de voz */
 .dialogo-voz .dialogo-corpo { padding: var(--e5); gap: var(--e4); }
 .dialogo-voz h2 { font-size: var(--t2); }

@@ -65,6 +65,8 @@ self.NAVI_SERVIDOR = {
 
 A chave pública pode ficar no site: quem protege os dados são as regras do passo 2.
 
+Depois, troque a `VERSAO` no começo de `site-acessivel/sw.js` (por exemplo, a data de hoje) e publique. Sem isso, quem já abriu o site continua com o `servidor-config.js` antigo, guardado para funcionar sem internet.
+
 ## 7. Conferir
 
 1. Abra o site, escolha uma rota e use **Avisar sobre um local**. Deve aparecer "Aviso enviado à equipe do Navi…".
