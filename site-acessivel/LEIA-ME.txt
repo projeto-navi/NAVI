@@ -30,6 +30,25 @@ TESTES KAIZEN NO PRÉDIO DE TESTES (29/10/2026)
   e Pillow). Os testes estão em testes/dados/predio-teste.spec.js e
   testes/comportamento/predio-teste.spec.js.
 
+ÁREA ADM E AVISOS COMPARTILHADOS (04/11/2026)
+- Regras RN66 a RN70, propostas no Documento 04 v1.4, aguardando aprovação.
+- Todo aviso feito em "Avisar sobre um local" também vai à equipe do Navi como pendente,
+  sem nenhum dado de quem avisou. Sem internet, ele espera no aparelho e é enviado
+  quando a conexão volta.
+- adm.html (link "Área ADM" no rodapé da Página de Rota): entrar com usuário e senha de
+  ADM. O primeiro ADM é naviadm, senha 12345678 (fixa a pedido da equipe; troque antes
+  de abrir para o público). No painel: abas Pendentes, Confirmados e Recusados e
+  resolvidos; avisos iguais viram um cartão ("3 pessoas avisaram"); "Confirmar: local
+  indisponível" vale para todos na hora e as rotas desviam; "Marcar como resolvido" tira
+  o aviso. Avisos novos aparecem em até 30 segundos, com faixa, "(n)" no título e
+  notificação do navegador, se permitida. Na seção ADMs, cadastre outros ADMs.
+- Os avisos e as contas ficam num servidor Supabase. Enquanto js/servidor-config.js
+  estiver vazio, o site funciona como antes (avisos só no aparelho) e a Área ADM diz
+  "O servidor do Navi ainda não foi configurado." Passo a passo: supabase/LEIA-ME.md.
+- A Área ADM precisa de internet. A sessão fica só na aba e termina ao fechá-la ou em Sair.
+- Testes: testes/dados/servidor.spec.js, testes/dados/fila-e-interdicoes.spec.js e
+  testes/comportamento/adm-avisos.spec.js (com o Supabase simulado).
+
 COMO PUBLICAR (a publicação no Netlify é do Líder Técnico)
 1. No Netlify, publique a pasta site-acessivel (ela tem o arquivo _headers, que impede
    o navegador de guardar o sw.js em cache).
