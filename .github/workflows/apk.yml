@@ -11,6 +11,10 @@ on:
       - '.github/workflows/apk.yml'
   workflow_dispatch:
 
+# contents: write só para publicar o APK na branch apk-teste
+permissions:
+  contents: write
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -58,3 +62,18 @@ jobs:
           path: app-android/navi-teste.apk
           retention-days: 30
           if-no-files-found: error
+
+      # Atalho para quem não usa o Actions: a branch apk-teste guarda só o APK mais recente.
+      # No GitHub: troque a branch para apk-teste, abra navi-teste.apk e clique em "Download raw file".
+      - name: Publicar o APK na branch apk-teste
+        working-directory: ${{ runner.temp }}
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          mkdir apk && cp "$GITHUB_WORKSPACE/app-android/navi-teste.apk" apk/ && cd apk
+          printf 'APK de teste do Navi, gerado do commit %s da branch app/android em %s (UTC).\nComo instalar: app-android/LEIA-ME.md na branch app/android.\n' "${GITHUB_SHA::7}" "$(date -u '+%d/%m/%Y %H:%M')" > LEIA-ME.txt
+          git init -q -b apk-teste
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add . && git commit -q -m "APK de teste ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" apk-teste

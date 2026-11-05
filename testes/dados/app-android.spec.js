@@ -28,6 +28,12 @@ test.describe('app-android', () => {
     for (const t of ['workflow_dispatch', 'app/android', 'assembleDebug', 'upload-artifact', 'navi-teste', 'npx cap add android', 'ajustar-android']) expect(w, t).toContain(t);
   });
 
+  test('o workflow também publica o APK na branch apk-teste, só com a versão mais recente', () => {
+    const w = ler('.github/workflows/apk.yml');
+    expect(w).toContain('contents: write');
+    expect(w).toMatch(/git push -f .* apk-teste/);
+  });
+
   test('copiar-site leva o site inteiro para www/', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'navi-www-'));
     execFileSync(process.execPath, [path.join(APP, 'scripts/copiar-site.mjs'), tmp]);
