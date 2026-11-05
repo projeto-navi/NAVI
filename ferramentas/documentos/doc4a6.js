@@ -86,6 +86,12 @@ const RN = [
     ['RN69', 'Um ADM confirma, recusa ou marca como resolvido cada aviso. Um aviso confirmado vale para todos na hora, e as rotas desviam como hoje (RN16). Um aviso resolvido deixa de valer.', 'X'],
     ['RN70', 'Com a Área ADM aberta, avisos novos aparecem em até 30 segundos, com destaque na tela, anúncio para leitor de tela e notificação do navegador, se permitida.', 'X']
   ]],
+  ['App Android e beacons', [
+    ['RN71', 'O app Android é opcional e abre o mesmo Navi do site, com o site guardado dentro dele.', 'X'],
+    ['RN72', 'A localização por beacons só liga quando a pessoa pede, com explicação antes, e desliga a qualquer momento ("Parar de procurar").', 'X'],
+    ['RN73', 'A detecção de beacons acontece só no celular; nada sobre onde a pessoa está é enviado ou guardado fora do aparelho.', 'X'],
+    ['RN74', '"Você está perto de X" só sugere o ponto de partida ("Sair daqui") ou o recálculo ("Recalcular daqui"); a rota nunca muda sem a pessoa tocar.', 'X']
+  ]],
   ['Ajuda e segurança', [
     ['RN53', 'Um botão "Pedir ajuda" fica a no máximo 2 toques de qualquer tela, com o contato do SAC e a rota até ele.', 'I'],
     ['RN54', 'O site avisa que não deve ser usado em emergências; vale a sinalização e a equipe do local.', 'I'],
@@ -108,21 +114,23 @@ const todas = RN.flatMap(g => g[1]);
 const conta = k => todas.filter(r => r[2] === k).length;
 
 const doc4 = [
-  capa('04', 'Regras de negócio', 'O que o protótipo base do Navi deve sempre cumprir', 'listar as regras que valem para qualquer local onde o Navi for implantado, com a situação de cada uma no site atual. Toda mudança no produto deve respeitar ou atualizar esta lista.', '1.4 — 04/11/2026'),
+  capa('04', 'Regras de negócio', 'O que o protótipo base do Navi deve sempre cumprir', 'listar as regras que valem para qualquer local onde o Navi for implantado, com a situação de cada uma no site atual. Toda mudança no produto deve respeitar ou atualizar esta lista.', '1.5 — 05/11/2026'),
   h1('Resumo'),
-  p(`São **${todas.length} regras** em ${RN.length} grupos. No site do Marco 1 com o prédio comercial de testes e a Área ADM (branch adm/avisos, conferido pela suíte de testes em 04/11/2026, ainda não publicado):`),
+  p(`São **${todas.length} regras** em ${RN.length} grupos. No site do Marco 1 com o prédio comercial de testes, a Área ADM e o app Android de teste (branch app/android, conferido pela suíte de testes em 05/11/2026, ainda não publicado):`),
   ...tabela([2, 1], ['Situação', 'Quantidade'], [
     ['Implementada', String(conta('I'))], ['Implementada, aguardando aprovação da regra', String(conta('X'))], ['Parcial', String(conta('P'))], ['A implementar', String(conta('A'))]
   ]),
   nota('**Como ler:** "Implementada" = funciona hoje em todos os perfis. "Parcial" = funciona em parte (por exemplo, só no celular ou só no perfil visual). "A implementar" = prevista no Plano de Melhorias e no portfólio.'),
   nota('**Duas páginas:** a Página de Rota (index.html) escolhe perfil, destino e partida e não tem mapa; a Página do Mapa (mapa.html) mostra o mapa e o passo a passo. A publicação no Netlify é do Líder Técnico.'),
-  nota('**Aguardam aprovação:** a RN63 (tema "Cores distintas"), pedida durante o Marco 1; as RN64 (piso tátil e braille) e RN65 (elevador antes da rampa), debatidas para os testes kaizen no prédio de testes; e as RN66 a RN70 (Área ADM e avisos compartilhados). Todas já estão no site. Pela regra deste documento, Design e Negócios e o Líder Técnico precisam aprová-las; se uma não for aprovada, ela sai sem mudar o resto.'),
+  nota('**Aguardam aprovação:** a RN63 (tema "Cores distintas"), pedida durante o Marco 1; as RN64 (piso tátil e braille) e RN65 (elevador antes da rampa), debatidas para os testes kaizen no prédio de testes; as RN66 a RN70 (Área ADM e avisos compartilhados); e as RN71 a RN74 (app Android e beacons). Todas já estão no site ou no app de teste. Pela regra deste documento, Design e Negócios e o Líder Técnico precisam aprová-las; se uma não for aprovada, ela sai sem mudar o resto.'),
   nota('**Ajustes propostos junto com a Área ADM (aguardam aprovação):** na RN50, "avisos confirmados pela equipe valem para todos" passa a dizer "avisos confirmados por um ADM (RN69) ou publicados no avisos.js valem para todos". Na RN55, acrescentar "O aviso enviado à equipe (RN68) não leva nenhum dado pessoal." Até a aprovação, o texto das duas fica como está.'),
+  nota('**App Android e beacons (fase de testes):** um APK de teste, gerado pelo GitHub Actions, guarda o site e percebe beacons Bluetooth no padrão iBeacon. Ele diz de qual lugar a pessoa está perto, não a posição exata no mapa. A seção "Fora do escopo" do Documento 05 (Plano de implantação — UniOpet) cita "Localização automática (GPS interno, beacons)" e "Aplicativo nativo para celular": a proposta é permitir os dois só nesta fase de testes; a posição em tempo real continua fora. O roteiro de teste está em docs/kaizen/app-beacons-roteiro.md.'),
   nota('**Área ADM e servidor:** os avisos e as contas de ADM ficam num servidor Supabase; o site continua estático e funciona sem ele (os avisos valem só no aparelho, como antes). O primeiro ADM é naviadm, com a senha 12345678, mantida fixa a pedido da equipe. Essa senha é fácil de adivinhar: antes de usar o Navi com o público, ela deve ser trocada no painel do Supabase. O passo a passo está em supabase/LEIA-ME.md.'),
   nota('**Local de testes:** o site abre no prédio comercial de testes (três andares, com piso tátil, rampa, elevadores e escadas com e sem braille), criado para testar as rotas e coletar feedback pelo método kaizen. O Shopping Estação continua em ?local=shopping-estacao, e os links e QR Codes já impressos seguem abrindo o Shopping.'),
   ...RN.flatMap(([grupo, regras]) => [h2(grupo), ...tabela([0.6, 4.2, 1.1], ['ID', 'Regra', 'Situação'], regras.map(r => [`**${r[0]}**`, r[1], NOME[r[2]]]))]),
   h1('Histórico de versões'),
   ...tabela([0.8, 1.1, 4], ['Versão', 'Data', 'O que mudou'], [
+    ['1.5', '05/11/2026', 'Regras propostas para o app Android e os beacons: RN71 (app opcional, com o site dentro), RN72 (beacons só quando a pessoa pede), RN73 (nada sai do celular) e RN74 ("perto de" só sugere, nunca muda a rota sozinho). Todas aguardam aprovação.'],
     ['1.4', '04/11/2026', 'Regras propostas para a Área ADM e os avisos compartilhados: RN66 (entrar com usuário e senha de ADM), RN67 (só ADM cadastra ADM), RN68 (todo aviso vai à equipe, sem dados pessoais, com fila sem internet), RN69 (confirmar, recusar ou resolver; confirmado vale para todos na hora) e RN70 (avisos novos em até 30 segundos). Ajustes propostos no texto da RN50 e da RN55. Todas aguardam aprovação.'],
     ['1.3', '29/10/2026', 'Regras propostas para os testes kaizen no prédio comercial de testes: RN64 (pessoas cegas: piso tátil e braille preferidos, com aviso nos trechos sem piso tátil) e RN65 (mobilidade: elevador primeiro, rampa quando faltar elevador, passagens mais largas). As duas já estão no site e aguardam aprovação.'],
     ['1.2', '27/10/2026', 'Marco 1 (duas páginas, nova identidade, PWA). Passaram para Implementada, conferidas pela suíte de testes: RN01, RN06, RN07, RN09, RN10, RN17, RN19, RN20, RN25, RN27–RN30, RN32–RN34, RN36, RN39–RN43, RN53, RN54 e RN58–RN62. RN21 continua Parcial (metros só depois da escala medida). Regra nova proposta: RN63 (tema "Cores distintas"), aguardando aprovação.'],

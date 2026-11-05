@@ -49,6 +49,20 @@ TESTES KAIZEN NO PRÉDIO DE TESTES (29/10/2026)
 - Testes: testes/dados/servidor.spec.js, testes/dados/fila-e-interdicoes.spec.js e
   testes/comportamento/adm-avisos.spec.js (com o Supabase simulado).
 
+APP ANDROID E BEACONS (05/11/2026)
+- Regras RN71 a RN74, propostas no Documento 04 v1.5, aguardando aprovação.
+- O app (pasta app-android/, Capacitor) guarda este site e percebe beacons Bluetooth
+  (iBeacon). O APK de teste é montado pelo GitHub Actions ("APK de teste") a cada push na
+  branch app/android; o mais recente fica na branch apk-teste (navi-teste.apk).
+- No app: cartão "Localização por beacons" na página inicial ("Encontrar onde você
+  está": Bluetooth, localização e permissão), "Você está perto de X" com "Sair daqui",
+  faixa no mapa com "Recalcular daqui" e a tela de teste beacons.html (Preferências →
+  Beacons por perto). No navegador comum nada disso aparece.
+- Lista de beacons do prédio: locais/predio-teste/beacons.js (números de TESTE).
+- Roteiro: docs/kaizen/app-beacons-roteiro.md. Instalação: app-android/LEIA-ME.md.
+- Testes: testes/dados/beacons.spec.js, beacons-app.spec.js, app-android.spec.js e
+  testes/comportamento/beacons-app.spec.js (com Bluetooth falso).
+
 COMO PUBLICAR (a publicação no Netlify é do Líder Técnico)
 1. No Netlify, publique a pasta site-acessivel (ela tem o arquivo _headers, que impede
    o navegador de guardar o sw.js em cache).
