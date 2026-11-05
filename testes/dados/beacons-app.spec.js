@@ -59,7 +59,11 @@ test.describe('NaviBeaconsApp', () => {
     const { app, plugin, armazenamento } = montar({});
     const lidas = [];
     await app.comecar(l => lidas.push(l));
-    expect(plugin.chamadas.find(x => x.nome === 'requestLEScan').arg).toEqual({ allowDuplicates: true, scanMode: 2 });
+    // o próprio Android filtra: só pacotes da Apple (76) que começam como iBeacon (02 15) chegam ao app.
+    // Sem isso, todo anúncio Bluetooth em volta atravessa a ponte e trava celulares intermediários.
+    expect(plugin.chamadas.find(x => x.nome === 'requestLEScan').arg).toEqual({
+      allowDuplicates: true, scanMode: 2, manufacturerData: [{ companyIdentifier: 76, dataPrefix: '0215' }]
+    });
     plugin.emitirBeacon(2, -60);
     plugin.emitir({ rssi: -50, manufacturerData: { 6: '0102' } });
     expect(lidas).toEqual([{ uuid: 'FDA50693-A4E2-4FB1-AFCF-C6EB07647825', major: 1, minor: 2, potencia: -59, rssi: -60 }]);

@@ -7,7 +7,7 @@ function criarPluginFalso(op = {}) {
   const UUID_HEX = 'FDA50693A4E24FB1AFCFC6EB07647825';
   const est = { bluetooth: true, localizacao: true, permissao: 'permitida', ...op };
   const chamadas = [], ouvintes = [];
-  let escaneando = false;
+  let escaneando = false, filtro = null;
   const anota = (nome, arg) => { chamadas.push({ nome, arg }); };
   const nivel = p => (p === 'permitida' ? 'granted' : p === 'negada' ? 'denied' : 'prompt');
   const h2 = n => (n & 0xff).toString(16).padStart(2, '0');
@@ -24,7 +24,7 @@ function criarPluginFalso(op = {}) {
     async requestEnable() { anota('requestEnable'); est.bluetooth = true; },
     async openLocationSettings() { anota('openLocationSettings'); est.localizacao = true; },
     async openBluetoothSettings() { anota('openBluetoothSettings'); },
-    async requestLEScan(arg) { anota('requestLEScan', arg); escaneando = true; },
+    async requestLEScan(arg) { anota('requestLEScan', arg); escaneando = true; filtro = (arg && arg.manufacturerData) || null; },
     async stopLEScan() { anota('stopLEScan'); escaneando = false; },
     async addListener(ev, fn) {
       anota('addListener', ev);
@@ -35,6 +35,15 @@ function criarPluginFalso(op = {}) {
     /** Entrega um resultado de busca, como a ponte nativa faria. */
     emitir(resultado) {
       if (!escaneando) return;
+      // como o ScanFilter do Android: com filtro de fabricante, só passa o que bate com empresa e prefixo
+      if (filtro && filtro.length) {
+        const dados = (resultado && resultado.manufacturerData) || {};
+        const passa = filtro.some(f => {
+          const v = dados[String(f.companyIdentifier)];
+          return typeof v === 'string' && v.toLowerCase().startsWith(String(f.dataPrefix).toLowerCase());
+        });
+        if (!passa) return;
+      }
       for (const o of ouvintes.slice()) if (o.ev === 'onScanResult') o.fn(resultado);
     },
     /** Atalho: um iBeacon com o UUID de teste. */

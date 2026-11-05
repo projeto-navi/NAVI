@@ -7,6 +7,10 @@
   const NB = raiz.NaviBeacons || (typeof require === 'function' ? require('./beacons.js') : null);
   const CHAVE = 'navi-beacons';
   const SCAN_MODE_LOW_LATENCY = 2;
+  // Filtro aplicado pelo próprio Android (ScanFilter): só anúncios da Apple (empresa 76 = 0x004C)
+  // que começam como iBeacon (02 15). Sem ele, todo aparelho Bluetooth em volta (fones, relógios,
+  // TVs, celulares) gera eventos na ponte, várias vezes por segundo, e trava celulares intermediários.
+  const FILTRO_IBEACON = [{ companyIdentifier: 76, dataPrefix: '0215' }];
   const CONFERIR_MS = 5000;
 
   function pluginNativo() {
@@ -76,7 +80,7 @@
     }
     async function ligarBusca() {
       if (ativa) return;
-      await plugin.requestLEScan({ allowDuplicates: true, scanMode: SCAN_MODE_LOW_LATENCY });
+      await plugin.requestLEScan({ allowDuplicates: true, scanMode: SCAN_MODE_LOW_LATENCY, manufacturerData: FILTRO_IBEACON });
       ativa = true;
     }
     async function desligarBusca() {
