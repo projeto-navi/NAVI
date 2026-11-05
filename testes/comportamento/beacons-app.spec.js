@@ -116,3 +116,45 @@ test.describe('App: beacons na Página do Mapa', () => {
     await expect(faixa(page).getByRole('button')).toHaveCount(0);
   });
 });
+
+test.describe('App: tela Beacons por perto', () => {
+  const lista = page => page.getByRole('list', { name: 'Beacons por perto' });
+
+  test('lista os beacons percebidos, cadastrados ou não, e copia os números', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.addInitScript(scriptInit({}));
+    await N.abrir(page, { caminho: 'beacons.html', armazenamento: PROCURANDO });
+    await expect(page.getByRole('heading', { level: 1, name: 'Beacons por perto' })).toBeVisible();
+    await escaneando(page);
+    await emitir(page, 2, -59);
+    await emitir(page, 99, -70);
+    await expect(lista(page).getByRole('listitem')).toHaveCount(2);
+    const elevador = lista(page).getByRole('listitem').filter({ hasText: 'Elevador 1' });
+    await expect(elevador).toContainText('minor 2');
+    await expect(elevador).toContainText('Sinal: -59 dBm');
+    await expect(elevador).toContainText('Distância: ~1,0 m');
+    await expect(lista(page).getByRole('listitem').filter({ hasText: 'minor 99' })).toContainText('não cadastrado');
+    await page.getByRole('button', { name: 'Copiar números' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Números copiados' })).toBeVisible();
+    const copiado = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copiado.trim().split('\n')).toEqual([
+      'FDA50693-A4E2-4FB1-AFCF-C6EB07647825,1,2,-59',
+      'FDA50693-A4E2-4FB1-AFCF-C6EB07647825,1,99,-70'
+    ]);
+  });
+
+  test('com a busca desligada, oferece "Começar a procurar"', async ({ page }) => {
+    await page.addInitScript(scriptInit({}));
+    await N.abrir(page, { caminho: 'beacons.html', armazenamento: GERAL });
+    await page.getByRole('button', { name: 'Começar a procurar' }).click();
+    await escaneando(page);
+    await emitir(page, 3);
+    await expect(lista(page)).toContainText('Recepção');
+  });
+
+  test('fora do app: avisa que a tela é só do app', async ({ page }) => {
+    await N.abrir(page, { caminho: 'beacons.html', armazenamento: GERAL });
+    await expect(page.getByText('Esta tela funciona só no app do Navi.')).toBeVisible();
+    await expect(page.getByRole('link', { name: /Voltar ao Navi/ })).toHaveAttribute('href', 'index.html');
+  });
+});

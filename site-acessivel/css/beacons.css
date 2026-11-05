@@ -47,3 +47,20 @@
 @media (max-width: 420px) {
   .beacons-painel .btn-primario, .beacons-ativo .btn-primario, .beacons-faixa .btn { flex: 1 1 100%; justify-self: stretch; }
 }
+
+/* Tela de teste "Beacons por perto" */
+.beacons-main {
+  max-width: calc(var(--largura-leitura) + 2 * var(--e4));
+  margin: 0 auto;
+  padding: var(--e5) max(var(--e4), env(safe-area-inset-right)) calc(var(--e7) + env(safe-area-inset-bottom)) max(var(--e4), env(safe-area-inset-left));
+}
+.beacons-main:focus { outline: none; }
+.beacons-main h1 { font-size: var(--t3); line-height: 1.2; }
+.beacons-controles { display: grid; gap: var(--e3); justify-items: start; }
+.beacons-lista { display: grid; gap: var(--e2); }
+.beacons-item {
+  display: grid; gap: var(--e1);
+  padding: var(--e3) var(--e4);
+  background: var(--cor-superficie); border: 1px solid var(--cor-divisor); border-radius: var(--raio-controle);
+  font-variant-numeric: tabular-nums;
+}

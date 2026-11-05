@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Beacons por perto | Navi</title>
+<meta name="description" content="Tela de teste do app Navi: mostra os beacons Bluetooth percebidos pelo celular.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B4FA8">
+<link rel="icon" type="image/svg+xml" href="img/icone-navi.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
+<script>
+/* Aplica tema e tamanho do texto antes da primeira pintura (preferências do aparelho, RN07). */
+(function () { try {
+  var s = localStorage, h = document.documentElement, t = s.getItem('navi-tema'), x = s.getItem('navi-texto');
+  if (!t && s.getItem('navi-contraste') === '1') t = 'contraste';
+  if (t === 'contraste' || t === 'daltonismo') h.classList.add(t);
+  if (x === '1') x = '125';
+  if (['125', '150', '175', '200'].indexOf(x) >= 0) { h.setAttribute('data-texto', x); h.classList.add('texto-grande'); }
+} catch (e) {} })();
+</script>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/rota.css">
+<link rel="stylesheet" href="css/beacons.css">
+</head>
+<body class="pagina-beacons">
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+<header class="topo">
+  <a class="marca-navi" href="index.html">
+    <svg viewBox="0 0 128 128" aria-hidden="true" focusable="false"><use href="#navi-marca"/></svg>
+    <span class="marca-navi-texto"><b>Navi</b><span class="sr">, </span><span>Teste dos beacons</span></span><span class="sr">, voltar ao início</span>
+  </a>
+</header>
+
+<main id="conteudo" class="beacons-main pilha" tabindex="-1">
+  <h1>Beacons por perto</h1>
+  <div id="beacons-tela" class="pilha"><p class="texto-2">Carregando…</p></div>
+</main>
+
+<div id="anuncio" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script src="js/icones.js"></script>
+<script src="locais/indice.js" defer></script>
+<script src="js/estado.js" defer></script>
+<script src="js/categorias.js" defer></script>
+<script src="js/local.js" defer></script>
+<script src="js/beacons.js" defer></script>
+<script src="js/beacons-app.js" defer></script>
+<script src="js/beacons-ui.js" defer></script>
+<script src="js/pagina-beacons.js" defer></script>
+</body>
+</html>

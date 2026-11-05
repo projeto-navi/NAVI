@@ -16,7 +16,8 @@ test('as páginas só carregam scripts e estilos que estão no precache (ou são
   const sw = fs.readFileSync(path.join(SITE, 'sw.js'), 'utf8');
   const lista = new Set(JSON.parse(sw.match(/const PRECACHE = (\[[\s\S]*?\]);/)[1].replace(/'/g, '"')));
   expect(lista.has('adm.html'), 'adm.html no precache').toBe(true);
-  for (const pagina of ['index.html', 'mapa.html', 'adm.html']) {
+  expect(lista.has('beacons.html'), 'beacons.html no precache').toBe(true);
+  for (const pagina of ['index.html', 'mapa.html', 'adm.html', 'beacons.html']) {
     const html = fs.readFileSync(path.join(SITE, pagina), 'utf8');
     const usados = [...html.matchAll(/(?:src|href)="((?:js|css|fontes)\/[^"]+)"/g)].map(m => m[1]);
     expect(usados.filter(u => !lista.has(u)), pagina).toEqual([]);

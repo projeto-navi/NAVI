@@ -25,6 +25,7 @@ const PRECACHE = [
   'js/servidor-config.js', 'js/servidor.js', 'js/fila-avisos.js',
   'adm.html', 'css/adm.css', 'js/pagina-adm.js',
   'css/beacons.css', 'js/beacons.js', 'js/beacons-app.js', 'js/beacons-ui.js', 'locais/predio-teste/beacons.js',
+  'beacons.html', 'js/pagina-beacons.js',
   'js/pagina-rota.js', 'js/folha.js', 'js/mapa-renderer.js', 'js/mapa2d.js', 'js/pagina-mapa.js',
   'locais/indice.js'
 ];

@@ -193,5 +193,5 @@
     return { parar() { clearInterval(relogio); app.parar(); } };
   }
 
-  raiz.NaviBeaconsUI = { ligar };
+  raiz.NaviBeaconsUI = { ligar, listaDoLocal };
 })(window);
