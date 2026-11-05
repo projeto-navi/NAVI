@@ -30,8 +30,20 @@ test.describe('app-android', () => {
 
   test('o workflow também publica o APK na branch apk-teste, só com a versão mais recente', () => {
     const w = ler('.github/workflows/apk.yml');
-    expect(w).toContain('contents: write');
     expect(w).toMatch(/git push -f .* apk-teste/);
+  });
+
+  test('só a etapa de publicar escreve no repositório; a montagem (que instala pacotes do npm) só lê', () => {
+    const w = ler('.github/workflows/apk.yml');
+    const [antes, publicar] = w.split(/\n  publicar:\n/);
+    expect(publicar, 'job publicar').toBeTruthy();
+    expect(antes).toMatch(/^permissions:\n  contents: read$/m);
+    expect(antes).not.toContain('contents: write');
+    expect(antes).not.toContain('git push');
+    expect(publicar).toContain('needs: apk');
+    expect(publicar).toContain('contents: write');
+    expect(publicar).not.toContain('npm install');
+    expect(publicar).toContain('actions/download-artifact');
   });
 
   test('copiar-site leva o site inteiro para www/', () => {

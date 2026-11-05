@@ -11,9 +11,10 @@ on:
       - '.github/workflows/apk.yml'
   workflow_dispatch:
 
-# contents: write só para publicar o APK na branch apk-teste
+# A montagem instala pacotes do npm, então só lê o repositório.
+# Só o job "publicar", que não instala nada, escreve (na branch apk-teste).
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   apk:
@@ -63,14 +64,25 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-      # Atalho para quem não usa o Actions: a branch apk-teste guarda só o APK mais recente.
-      # No GitHub: troque a branch para apk-teste, abra navi-teste.apk e clique em "Download raw file".
+  # Atalho para quem não usa o Actions: a branch apk-teste guarda só o APK mais recente.
+  # No GitHub: troque a branch para apk-teste, abra navi-teste.apk e clique em "Download raw file".
+  publicar:
+    needs: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: navi-teste
+          path: apk
+
       - name: Publicar o APK na branch apk-teste
-        working-directory: ${{ runner.temp }}
+        working-directory: apk
         env:
           TOKEN: ${{ github.token }}
         run: |
-          mkdir apk && cp "$GITHUB_WORKSPACE/app-android/navi-teste.apk" apk/ && cd apk
           printf 'APK de teste do Navi, gerado do commit %s da branch app/android em %s (UTC).\nComo instalar: app-android/LEIA-ME.md na branch app/android.\n' "${GITHUB_SHA::7}" "$(date -u '+%d/%m/%Y %H:%M')" > LEIA-ME.txt
           git init -q -b apk-teste
           git config user.name "github-actions[bot]"
