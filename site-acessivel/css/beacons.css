@@ -1,0 +1,49 @@
+/* Navi — beacons no app Android: cartão na Página de Rota e faixa na Página do Mapa. */
+
+#beacons-area {
+  max-width: calc(var(--largura-leitura) + 2 * var(--e4));
+  margin: 0 auto;
+  padding: 0 max(var(--e4), env(safe-area-inset-right)) var(--e5) max(var(--e4), env(safe-area-inset-left));
+}
+#beacons-area:empty { display: none; }
+
+.beacons-cartao {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-divisor);
+  border-radius: var(--raio-painel);
+  padding: var(--e4);
+}
+.beacons-titulo { display: flex; align-items: center; gap: var(--e2); font-size: var(--t1); line-height: 1.25; }
+.beacons-titulo:focus { outline: none; }
+.beacons-titulo .ico { width: 24px; height: 24px; color: var(--cor-acao); }
+
+.beacons-linhas { display: grid; }
+.beacons-linhas li {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--e2) var(--e3);
+  min-height: var(--alvo); padding: var(--e2) 0; border-bottom: 1px solid var(--cor-divisor);
+}
+.beacons-linhas li:last-child { border-bottom: 0; }
+.beacons-linha-nome { font-weight: var(--peso-forte); }
+.beacons-painel .btn-primario { justify-self: start; }
+.beacons-perto { font-size: var(--t1); font-weight: var(--peso-forte); }
+.beacons-ativo .btn-primario { justify-self: start; }
+
+/* Página do Mapa: logo abaixo da barra do topo, por cima do mapa e abaixo dos diálogos */
+.beacons-faixa {
+  position: absolute; z-index: 21;
+  top: calc(env(safe-area-inset-top) + var(--e2) + 72px);
+  left: max(var(--e2), env(safe-area-inset-left)); right: max(var(--e2), env(safe-area-inset-right));
+  max-width: 560px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--e2) var(--e3);
+  padding: var(--e3) var(--e4);
+  background: var(--cor-superficie); color: var(--cor-texto);
+  border: 2px solid var(--cor-acao); border-radius: var(--raio-controle);
+  box-shadow: var(--sombra-flutuante);
+}
+.beacons-faixa[hidden] { display: none; }
+.beacons-faixa p { flex: 1 1 12em; font-weight: var(--peso-forte); }
+.beacons-faixa .ico { width: 24px; height: 24px; color: var(--cor-acao); flex: none; }
+
+@media (max-width: 420px) {
+  .beacons-painel .btn-primario, .beacons-ativo .btn-primario, .beacons-faixa .btn { flex: 1 1 100%; justify-self: stretch; }
+}

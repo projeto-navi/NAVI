@@ -778,6 +778,10 @@
   window.NaviPWA.iniciar({ oferecerAtualizacao: false });
 
   paginaPronta = true;
+  // app Android: beacons (só liga dentro do app; no navegador não faz nada)
+  if (window.NaviBeaconsUI) {
+    window.NaviBeaconsUI.ligar({ pagina: 'mapa', local, slug: local.slug, origem: () => st.origem && st.origem.id, destino: () => st.destino && st.destino.id, anunciar: t => voz.anunciar(t, { visual: false }) });
+  }
   if (servidorMudou) aposAvisosDoServidor();
 
   window.NaviMapaPagina = { st, local, G, irParaPasso, definirVista, folha: () => folha, mapa: () => mapa };

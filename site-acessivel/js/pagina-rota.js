@@ -481,6 +481,8 @@
   history.replaceState(fotografia(), '', urlDaEtapa());
   render({ focar: false });
   paginaPronta = true;
+  // app Android: beacons (só liga dentro do app; no navegador não faz nada)
+  if (G && window.NaviBeaconsUI) window.NaviBeaconsUI.ligar({ pagina: 'rota', local, slug: local.slug, anunciar: t => voz.anunciar(t, { visual: false }) });
   if (NE.primeiraVisita()) {
     await perguntarVoz();
     const h1 = area.querySelector('h1'); if (h1) h1.focus({ preventScroll: true });

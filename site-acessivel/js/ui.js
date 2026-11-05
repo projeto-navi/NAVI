@@ -78,6 +78,7 @@
         <section aria-labelledby="pref-rotas"><h3 id="pref-rotas">Rotas</h3>
           ${opcao('escadas', 'Evitar escadas', 'Inclui escadas rolantes. A troca de andar é pelo elevador; sem elevador, pela rampa.', p.evitarEscadas)}
           ${opcao('pisoTatil', 'Preferir piso tátil e braille', 'A rota segue o piso tátil e usa a escada com braille no corrimão, mesmo que seja mais longa.', p.preferirPisoTatil)}
+          ${noApp() ? `<div style="padding-top:var(--e3)"><a class="btn" href="beacons.html">${svg('i-voce')}Beacons por perto</a></div>` : ''}
         </section>
         ${radios('texto', 'Tamanho do texto', E().TEXTOS.map(v => [v, v + '%', v === 100 ? 'Padrão' : '']), p.texto)}
         ${radios('tema', 'Cores', [['claro', 'Claro', 'Padrão'], ['contraste', 'Alto contraste', 'Azul-marinho e amarelo'], ['daltonismo', 'Cores distintas', 'Para daltonismo']], p.tema)}
@@ -86,6 +87,8 @@
           <p class="texto-2 pequeno">Volta tudo ao padrão neste aparelho, inclusive a pergunta sobre a voz. Seus avisos de interdição continuam.</p>
         </section>`;
     }
+    // app Android: a tela de teste dos beacons só existe dentro do app
+    const noApp = () => { try { return !!(window.NaviBeaconsApp && window.NaviBeaconsApp.criar().disponivel()); } catch (e) { return false; } };
     const NOMES_OP = { voz: 'Voz do site', leitor: 'Uso de leitor de tela', libras: 'Tradutor de Libras', escadas: 'Evitar escadas', pisoTatil: 'Preferir piso tátil e braille' };
     const CAMPO_OP = { voz: 'voz', leitor: 'leitorDeTela', libras: 'libras', escadas: 'evitarEscadas', pisoTatil: 'preferirPisoTatil' };
     function aplicar(mudanca, nome) {
