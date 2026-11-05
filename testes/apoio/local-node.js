@@ -22,13 +22,13 @@ function carregarLocalNode(slug, { malha = false, pasta } = {}) {
   const ctx = contexto();
   for (const f of ['js/local.js', 'js/rotas.js', 'js/interdicoes.js', 'locais/indice.js']) rodar(ctx, path.join(SITE, f));
   const base = pasta || pastaDoLocal(slug);
-  for (const f of ['config.js', 'avisos.js', 'dados.js', 'grafo.js'].concat(malha ? ['malha.js'] : [])) {
+  for (const f of ['config.js', 'avisos.js', 'dados.js', 'grafo.js', 'beacons.js'].concat(malha ? ['malha.js'] : [])) {
     const p = path.join(base, f);
     if (fs.existsSync(p)) rodar(ctx, p);
   }
   const local = ctx.NaviLocal.montar(slug, ctx.NAVI_LOCAIS[slug]);
   ctx.NaviRotas.usarMalha(malha ? local.malha : null);
-  return { local, R: ctx.NaviRotas, NaviLocal: ctx.NaviLocal, NaviInterdicoes: ctx.NaviInterdicoes, ctx };
+  return { local, beacons: ctx.NAVI_LOCAIS[slug].beacons || null, R: ctx.NaviRotas, NaviLocal: ctx.NaviLocal, NaviInterdicoes: ctx.NaviInterdicoes, ctx };
 }
 
 /** Grafo do local no motor, com as referências do config (como o site faz). */
