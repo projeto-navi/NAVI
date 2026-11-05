@@ -1,0 +1,8 @@
+{
+  "appId": "br.com.projetonavi.navi",
+  "appName": "Navi",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

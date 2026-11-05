@@ -1,0 +1,60 @@
+# Navi — monta o APK de teste do app Android (Capacitor) e publica como artefato "navi-teste".
+# Baixar: GitHub → Actions → "APK de teste" → execução mais recente com ✓ → Artifacts → navi-teste.
+name: APK de teste
+
+on:
+  push:
+    branches: [app/android]
+    paths:
+      - 'app-android/**'
+      - 'site-acessivel/**'
+      - '.github/workflows/apk.yml'
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app-android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Instalar o Capacitor e o plugin de Bluetooth
+        run: npm install --no-audit --no-fund
+
+      - name: Copiar o site para dentro do app
+        run: npm run copiar-site
+
+      - name: Criar o projeto Android
+        run: npx cap add android
+
+      - name: Permissões, chave de teste e ícone
+        run: npm run ajustar-android
+
+      - name: Sincronizar site e plugins
+        run: npx cap sync android
+
+      - name: Montar o APK
+        working-directory: app-android/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk ../navi-teste.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: navi-teste
+          path: app-android/navi-teste.apk
+          retention-days: 30
+          if-no-files-found: error
