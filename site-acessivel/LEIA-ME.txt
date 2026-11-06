@@ -63,6 +63,22 @@ APP ANDROID E BEACONS (05/11/2026)
 - Testes: testes/dados/beacons.spec.js, beacons-app.spec.js, app-android.spec.js e
   testes/comportamento/beacons-app.spec.js (com Bluetooth falso).
 
+VOZ COM GESTOS DO TALKBACK (06/11/2026)
+- Regras RN76 a RN78, propostas no Documento 04 v1.7, aguardando aprovação.
+- "Sim" em "Deseja ouvir as instruções em voz alta?" (ou a Voz nas Preferências) liga a voz
+  e, em tela de toque, os gestos do TalkBack dentro do site: 1 toque lê o item ("nome, tipo,
+  estado"), 2 toques ativam, deslizar para a direita / esquerda muda de item, 2 dedos rolam a
+  página e movem o mapa. Retângulo verde no item selecionado. Na planta, um lugar é lido como
+  "<nome>, <andar>". Preferências → "Ouvir como usar os gestos" repete o tutorial.
+- No app, a voz é a do Android (plugin TextToSpeech); no navegador, a do navegador.
+- No app, com o TalkBack do celular ligado (plugin ScreenReader), o Navi não fala nem
+  intercepta toques: a leitura fica com o TalkBack. No navegador não há como saber: vale
+  "Uso leitor de tela" nas Preferências.
+- Arquivos: js/voz.js (motor de voz), js/leitor-gestos.js (gestos e leitura),
+  js/leitor-celular.js (TalkBack do celular); a ligação fica em js/ui.js.
+- Roteiro: docs/kaizen/voz-gestos-roteiro.md. Testes: testes/dados/voz.spec.js e
+  testes/comportamento/voz-gestos.spec.js.
+
 COMO PUBLICAR (a publicação no Netlify é do Líder Técnico)
 1. No Netlify, publique a pasta site-acessivel (ela tem o arquivo _headers, que impede
    o navegador de guardar o sw.js em cache).
@@ -160,7 +176,7 @@ ARQUIVOS
 - index.html, mapa.html, manifest.webmanifest, sw.js, _headers
 - css/tokens.css (cores, tipo, espaço; os três temas), base.css (componentes),
   rota.css (Página de Rota), mapa.css (Página do Mapa), mapa3d.css (3D, carregado depois)
-- js/estado.js (preferências e parâmetros), voz.js, ui.js (Preferências, Pedir ajuda,
+- js/estado.js (preferências e parâmetros), voz.js, leitor-gestos.js, leitor-celular.js, ui.js (Preferências, Pedir ajuda,
   cartão), libras.js, icones.js, categorias.js, local.js (locais), rotas.js (motor),
   interdicoes.js e avisos-ui.js (avisos), pwa.js
 - js/pagina-rota.js, js/pagina-mapa.js, js/folha.js (painel do passo a passo)
