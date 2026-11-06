@@ -23,6 +23,12 @@ test.describe('app-android', () => {
     expect(p.scripts['ajustar-android']).toBeTruthy();
   });
 
+  test('package.json pede a voz do Android e a detecção do TalkBack, versão 8 (RN77, RN78)', () => {
+    const p = JSON.parse(ler('app-android/package.json'));
+    expect(p.dependencies['@capacitor-community/text-to-speech']).toMatch(/^\^8/);
+    expect(p.dependencies['@capacitor/screen-reader']).toMatch(/^\^8/);
+  });
+
   test('o workflow monta o APK de teste e publica o artefato navi-teste', () => {
     const w = ler('.github/workflows/apk.yml');
     for (const t of ['workflow_dispatch', 'app/android', 'assembleDebug', 'upload-artifact', 'navi-teste', 'npx cap add android', 'ajustar-android']) expect(w, t).toContain(t);
