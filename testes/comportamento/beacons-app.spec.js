@@ -248,7 +248,7 @@ test.describe('App: localizador automático e "Você está aqui"', () => {
     expect(N.errosReais(erros)).toEqual([]);
   });
 
-  test('no app, o aviso "perto de" vai para o leitor de tela, sem a voz do celular', async ({ page }) => {
+  test('no app, com a Voz ligada, o aviso "perto de" também é falado (RN78)', async ({ page }) => {
     await page.addInitScript(scriptInit({}));
     await page.addInitScript(() => {
       window.__falas = 0;
@@ -261,8 +261,7 @@ test.describe('App: localizador automático e "Você está aqui"', () => {
     const antes = await page.evaluate(() => window.__falas);
     await emitir(page, 2);
     await expect(cartao(page).getByText('Você está perto de: Elevador 1 (1º andar)')).toBeVisible();
-    await page.waitForTimeout(500);
-    expect(await page.evaluate(() => window.__falas)).toBe(antes);
+    await expect.poll(() => page.evaluate(() => window.__falas)).toBeGreaterThan(antes);
   });
 });
 

@@ -22,7 +22,8 @@
   const DESLIZE_MIN_PX = 60;
   const DESLIZE_MAX_MS = 500;
   const TOQUE_MAX_PX = 20;
-  const EXPLORAR_APOS_MS = 250; // movimento mais lento que isso é exploração, não deslize
+  const EXPLORAR_APOS_MS = 250;      // depois disso, se o dedo anda devagar, é exploração, não deslize
+  const EXPLORAR_VELOCIDADE = 0.25;  // px/ms: abaixo disso é arrastar para explorar
 
   const limpar = s => String(s || '').replace(/\s+/g, ' ').trim();
   const estilo = el => { try { return el.ownerDocument.defaultView.getComputedStyle(el); } catch (e) { return null; } };
@@ -158,10 +159,18 @@
     return e;
   }
 
+  // aria-describedby vem por último, como a dica do TalkBack
+  function descricao(el) {
+    const ids = el.getAttribute('aria-describedby');
+    if (!ids) return '';
+    const doc = el.ownerDocument;
+    return limpar(ids.split(/\s+/).map(id => { const r = doc.getElementById(id); return r ? texto(r) : ''; }).join(' '));
+  }
+
   function descrever(el, descreverExtra) {
     if (!el) return '';
     if (descreverExtra) { const r = descreverExtra(el); if (r) return r; }
-    return [nome(el), tipo(el), valor(el), ...estados(el)].filter(Boolean).join(', ');
+    return [nome(el), tipo(el), valor(el), ...estados(el), descricao(el)].filter(Boolean).join(', ');
   }
 
   /* ---------- sons curtos (Web Audio) ---------- */
@@ -203,19 +212,21 @@
     const agora = () => Date.now();
     const ehItem = el => itensDeLeitura().includes(el);
 
+    // item sob o dedo: o que está por cima; dentro dele (ex.: a planta), um lugar com leitura própria tem preferência
     function itemEm(x, y) {
-      const lista = itensDeLeitura();
-      const conj = new Set(lista);
+      const conj = new Set(itensDeLeitura());
+      const modal = raizModal(doc);
+      const extra = el => !!(descreverExtra && el.nodeType === 1 && descreverExtra(el) && (!modal || modal.contains(el)));
+      let achado = null;
       for (const topo of doc.elementsFromPoint(x, y)) {
-        for (let a = topo; a && a !== doc.documentElement; a = a.parentElement) {
-          if (descreverExtra && a.nodeType === 1 && descreverExtra(a)) {
-            const m = raizModal(doc);
-            if (!m || m.contains(a)) return a;
-          }
-          if (conj.has(a)) return a;
+        if (achado && !achado.contains(topo)) continue;
+        for (let a = topo; a && a !== doc.documentElement && a !== achado; a = a.parentElement) {
+          if (extra(a)) return a;
+          if (!achado && conj.has(a)) { achado = a; break; }
         }
+        if (achado && !descreverExtra) return achado;
       }
-      return null;
+      return achado;
     }
 
     /* retângulo verde */
@@ -322,7 +333,8 @@
       d.x = ev.clientX; d.y = ev.clientY;
       if (modo !== 'um') return;
       consumir(ev);
-      if (!explorando && Math.hypot(d.x - d.x0, d.y - d.y0) > TOQUE_MAX_PX && agora() - d.t0 > EXPLORAR_APOS_MS) explorando = true;
+      const dist = Math.hypot(d.x - d.x0, d.y - d.y0), dt = agora() - d.t0;
+      if (!explorando && dist > TOQUE_MAX_PX && dt > EXPLORAR_APOS_MS && (dt > DESLIZE_MAX_MS || dist / dt < EXPLORAR_VELOCIDADE)) explorando = true;
       if (explorando) {
         const el = itemEm(d.x, d.y);
         if (el && el !== atual) selecionar(el, { pontoToque: { x: d.x, y: d.y } });
@@ -374,8 +386,10 @@
       ultimoConsumido = agora();
     }
 
+    // o clique que o navegador gera depois de um toque consumido não chega à página (o mouse e o teclado chegam)
+    const cliqueDeToque = ev => ev.pointerType === 'touch' || (!ev.pointerType && agora() - ultimoConsumido < 800);
     function aoClicar(ev) {
-      if (ativando) return;
+      if (ativando || !cliqueDeToque(ev)) return;
       if (agora() - ultimoConsumido < 800) { ev.preventDefault(); ev.stopPropagation(); }
     }
     function aoMenu(ev) { if (agora() - ultimoConsumido < 800) ev.preventDefault(); }
@@ -403,9 +417,24 @@
       anel.style.display = 'none';
       doc.body.appendChild(anel);
     }
+    // desligados no meio de um toque (ex.: 2 toques em "Voz"), o resto daquele toque não pode virar clique
+    function engolirResto() {
+      const fim = agora() + 800;
+      const engolir = ev => {
+        if (agora() > fim) { tirar(); return; }
+        if (ev.type === 'click' && ev.pointerType !== 'touch') return;
+        if (ev.cancelable) ev.preventDefault();
+        ev.stopPropagation();
+        if (ev.type === 'click' || !ev.touches || !ev.touches.length) tirar(); // só o resto do toque atual
+      };
+      const tirar = () => ['touchend', 'click'].forEach(t => win.removeEventListener(t, engolir, { capture: true }));
+      ['touchend', 'click'].forEach(t => win.addEventListener(t, engolir, { capture: true, passive: false }));
+      setTimeout(tirar, 800);
+    }
     function desligar() {
       if (!ligadoFlag) return;
       ligadoFlag = false;
+      if (dedos.size || agora() - ultimoConsumido < 800) engolirResto();
       for (const [tipoEv, fn] of OUVINTES) win.removeEventListener(tipoEv, fn, { capture: true });
       clearTimeout(timerToque); timerToque = null;
       dedos.clear(); modo = null; explorando = false; rolagem = null;

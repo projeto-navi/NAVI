@@ -117,6 +117,12 @@
   /* ---------- interface compartilhada ---------- */
   const ui = window.NaviUI.criar({
     local, voz,
+    // gestos do TalkBack na planta: um lugar é lido como "<nome>, <andar>"
+    descreverExtra: el => {
+      if (!el.matches || !el.matches('svg.mapa-svg [data-id]')) return null;
+      const l = G.lugarPorId[el.dataset.id];
+      return l ? `${l.nome}, ${nomeAndar(l.piso)}` : null;
+    },
     aoMudarPreferencias: (p, nome) => {
       if (nome === 'libras') p.libras ? window.NaviLibras.carregar() : window.NaviLibras.esconder();
       if (nome === 'voz' || nome === 'leitor') { renderVoz(); renderExpandido(); }
@@ -790,7 +796,7 @@
     window.NaviBeaconsUI.ligar({
       pagina: 'mapa', local, slug: local.slug, automatico: true, // RN72: liga sozinho ao traçar a rota
       origem: () => st.origem && st.origem.id, destino: () => st.destino && st.destino.id,
-      anunciar: t => voz.anunciar(t, { visual: false, falar: false }), // só o leitor de tela, sem a voz do celular
+      anunciar: t => voz.anunciar(t, { visual: false }), // com a Voz ligada, também falado
       aoMudarPosicao: definirPosicao
     });
   }

@@ -360,8 +360,9 @@
   function ligarPerfis() {
     area.querySelectorAll('[data-perfil]').forEach(b => b.onclick = ev => {
       const k = b.dataset.perfil, p = NE.PERFIS[k];
-      // com a voz ligada: 1º toque lê a opção, 2º toque escolhe (teclado escolhe direto)
-      if (NE.preferencias().voz && ev.detail > 0 && b.dataset.ouvido !== 'sim') {
+      // com a voz ligada e sem os gestos do TalkBack: 1º clique lê a opção, 2º escolhe (teclado escolhe direto);
+      // com os gestos (RN76), quem lê é o 1 toque e quem escolhe são os 2 toques
+      if (NE.preferencias().voz && !ui.gestosLigados() && ev.detail > 0 && b.dataset.ouvido !== 'sim') {
         area.querySelectorAll('[data-ouvido]').forEach(x => delete x.dataset.ouvido);
         b.dataset.ouvido = 'sim';
         voz.falar(`${p.nome}. ${p.desc} Toque de novo para escolher.`);
@@ -369,6 +370,7 @@
       }
       const prefs = NE.aplicarPerfil(k);
       NE.aplicarNaPagina(prefs);
+      ui.atualizarLeitura();
       if (prefs.libras) window.NaviLibras.carregar();
       ui.renderBarraVoz($('barra-voz'));
       const aviso = { visual: 'Perfil deficiência visual: alto contraste, letras maiores e voz ligados.', mobilidade: 'Perfil mobilidade reduzida: as rotas evitam escadas e usam o elevador.',
@@ -446,14 +448,16 @@
         `<p class="texto-2 pequeno">Você pode mudar isso depois em Preferências.</p></div>`;
       $('dialogos').appendChild(dlg);
       const PERGUNTA = 'Deseja ouvir as instruções em voz alta? Recomendado para quem não usa leitor de tela. Toque em Sim ou em Não.';
+      let timerPergunta = 0;
       const responder = sim => {
+        clearTimeout(timerPergunta);
         NE.salvar({ voz: sim });
         NE.concluirBoasVindas();
         dlg.close(); dlg.remove();
         ui.renderBarraVoz($('barra-voz'));
-        if (sim) voz.falar('Voz ligada.');
-        else voz.cancelar();
-        pronto();
+        ui.atualizarLeitura();     // Sim liga a Voz e, com tela de toque, os gestos (RN76)
+        if (!sim) voz.cancelar();
+        pronto(sim);
       };
       dlg.querySelector('[data-resp="sim"]').onclick = () => responder(true);
       dlg.querySelector('[data-resp="nao"]').onclick = () => responder(false);
@@ -463,7 +467,7 @@
       dlg.showModal();
       dlg.querySelector('h2').focus();
       // alguns navegadores só liberam a voz depois do primeiro toque; tentamos mesmo assim
-      setTimeout(() => voz.falar(PERGUNTA, { forcar: true }), 400);
+      timerPergunta = setTimeout(() => voz.falar(PERGUNTA, { forcar: true }), 400);
     });
   }
 
@@ -482,12 +486,15 @@
   render({ focar: false });
   paginaPronta = true;
   // app Android: beacons (só liga dentro do app; no navegador não faz nada)
-  if (G && window.NaviBeaconsUI) window.NaviBeaconsUI.ligar({ pagina: 'rota', local, slug: local.slug, anunciar: t => voz.anunciar(t, { visual: false, falar: false }) }); // no app: só o leitor de tela, sem a voz do celular
+  if (G && window.NaviBeaconsUI) window.NaviBeaconsUI.ligar({ pagina: 'rota', local, slug: local.slug, anunciar: t => voz.anunciar(t, { visual: false }) });
+  const titulo = st.etapa === 'perfil' || st.etapa === 'preparacao' ? TITULOS[st.etapa]() : '';
   if (NE.primeiraVisita()) {
-    await perguntarVoz();
+    const sim = await perguntarVoz();
     const h1 = area.querySelector('h1'); if (h1) h1.focus({ preventScroll: true });
-  }
-  if (st.etapa === 'perfil' || st.etapa === 'preparacao') voz.falar(TITULOS[st.etapa]());
+    // uma fala só, para o tutorial não ser cortado pelo título
+    if (sim) voz.falar([ui.textoVozLigada(), titulo].filter(Boolean).join(' '));
+    else if (titulo) voz.falar(titulo);
+  } else if (titulo) voz.falar(titulo);
   if (st.destino && st.etapa === 'entrada') prefetchMapa();
   if (params.avisar && avisos) avisos.abrir();
   window.NaviRota = { st, local, G, irPara };

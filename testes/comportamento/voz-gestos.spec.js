@@ -5,6 +5,7 @@ const N = require('../apoio/navi');
 
 const GESTOS = path.join(__dirname, '..', '..', 'site-acessivel', 'js', 'leitor-gestos.js');
 const COM_VOZ = { 'navi-boas-vindas': '1', 'navi-voz': '1' };
+const SEM_VOZ = { 'navi-boas-vindas': '1', 'navi-voz': '0' }; // a página não liga os próprios gestos; o teste liga os seus
 
 test.use({ hasTouch: true });
 
@@ -25,7 +26,7 @@ async function tocarDuasVezes(page, loc) { const c = await centro(loc); await pa
 async function deslizar(page, dx, { x = 180, y = 320 } = {}) {
   const c = await page.context().newCDPSession(page);
   await c.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
-  for (let i = 1; i <= 4; i++) await c.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx * i / 4, y }] });
+  for (let i = 1; i <= 2; i++) await c.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx * i / 2, y }] });
   await c.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await c.detach();
 }
@@ -34,7 +35,7 @@ test.describe('Gestos do TalkBack (RN76)', () => {
   test.beforeEach(async ({}, info) => { test.skip(info.project.name !== 'celular', 'gestos são de tela de toque'); });
 
   test('1 toque lê "Preferências, botão" e não abre; 2 toques abrem; retângulo verde em volta', async ({ page }) => {
-    await N.abrir(page, { armazenamento: COM_VOZ });
+    await N.abrir(page, { armazenamento: SEM_VOZ });
     await ligarGestos(page);
     const pref = page.locator('#btn-preferencias');
     await tocar(page, pref);
@@ -50,7 +51,7 @@ test.describe('Gestos do TalkBack (RN76)', () => {
   });
 
   test('deslizar para a direita e a esquerda percorre os itens na ordem; no fim, o item fica', async ({ page }) => {
-    await N.abrir(page, { armazenamento: COM_VOZ });
+    await N.abrir(page, { armazenamento: SEM_VOZ });
     await ligarGestos(page);
     const esperado = await page.evaluate(() => {
       const l = window.NaviGestos.itensDeLeitura();
@@ -71,7 +72,7 @@ test.describe('Gestos do TalkBack (RN76)', () => {
   });
 
   test('com uma janela aberta, deslizar só passa por itens dentro dela', async ({ page }) => {
-    await N.abrir(page, { armazenamento: COM_VOZ });
+    await N.abrir(page, { armazenamento: SEM_VOZ });
     await ligarGestos(page);
     await tocar(page, page.locator('#btn-preferencias'));
     await expect.poll(() => ultimaFala(page)).toBe('Preferências, botão');
@@ -80,12 +81,12 @@ test.describe('Gestos do TalkBack (RN76)', () => {
     await expect(dlg).toBeVisible();
     for (let i = 0; i < 6; i++) {
       await deslizar(page, 120);
-      expect(await page.evaluate(() => !!(window.__g.atual() && window.__g.atual().closest('dialog[open]')))).toBe(true);
+      expect(await page.evaluate(() => { const a = window.__g.atual(); return !!(a && a.closest('dialog[open]')); })).toBe(true);
     }
   });
 
   test('descrever: nome, tipo e estado', async ({ page }) => {
-    await N.abrir(page, { armazenamento: COM_VOZ });
+    await N.abrir(page, { armazenamento: SEM_VOZ });
     await ligarGestos(page);
     const r = await page.evaluate(() => {
       const caixa = document.createElement('div');
@@ -115,8 +116,8 @@ test.describe('Gestos do TalkBack (RN76)', () => {
   });
 
   test('2 toques no campo de busca: o campo fica focado e dá para digitar', async ({ page }) => {
-    await N.abrir(page, { armazenamento: COM_VOZ });
-    await N.opcaoPerfil(page, 'Sem adaptações').press('Enter'); // com a voz ligada, o teclado escolhe direto
+    await N.abrir(page, { armazenamento: SEM_VOZ });
+    await N.escolherPerfil(page, 'Sem adaptações');
     await ligarGestos(page);
     const campo = N.campoBusca(page);
     await tocar(page, campo);
@@ -128,7 +129,7 @@ test.describe('Gestos do TalkBack (RN76)', () => {
   });
 
   test('se o item selecionado some da página, o próximo deslize recomeça do primeiro item', async ({ page }) => {
-    await N.abrir(page, { armazenamento: COM_VOZ });
+    await N.abrir(page, { armazenamento: SEM_VOZ });
     await ligarGestos(page);
     const primeiro = await page.evaluate(() => {
       const b = document.createElement('button'); b.textContent = 'Temporário'; document.querySelector('main').appendChild(b);
@@ -143,11 +144,158 @@ test.describe('Gestos do TalkBack (RN76)', () => {
   });
 
   test('com os gestos desligados, 1 toque funciona como sempre', async ({ page }) => {
-    await N.abrir(page, { armazenamento: COM_VOZ });
+    await N.abrir(page, { armazenamento: SEM_VOZ });
     await ligarGestos(page);
     await page.evaluate(() => window.__g.desligar());
     await expect(page.locator('.foco-gestos')).toHaveCount(0);
     await tocar(page, page.locator('#btn-preferencias'));
     await expect(page.getByRole('dialog', { name: /preferências/i })).toBeVisible();
+  });
+});
+
+/* ---------- nas páginas do Navi (Tarefa 4) ---------- */
+const TUTORIAL = 'Toque uma vez para ouvir um item, toque duas vezes para ativar e deslize para a direita para ir ao próximo.';
+// voz do navegador falsa: guarda cada frase em window.__falas
+function vozFalsa() {
+  window.__falas = [];
+  const falsa = { speaking: false, pending: false, paused: false, speak(u) { window.__falas.push(u.text); setTimeout(() => u.onend && u.onend(), 0); },
+    cancel() {}, pause() {}, resume() {}, getVoices: () => [], addEventListener() {}, onvoiceschanged: null };
+  Object.defineProperty(window, 'speechSynthesis', { value: falsa, configurable: true });
+  window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+}
+// TalkBack do celular falso (plugin ScreenReader do app)
+function talkbackFalso(ligado) {
+  window.__tb = { ligado, ouvinte: null };
+  window.Capacitor = { isNativePlatform: () => true, Plugins: { ScreenReader: {
+    isEnabled: async () => ({ value: window.__tb.ligado }),
+    addListener: async (ev, fn) => { if (ev === 'stateChange') window.__tb.ouvinte = fn; return { remove() {} }; }
+  } } };
+}
+const ROTA = 'mapa.html?perfil=geral&origem=PCT_P01_L0001&destino=PCT_P02_L0007';
+async function doisDedos(page, de, ate) {
+  const c = await page.context().newCDPSession(page);
+  const pts = (x, y) => [{ x, y, id: 1 }, { x: x + 60, y, id: 2 }];
+  await c.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: de.x, y: de.y, id: 1 }] });
+  await c.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pts(de.x, de.y) });
+  for (let i = 1; i <= 5; i++) await c.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pts(de.x + (ate.x - de.x) * i / 5, de.y + (ate.y - de.y) * i / 5) });
+  await c.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await c.detach();
+}
+
+test.describe('Voz e gestos nas páginas (RN76, RN77, RN78)', () => {
+  test.beforeEach(async ({ page }, info) => {
+    test.skip(info.project.name !== 'celular', 'gestos são de tela de toque');
+    await page.addInitScript(vozFalsa);
+  });
+
+  test('primeira visita: Sim fala o tutorial e liga os gestos; 1 toque num perfil só lê', async ({ page }) => {
+    await N.abrir(page);
+    await tocar(page, N.dialogoVoz(page).getByRole('button', { name: 'Sim', exact: true }));
+    await expect.poll(() => ultimaFala(page)).toContain(TUTORIAL);
+    expect(await ultimaFala(page)).toMatch(/^Voz ligada\. /);
+    await tocar(page, N.opcaoPerfil(page, 'Deficiência visual'));
+    await expect.poll(() => ultimaFala(page)).toMatch(/^Deficiência visual, botão/);
+    await expect(page.getByRole('heading', { level: 1, name: /Como você prefere/ })).toBeVisible();
+    await tocarDuasVezes(page, N.opcaoPerfil(page, 'Deficiência visual'));
+    await expect(N.campoBusca(page)).toBeVisible();
+  });
+
+  test('Preferências: "Ouvir como usar os gestos" fala o tutorial; desligar a Voz desliga os gestos', async ({ page }) => {
+    await N.abrir(page, { armazenamento: COM_VOZ });
+    const pref = page.locator('#btn-preferencias');
+    await tocar(page, pref); await page.waitForTimeout(350);
+    await tocarDuasVezes(page, pref);
+    const dlg = page.getByRole('dialog', { name: /preferências/i });
+    await expect(dlg).toBeVisible();
+    const tutorial = dlg.getByRole('button', { name: 'Ouvir como usar os gestos' });
+    await tocar(page, tutorial); await page.waitForTimeout(350);
+    await tocarDuasVezes(page, tutorial);
+    await expect.poll(() => ultimaFala(page)).toContain(TUTORIAL);
+    const sw = dlg.getByRole('switch', { name: 'Ouvir as instruções em voz alta' });
+    await tocar(page, sw); await page.waitForTimeout(350);
+    await tocarDuasVezes(page, sw);
+    await expect(sw).toHaveAttribute('aria-checked', 'false');
+    await expect(page.locator('.foco-gestos')).toHaveCount(0);
+    await expect(tutorial).toBeHidden();
+    // sem gestos, 1 toque volta a funcionar direto
+    await tocar(page, sw);
+    await expect(sw).toHaveAttribute('aria-checked', 'true');
+  });
+
+  test('mapa: 2 dedos movem a planta; 1 toque num lugar lê "nome, andar"; 2 toques abrem o cartão', async ({ page }) => {
+    await N.abrir(page, { caminho: ROTA, armazenamento: { ...COM_VOZ, 'navi-perfil': 'geral' } });
+    const planta = page.getByRole('img', { name: /^Planta do 1º andar/ });
+    await expect(planta).toBeVisible();
+    // 2 dedos arrastam a planta para cima (a folha do passo a passo cobre a parte de baixo)
+    const vb = () => planta.evaluate(s => s.getAttribute('viewBox'));
+    const antes = await vb();
+    await doisDedos(page, { x: 120, y: 200 }, { x: 120, y: 80 });
+    await expect.poll(vb).not.toBe(antes);
+    const alvo = await page.evaluate(() => {
+      const { G } = window.NaviMapaPagina;
+      const alca = document.querySelector('.folha-alca');
+      const limite = alca ? alca.getBoundingClientRect().top - 8 : innerHeight;
+      for (const f of document.querySelectorAll('svg.mapa-svg .loja-forma[data-id], svg.mapa-svg .icone-mapa[data-id]')) {
+        const r = f.getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + r.height / 2;
+        if (r.width < 12 || r.height < 12 || x < 10 || y < 60 || x > innerWidth - 10 || y > limite) continue;
+        const topo = document.elementFromPoint(x, y);
+        if (!topo || !topo.closest('svg.mapa-svg')) continue;
+        const l = G.lugarPorId[f.dataset.id];
+        if (!l || l.id === window.NaviMapaPagina.st.destino.id || l.id === window.NaviMapaPagina.st.origem.id) continue;
+        return { x, y, texto: `${l.nome}, ${G.nomeDoAndar(l.piso)}`, nome: l.nome };
+      }
+      return null;
+    });
+    expect(alvo).not.toBeNull();
+    await page.touchscreen.tap(alvo.x, alvo.y);
+    await expect.poll(() => ultimaFala(page)).toBe(alvo.texto);
+    await expect(page.locator('#dlg-lugar')).toBeHidden();
+    await page.touchscreen.tap(alvo.x, alvo.y); await page.touchscreen.tap(alvo.x, alvo.y);
+    const cartao = page.locator('#dlg-lugar');
+    await expect(cartao).toBeVisible();
+    await expect(cartao.getByRole('heading', { name: alvo.nome })).toBeVisible();
+  });
+
+  test('TalkBack do celular ligado: o Navi não fala nem intercepta toques, e avisa uma vez', async ({ page }) => {
+    await page.addInitScript(talkbackFalso, true);
+    await N.abrir(page, { armazenamento: COM_VOZ });
+    await expect(page.locator('#anuncio')).toHaveText('O TalkBack do celular está ligado. O Navi deixa a leitura com ele.');
+    await page.evaluate(() => { window.__falas = []; });
+    await tocar(page, page.locator('#btn-preferencias'));
+    await expect(page.getByRole('dialog', { name: /preferências/i })).toBeVisible();
+    expect(await falas(page)).toEqual([]);
+    await page.keyboard.press('Escape');
+    // TalkBack desligado → voz e gestos voltam
+    await page.evaluate(() => window.__tb.ouvinte({ value: false }));
+    await tocar(page, page.locator('#btn-preferencias'));
+    await expect.poll(() => ultimaFala(page)).toBe('Preferências, botão');
+    await expect(page.getByRole('dialog', { name: /preferências/i })).toBeHidden();
+  });
+
+  test('no app, a pergunta da primeira visita é falada pela voz do Android', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__tts = [];
+      window.Capacitor = { isNativePlatform: () => true, Plugins: { TextToSpeech: {
+        speak: async o => { window.__tts.push(o); }, stop: async () => {}
+      } } };
+    });
+    await N.abrir(page);
+    await expect.poll(() => page.evaluate(() => window.__tts.map(o => o.text).join(' | '))).toContain('Deseja ouvir as instruções em voz alta?');
+    const o = await page.evaluate(() => window.__tts[0]);
+    expect(o).toMatchObject({ lang: 'pt-BR', rate: 1, queueStrategy: 0 });
+    expect(await page.evaluate(() => window.__falas)).toEqual([]);
+  });
+});
+
+test.describe('Computador: voz e Tab (RN76)', () => {
+  test.use({ hasTouch: false });
+  test('com a Voz ligada, Tab lê o item focado no formato "nome, tipo"', async ({ page }, info) => {
+    test.skip(info.project.name !== 'computador', 'teclado do computador');
+    await page.addInitScript(vozFalsa);
+    await N.abrir(page, { armazenamento: COM_VOZ });
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await page.keyboard.press('Tab');
+    await expect.poll(() => ultimaFala(page)).toBe('Pular para o conteúdo, link');
+    expect(await page.evaluate(() => !!document.querySelector('.foco-gestos'))).toBe(false);
   });
 });

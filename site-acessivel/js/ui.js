@@ -43,6 +43,7 @@
    * @param {() => boolean} [o.temRotaAjuda] há lugar de atendimento para traçar rota?
    * @param {() => void} [o.irParaAjuda]
    * @param {() => {destino?: object, passo?: string}} [o.contexto]
+   * @param {(el: Element) => string|null} [o.descreverExtra] leitura própria de itens da página (ex.: lugares da planta)
    */
   function criar(o) {
     const local = o.local, voz = o.voz;
@@ -71,6 +72,7 @@
         </section>
         <section aria-labelledby="pref-instrucoes"><h3 id="pref-instrucoes">Como receber as instruções</h3>
           ${opcao('voz', 'Ouvir as instruções em voz alta', voz.temVoz ? 'O site lê cada passo, com pausa, repetição e velocidade.' : 'Este navegador não tem voz. As instruções continuam por escrito.', p.voz)}
+          <div data-tutorial-gestos ${p.voz && leitura.temToque() ? '' : 'hidden'} style="padding-bottom:var(--e3)"><button type="button" class="btn" data-ouvir-gestos>${svg('i-voz')}Ouvir como usar os gestos</button></div>
           ${opcao('leitor', 'Uso leitor de tela', 'TalkBack, VoiceOver ou NVDA. O site não fala por cima dele.', p.leitorDeTela)}
           ${opcao('libras', 'Tradutor de Libras', 'VLibras, do Governo Federal. Precisa de internet.', p.libras)}
           <div style="padding-top:var(--e3)"><button type="button" class="btn" data-cartao>${svg('i-cartao')}Mostrar cartão para o atendente</button></div>
@@ -94,6 +96,7 @@
     function aplicar(mudanca, nome) {
       const p = E().salvar(mudanca);
       E().aplicarNaPagina(p);
+      leitura.avaliar();
       if (o.aoMudarPreferencias) o.aoMudarPreferencias(p, nome);
       return p;
     }
@@ -111,9 +114,13 @@
           if (sw) sw.setAttribute('aria-checked', String(!!p[campo]));
           if (est) est.textContent = p[campo] ? 'Ligado' : 'Desligado';
         }
+        const tut = corpo.querySelector('[data-tutorial-gestos]');
+        if (tut) tut.hidden = !(p.voz && leitura.temToque());
         voz.anunciar(`${NOMES_OP[op]}: ${p[CAMPO_OP[op]] ? 'ligado' : 'desligado'}.`, { visual: false });
-        if (op === 'voz' && p.voz) voz.falar('Voz ligada.');
+        if (op === 'voz' && p.voz) voz.falar(textoVozLigada());
       });
+      const og = corpo.querySelector('[data-ouvir-gestos]');
+      if (og) og.onclick = () => voz.falar(TUTORIAL_GESTOS, { forcar: true });
       corpo.querySelectorAll('input[name="texto"]').forEach(r => r.onchange = () => { aplicar({ texto: +r.value }, 'texto'); voz.anunciar(`Tamanho do texto: ${r.value}%.`, { visual: false }); });
       corpo.querySelectorAll('input[name="tema"]').forEach(r => r.onchange = () => {
         aplicar({ tema: r.value }, 'tema');
@@ -198,19 +205,61 @@
       };
     }
 
-    /* ---------- leitura do item em foco pelo teclado, com a voz ligada ---------- */
+    /* ---------- leitura do item em foco pelo teclado, com a voz ligada (formato "nome, tipo, estado") ---------- */
     let usouTeclado = false;
     document.addEventListener('keydown', ev => { if (ev.key === 'Tab') usouTeclado = true; });
     document.addEventListener('pointerdown', () => { usouTeclado = false; });
     document.addEventListener('focusin', ev => {
       if (!usouTeclado || !E().preferencias().voz) return;
+      const G = raiz.NaviGestos;
       const alvo = ev.target;
-      const nome = alvo.getAttribute('aria-label') || (alvo.id && document.querySelector(`label[for="${alvo.id}"]`)?.textContent) || alvo.textContent;
-      if (nome && nome.trim()) voz.falar(nome.replace(/\s+/g, ' ').trim(), { baixa: true });
+      const texto = G ? G.descrever(alvo, o.descreverExtra)
+        : (alvo.getAttribute('aria-label') || (alvo.id && document.querySelector(`label[for="${alvo.id}"]`)?.textContent) || alvo.textContent);
+      if (texto && texto.trim()) voz.falar(texto.replace(/\s+/g, ' ').trim(), { baixa: true });
     });
 
-    return { abrirPreferencias, abrirAjuda, abrirCartao, renderBarraVoz, abrirDialogo, criarDialogo, esc };
+    /* ---------- gestos do TalkBack (RN76) e TalkBack do celular (RN77) ---------- */
+    const leitura = criarLeitura();
+    function criarLeitura() {
+      const G = raiz.NaviGestos, LC = raiz.NaviLeitorCelular;
+      const gestos = G ? G.criar({ voz, descreverExtra: o.descreverExtra }) : null;
+      let celular = false;
+      const temToque = () => {
+        try { if (raiz.matchMedia && raiz.matchMedia('(any-pointer: coarse)').matches) return true; } catch (e) { /* */ }
+        return !!(raiz.navigator && raiz.navigator.maxTouchPoints > 0);
+      };
+      function avaliar() {
+        if (!gestos) return;
+        const p = E().preferencias();
+        if (p.voz && !p.leitorDeTela && !celular && voz.temVoz && temToque()) gestos.ligar(); else gestos.desligar();
+      }
+      function mudarCelular(ligado) {
+        ligado = !!ligado;
+        if (ligado === celular) return;
+        celular = ligado;
+        if (voz.definirLeitorCelular) voz.definirLeitorCelular(ligado);
+        // só pela região aria-live: quem lê é o próprio TalkBack
+        if (ligado) voz.anunciar('O TalkBack do celular está ligado. O Navi deixa a leitura com ele.', { falar: false, visual: false });
+        avaliar();
+      }
+      if (LC) {
+        const lc = LC.criar();
+        lc.ligado().then(mudarCelular, () => {});
+        lc.aoMudar(mudarCelular);
+      }
+      avaliar();
+      return { avaliar, temToque, ligados: () => !!(gestos && gestos.ligado()) };
+    }
+    // o que se fala ao ligar a Voz: com tela de toque, como usar os gestos
+    const textoVozLigada = () => leitura.ligados() ? 'Voz ligada. ' + TUTORIAL_GESTOS : 'Voz ligada.';
+
+    return {
+      abrirPreferencias, abrirAjuda, abrirCartao, renderBarraVoz, abrirDialogo, criarDialogo, esc,
+      atualizarLeitura: () => leitura.avaliar(), gestosLigados: () => leitura.ligados(), textoVozLigada
+    };
   }
 
-  raiz.NaviUI = { criar, abrirDialogo, criarDialogo, esc };
+  const TUTORIAL_GESTOS = 'Toque uma vez para ouvir um item, toque duas vezes para ativar e deslize para a direita para ir ao próximo.' +
+    ' Deslize para a esquerda para voltar. Com dois dedos, você rola a página e move o mapa.';
+  raiz.NaviUI = { criar, abrirDialogo, criarDialogo, esc, TUTORIAL_GESTOS };
 })(typeof window !== 'undefined' ? window : globalThis);

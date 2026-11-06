@@ -382,7 +382,9 @@
       svg.addEventListener('pointerup', soltar);
       svg.addEventListener('pointercancel', soltar);
       svg.addEventListener('click', ev => {
-        if (arrastou) { arrastou = false; return; }
+        // clique depois de arrastar não seleciona; o clique dos 2 toques dos gestos (RN76, não confiável) sempre seleciona
+        if (arrastou && ev.isTrusted) { arrastou = false; return; }
+        arrastou = false;
         const alvo = document.elementsFromPoint(ev.clientX, ev.clientY).map(n => n.closest && n.closest('[data-id]')).find(n => n && svg.contains(n));
         if (alvo && ao.selecionar) ao.selecionar(G.lugarPorId[alvo.dataset.id]);
       });
