@@ -1,0 +1,2 @@
+APK de teste do Navi, gerado do commit e774815 da branch app/android em 06/11/2026 18:49 (UTC).
+Como instalar: app-android/LEIA-ME.md na branch app/android.
