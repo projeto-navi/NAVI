@@ -21,8 +21,9 @@ function intervaloFalso() {
 function montar(estado) {
   const plugin = criarPluginFalso(estado);
   const armazenamento = armazenamentoFalso(), documento = documentoFalso(), tempo = intervaloFalso();
-  const app = NBA.criar({ plugin, armazenamento, documento, intervalo: tempo.intervalo });
-  return { plugin, armazenamento, documento, tempo, app };
+  const relogio = { t: 1000 };
+  const app = NBA.criar({ plugin, armazenamento, documento, intervalo: tempo.intervalo, agora: () => relogio.t });
+  return { plugin, armazenamento, documento, tempo, app, relogio };
 }
 const nomes = p => p.chamadas.map(c => c.nome);
 const espera = () => new Promise(r => setTimeout(r, 0));
@@ -55,14 +56,14 @@ test.describe('NaviBeaconsApp', () => {
     expect(nomes(plugin)).toEqual(expect.arrayContaining(['requestEnable', 'openLocationSettings']));
   });
 
-  test('começar: busca com duplicados e baixa latência; só iBeacons chegam', async () => {
+  test('começar: busca com duplicados no modo equilibrado; só iBeacons chegam', async () => {
     const { app, plugin, armazenamento } = montar({});
     const lidas = [];
     await app.comecar(l => lidas.push(l));
     // o próprio Android filtra: só pacotes da Apple (76) que começam como iBeacon (02 15) chegam ao app.
     // Sem isso, todo anúncio Bluetooth em volta atravessa a ponte e trava celulares intermediários.
     expect(plugin.chamadas.find(x => x.nome === 'requestLEScan').arg).toEqual({
-      allowDuplicates: true, scanMode: 2, manufacturerData: [{ companyIdentifier: 76, dataPrefix: '0215' }]
+      allowDuplicates: true, scanMode: 1, manufacturerData: [{ companyIdentifier: 76, dataPrefix: '0215' }]
     });
     plugin.emitirBeacon(2, -60);
     plugin.emitir({ rssi: -50, manufacturerData: { 6: '0102' } });
@@ -106,7 +107,44 @@ test.describe('NaviBeaconsApp', () => {
     await app.parar();
     expect(app.procurando()).toBe(false);
     expect(nomes(plugin)).toEqual(expect.arrayContaining(['stopLEScan', 'removeListener']));
-    expect(armazenamento.getItem('navi-beacons')).toBeNull();
+    expect(armazenamento.getItem('navi-beacons')).toBe('0');
+    expect(app.desligadoPelaPessoa()).toBe(true);
+    await app.comecar(() => {});
+    expect(app.desligadoPelaPessoa()).toBe(false);
+  });
+
+  test('no máximo uma leitura por beacon a cada 0,5 s', async () => {
+    const { app, plugin, relogio } = montar({});
+    const lidas = [];
+    await app.comecar(l => lidas.push(l));
+    plugin.emitirBeacon(2, -60); plugin.emitirBeacon(2, -61); plugin.emitirBeacon(2, -62);
+    expect(lidas).toHaveLength(1);
+    plugin.emitirBeacon(5, -60);
+    expect(lidas).toHaveLength(2); // outro beacon não espera
+    relogio.t += 499; plugin.emitirBeacon(2, -63);
+    expect(lidas).toHaveLength(2);
+    relogio.t += 2; plugin.emitirBeacon(2, -64);
+    expect(lidas.map(l => l.rssi)).toEqual([-60, -60, -64]);
+  });
+
+  test('enxurrada de 500 leituras no mesmo instante: só uma por beacon passa', async () => {
+    const { app, plugin } = montar({});
+    let n = 0;
+    await app.comecar(() => { n++; });
+    for (let i = 0; i < 500; i++) plugin.emitirBeacon(1 + (i % 5), -60);
+    expect(n).toBe(5);
+    expect(app.diagnostico()).toMatchObject({ leituras: 500, aceitas: 5 });
+  });
+
+  test('um erro ao tratar uma leitura não derruba as próximas e fica anotado', async () => {
+    const { app, plugin, relogio } = montar({});
+    const lidas = [];
+    await app.comecar(l => { if (!lidas.length) { lidas.push('erro'); throw new Error('falha de teste'); } lidas.push(l.minor); });
+    plugin.emitirBeacon(2, -60);
+    relogio.t += 600; plugin.emitirBeacon(2, -60);
+    plugin.emitir({ rssi: -50, manufacturerData: { 76: 'zz' } }); // lixo também não derruba
+    expect(lidas).toEqual(['erro', 2]);
+    expect(app.diagnostico()).toMatchObject({ erros: 1, ultimoErro: 'falha de teste' });
   });
 
   test('Bluetooth desligado no meio: a busca pausa e avisa; religado, retoma', async () => {

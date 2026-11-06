@@ -1,13 +1,13 @@
 # Roteiro de testes — app Android do Navi com beacons
 
-Versão de 05/11/2026. Branch `app/android`. Regras em teste: RN71 a RN74 (propostas no Documento 04 v1.5, aguardando aprovação de Camilly e Leonardo).
+Versão de 05/11/2026 (revisada depois do primeiro teste no celular). Branch `app/android`. Regras em teste: RN71 a RN75 (propostas no Documento 04 v1.6, aguardando aprovação de Camilly e Leonardo).
 
-O app guarda o site do Navi e percebe beacons Bluetooth (padrão iBeacon). Quando a pessoa chega perto de um beacon cadastrado, ele mostra "Você está perto de X" e oferece usar esse lugar como ponto de partida. Ele **não** mostra a posição exata andando no mapa.
+O app guarda o site do Navi e percebe beacons Bluetooth (padrão iBeacon). Ao traçar uma rota, a busca liga sozinha. Quando a pessoa chega perto de um beacon cadastrado, o mapa mostra uma **bolinha vermelha "Você está aqui"** no lugar do beacon e a faixa "Você está perto de X", com a opção de recalcular a rota dali. A bolinha fica no lugar do beacon: ela não acompanha cada passo.
 
 ## O que é preciso
 
 - 1 celular Android para o Navi (Android 8 ou mais novo, de preferência).
-- 1 segundo celular Android com o app gratuito **Beacon Simulator** (Play Store), fazendo papel de beacon. Alguns celulares mais simples não conseguem transmitir; o próprio app avisa.
+- 1 segundo celular Android com o app gratuito **Locate Beacon** (Play Store), fazendo papel de beacon. No primeiro teste, o Redmi Note 14 Pro 4G transmitiu bem. Alternativa: **nRF Connect for Mobile** (Nordic), aba Advertiser.
 - O APK `navi-teste.apk`. Onde baixar:
   - no GitHub, trocando a branch para **`apk-teste`**, abrindo `navi-teste.apk` e clicando em **Download raw file** (é sempre o mais recente);
   - ou em **Actions → APK de teste → execução com ✓ → Artifacts → navi-teste** (vem num `.zip`).
@@ -19,9 +19,12 @@ O app guarda o site do Navi e percebe beacons Bluetooth (padrão iBeacon). Quand
 3. No aviso do Play Protect: **Mais detalhes → Instalar mesmo assim**.
 4. As próximas versões instalam por cima, sem desinstalar.
 
-## Montar o beacon simulado
+## Montar o beacon simulado (Locate Beacon)
 
-No segundo celular, no Beacon Simulator, crie um **iBeacon** com UUID `FDA50693-A4E2-4FB1-AFCF-C6EB07647825`, **major 1** e o **minor** do lugar. Ligue a transmissão. Para testar a troca de lugar, crie dois beacons com minors diferentes e alterne.
+1. No segundo celular, dê ao Locate a permissão **Dispositivos por perto** (Configurações → Apps → Locate → Permissões) e tire-o da economia de bateria.
+2. Abra **Beacon Transmitter** e preencha: **ID1** `FDA50693-A4E2-4FB1-AFCF-C6EB07647825`, **ID2** `1`, **ID3** = minor do lugar (tabela), **Power** `-59`, **Beacon format** **iBeacon**.
+3. Toque na **chavinha** para transmitir (o **Apply** só funciona com ela ligada, para trocar valores). Deixe a tela acesa.
+4. O Locate não guarda os campos: ao reabrir, preencha de novo.
 
 | minor | Lugar |
 |---|---|
@@ -38,19 +41,23 @@ No segundo celular, no Beacon Simulator, crie um **iBeacon** com UUID `FDA50693-
 
 | # | O que fazer | Esperado |
 |---|---|---|
-| 1 | Na página inicial, em "Localização por beacons", toque em **Encontrar onde você está** e ligue Bluetooth, localização e permissão, um de cada vez | Cada linha muda para "Ligado", "Ligada" e "Permitida"; "Começar a procurar" só fica ativo com as três |
+| 0 | **Preferências → Beacons por perto** | Mostra "Versão do app" (confira se é a do APK mais recente) e "Leituras recebidas" |
+| 1 | Trace uma rota (Entrada → Sala de reunião) com Bluetooth e localização ligados | A busca liga sozinha; na primeira vez, o Android pede as permissões |
+| 1b | Trace uma rota com o Bluetooth desligado | Faixa "Para mostrar onde você está no mapa, ative o Bluetooth e a localização." com **Ativar**; ao tocar, o Android liga o que falta e a busca começa |
 | 2 | **Preferências → Beacons por perto**, com o simulador ligado (minor 2) | O beacon aparece com "Elevador 1", "minor 2", sinal e distância. Anote o sinal a 1 m e a 3 m |
 | 3 | **Começar a procurar** e deixe os celulares a ~1 m | Em alguns segundos: "Você está perto de: Elevador 1 (1º andar)" |
 | 4 | Afaste-se ~5 m ou desligue o simulador | A mensagem some em até ~8 s |
 | 5 | Perto do Elevador 1, toque em **Sair daqui** e escolha um destino | A rota começa no Elevador 1 |
-| 6 | Abra uma rota (Entrada → Sala de reunião) e chegue perto da Rampa (minor 5) | No mapa, faixa "Você está perto de: Rampa (1º andar)"; **Recalcular daqui** refaz a rota saindo da rampa |
+| 6 | Abra uma rota (Entrada → Sala de reunião) e chegue perto da Rampa (minor 5) | **Bolinha vermelha "Você está aqui"** na rampa (2D e 3D); a partida passa a se chamar "Partida: Entrada principal"; faixa "Você está perto de: Rampa (1º andar)"; **Recalcular daqui** refaz a rota saindo da rampa |
+| 6b | Com o mapa no 1º andar, chegue perto do minor 6 (Elevador 1, 2º andar) | A bolinha só aparece ao mudar para o 2º andar; a faixa diz o andar |
+| 6c | Deixe o app procurando com muitos aparelhos Bluetooth em volta (fones, relógios) | Nada trava; a tela continua respondendo |
 | 7 | Com a mesma rota, chegue perto da Sala de reunião (minor 7) | "Você chegou: Sala de reunião", sem botão |
 | 8 | Com a busca ligada, desligue o Bluetooth | "O Bluetooth foi desligado. A busca está pausada." com "Ligar o Bluetooth"; religando, volta a procurar |
 | 9 | Negue a permissão quando o Android perguntar | O painel explica como permitir em Configurações → Apps → Navi → Permissões |
 | 10 | Mande o app para segundo plano e volte | A busca para e volta sozinha |
 | 11 | Repita 1, 3 e 5 com o **TalkBack** ligado | Tudo é lido; os anúncios de "perto de" chegam uma vez por chegada |
 | 12 | Rotas, 3D, avisos e Área ADM | Funcionam como no site (avisos e Área ADM precisam de internet) |
-| 13 | **Parar de procurar** | A busca desliga; ao reabrir o app, continua desligada |
+| 13 | **Parar de procurar** (cartão da página inicial) | A busca desliga e não religa sozinha ao traçar rota, até a pessoa pedir de novo |
 
 ## Ficha de retorno
 

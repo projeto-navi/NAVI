@@ -60,6 +60,8 @@
   --mapa-trecho-ativo-borda: #0D1B2A;
   --mapa-partida: #FFFFFF;
   --mapa-partida-borda: #0D1B2A;
+  --mapa-posicao: #D7263D;        /* RN75: bolinha "Você está aqui" */
+  --mapa-posicao-borda: #FFFFFF;
   --mapa-destino: #FFC62E;
   --mapa-destino-borda: #0D1B2A;
   --mapa-acessibilidade: #0B4FA8;        /* rampa, elevador, piso tátil, acesso */
@@ -169,6 +171,8 @@ html.contraste {
   --mapa-trecho-ativo-borda: #FFFFFF;
   --mapa-partida: #061A33;
   --mapa-partida-borda: #FFFFFF;
+  --mapa-posicao: #FF5C6C;
+  --mapa-posicao-borda: #FFFFFF;
   --mapa-destino: #FFD21F;
   --mapa-destino-borda: #FFD21F;
   --mapa-acessibilidade: #FFD21F;
@@ -233,6 +237,8 @@ html.daltonismo {
   --mapa-trecho-ativo-borda: #000000;
   --mapa-partida: #FFFFFF;
   --mapa-partida-borda: #000000;
+  --mapa-posicao: #D55E00;        /* vermelhão: distinguível com daltonismo vermelho-verde */
+  --mapa-posicao-borda: #FFFFFF;
   --mapa-destino: #E69F00;
   --mapa-destino-borda: #000000;
   --mapa-acessibilidade: #000000;

@@ -125,6 +125,8 @@
         lajeVidro: L({ color: pisoBase, transparent: true, opacity: 0.55, depthWrite: false }),
         origem: L({ color: cssVar('--mapa-partida', '#FFFFFF') }),
         origemAnel: L({ color: cssVar('--mapa-partida-borda', '#0D1B2A') }),
+        posicao: L({ color: cssVar('--mapa-posicao', '#D7263D') }),
+        posicaoAnel: L({ color: cssVar('--mapa-posicao-borda', '#FFFFFF') }),
         destino: L({ color: destino, emissive: destino, emissiveIntensity: 0.2 }),
         aviso: L({ color: cssVar('--mapa-aviso', '#A85F00'), emissive: cssVar('--mapa-aviso', '#A85F00'), emissiveIntensity: 0.2 }),
         quiosqueFantasma: L({ color: cssVar('--mapa-quiosque', '#E6EBF1'), transparent: true, opacity: 0.18, depthWrite: false }),
@@ -424,12 +426,26 @@
         }
         const el = document.createElement('div');
         el.className = 'rotulo3d rotulo3d-fixo ' + tipo;
-        el.textContent = (tipo === 'origem' ? 'Você: ' : '') + lugar.nome;
+        el.textContent = (tipo === 'origem' ? (E.posicao ? 'Partida: ' : 'Você: ') : '') + lugar.nome;
         el.dataset.x = lugar.x; el.dataset.y = lugar.y; el.dataset.piso = lugar.piso;
         el.dataset.h = tipo === 'origem' ? 20 : fp ? ALT_LOJA - 6 : ALT_LOJA + 64;
         rotulos.appendChild(el);
       };
       marca(E.origem, 'origem'); marca(E.destino, 'destino');
+      // RN75: bolinha vermelha "Você está aqui" no lugar do beacon encontrado
+      const aqui = E.posicao;
+      if (aqui && visivel(aqui.piso)) {
+        const g = new T.Group();
+        const bola = new T.Mesh(new T.SphereGeometry(11, 24, 16), M.posicao); bola.position.y = 14;
+        const anel = new T.Mesh(new T.TorusGeometry(13, 3, 10, 40), M.posicaoAnel); anel.rotation.x = Math.PI / 2; anel.position.y = 2;
+        g.add(bola, anel); g.position.copy(P(aqui.x, aqui.y, aqui.piso, 3));
+        grupoRota.add(g);
+        const el = document.createElement('div');
+        el.className = 'rotulo3d rotulo3d-fixo posicao';
+        el.textContent = 'Você está aqui';
+        el.dataset.x = aqui.x; el.dataset.y = aqui.y; el.dataset.piso = aqui.piso; el.dataset.h = 44;
+        rotulos.appendChild(el);
+      }
     }
 
     function visibilidade(E) {

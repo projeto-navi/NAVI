@@ -71,6 +71,12 @@ html.contraste .entrada-forma, html.daltonismo .entrada-forma { fill: var(--mapa
 .marca-halo-traco { fill: none; stroke: var(--mapa-marca-halo); stroke-linejoin: round; }
 .marca-origem { fill: var(--mapa-partida); stroke: var(--mapa-partida-borda); }
 .marca-origem-centro { fill: var(--mapa-partida-borda); }
+/* RN75: "Você está aqui" (beacon encontrado). O pulso mostra que é ao vivo; parado para quem desligou animações. */
+.marca-posicao-centro { fill: var(--mapa-posicao); }
+.marca-posicao-borda { fill: var(--mapa-posicao-borda); }
+.marca-posicao-pulso { fill: var(--mapa-posicao); opacity: 0.3; transform-box: fill-box; transform-origin: center; animation: pulso-posicao 1.8s cubic-bezier(0.23, 1, 0.32, 1) infinite; }
+@keyframes pulso-posicao { from { transform: scale(0.6); opacity: 0.45; } to { transform: scale(1.5); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .marca-posicao-pulso { animation: none; opacity: 0.25; } }
 .marca-destino { fill: var(--mapa-destino); stroke: var(--mapa-destino-borda); stroke-linejoin: round; }
 .marca-destino-centro { fill: var(--mapa-destino-borda); }
 

@@ -40,6 +40,10 @@
     tela.innerHTML = `<p>Todos os beacons que este celular percebe agora. Os cadastrados mostram o lugar; os outros aparecem como "não cadastrado".</p>
       <div class="beacons-controles">${htmlControles()}</div>
       <p class="texto-2" id="beacons-contagem" role="status"></p>
+      <div class="beacons-diagnostico texto-2">
+        <p>Versão do app: ${esc(window.NAVI_VERSAO_APP || 'desconhecida')}</p>
+        <p id="beacons-diag"></p>
+      </div>
       <ul class="beacons-lista" aria-label="Beacons por perto"></ul>`;
     const c = $('btn-comecar');
     if (c) c.onclick = comecar;
@@ -60,6 +64,8 @@
         <span>Distância: ${metros(b.distancia)}</span>
         <span class="texto-2">visto há ${Math.max(0, Math.round((agora - b.vistoEm) / 1000))} s</span>
       </li>`).join('');
+    const d = app.diagnostico ? app.diagnostico() : null, diag = $('beacons-diag');
+    if (d && diag) diag.textContent = `Leituras recebidas: ${d.leituras} (usadas: ${d.aceitas})` + (d.erros ? `. Último erro: ${d.ultimoErro}` : '');
     if (todos.length !== quantos) {
       quantos = todos.length;
       $('beacons-contagem').textContent = app.procurando()

@@ -187,6 +187,24 @@
       desenharAvisos();
       if (svg) svg.setAttribute('aria-label', o.rotulo ? o.rotulo(st.piso) : 'Planta do andar');
       desenharRota();
+      desenharPosicao();
+    }
+
+    /** RN75: bolinha vermelha "Você está aqui" no lugar do beacon encontrado, só no andar dele. */
+    function desenharPosicao() {
+      if (!svg || !cam.posicao) return;
+      cam.posicao.textContent = '';
+      const l = st.posicao;
+      if (!l || l.piso !== st.piso) return;
+      const g = el('g', { class: 'marca-ponto marca-posicao', 'data-escala': 1, 'data-x': l.x, 'data-y': l.y }, cam.posicao);
+      g.dataset.id = l.id;
+      el('circle', { r: 18, class: 'marca-posicao-pulso' }, g);
+      el('circle', { r: 11, class: 'marca-posicao-borda' }, g);
+      el('circle', { r: 8, class: 'marca-posicao-centro' }, g);
+      const t = el('text', { x: 0, y: -22, 'text-anchor': 'middle', class: 'rotulo rotulo-marca rotulo-posicao', 'font-size': 15 }, g);
+      t.textContent = 'Você está aqui';
+      escalaAplicada = null;
+      aplicarVB();
     }
     function desenharRotulos(lugares) {
       // nomes das lojas e salas (aparecem ao aproximar); as maiores primeiro, sem sobrepor
@@ -321,7 +339,8 @@
           el('circle', { cy: -24, r: 5, class: 'marca-destino-centro' }, g);
         }
         const t = el('text', { x: 0, y: tipo === 'origem' ? -20 : -45, 'text-anchor': 'middle', class: 'rotulo rotulo-marca', 'font-size': 15 }, g);
-        t.textContent = (tipo === 'origem' ? 'Você: ' : '') + lugar.nome;
+        // com a bolinha "Você está aqui" (RN75) a partida deixa de dizer "Você:", para não haver dois "você"
+        t.textContent = (tipo === 'origem' ? (st.posicao ? 'Partida: ' : 'Você: ') : '') + lugar.nome;
       };
       marca(st.origem, 'origem'); marca(st.destino, 'destino');
       aplicarVB();
@@ -401,7 +420,7 @@
         desc.className = 'sr'; desc.id = 'mapa-svg-desc';
         desc.textContent = 'Arraste ou use as setas do teclado para mover a planta, e as teclas mais e menos para aproximar. Tudo o que está no mapa também está no passo a passo e na lista de lugares do andar.';
         svg.setAttribute('aria-describedby', desc.id);
-        for (const nome of ['piso', 'planta', 'rotulos', 'icones', 'rota', 'setas', 'marcas']) cam[nome] = el('g', { class: 'camada-' + nome }, svg);
+        for (const nome of ['piso', 'planta', 'rotulos', 'icones', 'rota', 'setas', 'marcas', 'posicao']) cam[nome] = el('g', { class: 'camada-' + nome }, svg);
         container.append(svg, desc);
         medir();
         ligarInteracao();
@@ -458,6 +477,13 @@
         if (JSON.stringify(st.margens) !== antes && enquadramento && !mexeu && largura) moverPara(enquadramento(), true);
       },
       setAvisos(lista) { st.avisos = lista || []; if (svg) desenharAndar(); },
+      setPosicao(id) {
+        const tinha = !!st.posicao;
+        st.posicao = id ? local.lugar(id) || null : null;
+        if (tinha !== !!st.posicao) desenharRota(); // o rótulo da partida muda ("Você:" ↔ "Partida:")
+        desenharPosicao();
+      },
+      get posicao() { return st.posicao ? st.posicao.id : null; },
       get andar() { const a = local.andares.find(x => x.ordem === st.piso); return a ? a.id : null; },
       elemento: () => svg
     };

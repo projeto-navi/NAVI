@@ -111,6 +111,8 @@
       zoom(f) { if (m3d) m3d.zoom(f); },
       setMargens() { /* o 3D enquadra pela caixa do andar; os controles flutuam por cima */ },
       setAvisos(lista) { E.avisos = lista || []; if (m3d) m3d.atualizar(E); },
+      setPosicao(id) { E.posicao = id ? local.lugar(id) || null : null; if (m3d) m3d.atualizar(E); },
+      get posicao() { return E.posicao ? E.posicao.id : null; },
       /* extras do 3D */
       primeiraPessoa(passo) { if (!m3d) return false; E.passo = passo || 0; return m3d.primeiraPessoa(E); },
       sairPrimeiraPessoa(silencioso) { if (m3d && m3d.emPrimeiraPessoa) m3d.sairPrimeiraPessoa(silencioso); },

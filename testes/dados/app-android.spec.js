@@ -28,6 +28,12 @@ test.describe('app-android', () => {
     for (const t of ['workflow_dispatch', 'app/android', 'assembleDebug', 'upload-artifact', 'navi-teste', 'npx cap add android', 'ajustar-android']) expect(w, t).toContain(t);
   });
 
+  test('o workflow grava a versão (commit) dentro do app, para aparecer na tela "Beacons por perto"', () => {
+    const w = ler('.github/workflows/apk.yml');
+    expect(w).toMatch(/www\/js\/versao-app\.js/);
+    expect(w).toContain('GITHUB_SHA');
+  });
+
   test('o workflow também publica o APK na branch apk-teste, só com a versão mais recente', () => {
     const w = ler('.github/workflows/apk.yml');
     expect(w).toMatch(/git push -f .* apk-teste/);

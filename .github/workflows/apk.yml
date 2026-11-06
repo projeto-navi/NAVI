@@ -41,6 +41,9 @@ jobs:
       - name: Copiar o site para dentro do app
         run: npm run copiar-site
 
+      - name: Gravar a versão do app (aparece em Preferências → Beacons por perto)
+        run: echo "self.NAVI_VERSAO_APP = '${GITHUB_SHA::7} ($(date -u '+%d/%m/%Y %H:%M') UTC)';" > www/js/versao-app.js
+
       - name: Criar o projeto Android
         run: npx cap add android
 

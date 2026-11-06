@@ -74,7 +74,7 @@
       unmount() { if (raizEl) raizEl.remove(); raizEl = null; },
       setFloor() {}, showRoute() {}, focusStep() {}, highlight() {}, applyTheme() {}, applyPreferences() {},
       capabilities: () => ({ tresD: false, primeiraPessoa: false, zoom: false, selecionar: false }),
-      centralizar() {}, zoom() {}, setMargens() {}, setAvisos() {}
+      centralizar() {}, zoom() {}, setMargens() {}, setAvisos() {}, setPosicao() {}
     };
   }
 

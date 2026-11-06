@@ -417,6 +417,12 @@
     guardarNaUrl();
     aposMudarRota({ prefixo: 'Partida e destino invertidos. Rota calculada' });
   }
+  /** RN75: bolinha "Você está aqui" no lugar do beacon encontrado (2D e 3D). */
+  function definirPosicao(id) {
+    st.posicao = id || null;
+    if (mapa2d && mapa2d.setPosicao) mapa2d.setPosicao(st.posicao);
+    if (mapa3d && mapa3d.setPosicao) mapa3d.setPosicao(st.posicao);
+  }
   function recalcular(o = {}) {
     aposMudarRota({ anunciar: o.anunciar, focar: o.focar, manterPainel: !o.focar, prefixo: 'Rota recalculada' });
   }
@@ -589,6 +595,7 @@
           });
           await r.mount(camada3d);
           mapa3d = r;
+          if (r.setPosicao && st.posicao) r.setPosicao(st.posicao);
         } catch (e) {
           if (camada3d) camada3d.remove();
           camada3d = null; mapa3d = null;
@@ -780,7 +787,12 @@
   paginaPronta = true;
   // app Android: beacons (só liga dentro do app; no navegador não faz nada)
   if (window.NaviBeaconsUI) {
-    window.NaviBeaconsUI.ligar({ pagina: 'mapa', local, slug: local.slug, origem: () => st.origem && st.origem.id, destino: () => st.destino && st.destino.id, anunciar: t => voz.anunciar(t, { visual: false }) });
+    window.NaviBeaconsUI.ligar({
+      pagina: 'mapa', local, slug: local.slug, automatico: true, // RN72: liga sozinho ao traçar a rota
+      origem: () => st.origem && st.origem.id, destino: () => st.destino && st.destino.id,
+      anunciar: t => voz.anunciar(t, { visual: false, falar: false }), // só o leitor de tela, sem a voz do celular
+      aoMudarPosicao: definirPosicao
+    });
   }
   if (servidorMudou) aposAvisosDoServidor();
 

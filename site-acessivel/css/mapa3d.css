@@ -17,6 +17,7 @@
 }
 .rotulo3d.origem { background: var(--mapa-partida); color: var(--cor-texto); border: 2px solid var(--mapa-partida-borda); font-size: 0.9375rem; padding: 6px 10px; z-index: 2; }
 html.contraste .rotulo3d.origem { color: #FFFFFF; }
+.rotulo3d.posicao { background: var(--mapa-posicao); color: #FFFFFF; border: 2px solid var(--mapa-posicao-borda); font-weight: 700; }
 html.texto-grande .rotulo3d { font-size: 1rem; }
 html.texto-grande .rotulo3d.destino, html.texto-grande .rotulo3d.origem { font-size: 1.125rem; }
 .dica3d {

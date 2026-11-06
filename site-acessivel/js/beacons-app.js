@@ -6,7 +6,10 @@
   'use strict';
   const NB = raiz.NaviBeacons || (typeof require === 'function' ? require('./beacons.js') : null);
   const CHAVE = 'navi-beacons';
-  const SCAN_MODE_LOW_LATENCY = 2;
+  // Modo equilibrado: menos leituras por segundo que o de baixa latência e detecção em poucos
+  // segundos do mesmo jeito. Escolhido depois do travamento no Galaxy A23 5G (teste de 05/11/2026).
+  const SCAN_MODE_BALANCED = 1;
+  const INTERVALO_POR_BEACON_MS = 500; // no máximo uma leitura de cada beacon nesse tempo
   // Filtro aplicado pelo próprio Android (ScanFilter): só anúncios da Apple (empresa 76 = 0x004C)
   // que começam como iBeacon (02 15). Sem ele, todo aparelho Bluetooth em volta (fones, relógios,
   // TVs, celulares) gera eventos na ponte, várias vezes por segundo, e trava celulares intermediários.
@@ -23,14 +26,18 @@
 
   /**
    * @param {{plugin?: object, armazenamento?: Storage, documento?: Document,
-   *          intervalo?: (fn: () => void, ms: number) => () => void}} op
+   *          intervalo?: (fn: () => void, ms: number) => () => void, agora?: () => number}} op
    */
   function criar(op = {}) {
     const plugin = op.plugin !== undefined ? op.plugin : pluginNativo();
     const arm = op.armazenamento !== undefined ? op.armazenamento : (typeof localStorage !== 'undefined' ? localStorage : null);
     const doc = op.documento !== undefined ? op.documento : (typeof document !== 'undefined' ? document : null);
     const intervalo = op.intervalo || ((fn, ms) => { const id = setInterval(fn, ms); return () => clearInterval(id); });
-    const guardar = (sim) => { try { if (arm) { if (sim) arm.setItem(CHAVE, '1'); else arm.removeItem(CHAVE); } } catch (e) { /* bloqueado */ } };
+    const agora = op.agora || (() => Date.now());
+    // '1' = procurando; '0' = a pessoa desligou (não religa sozinho ao traçar rota, RN72)
+    const guardar = (sim) => { try { if (arm) arm.setItem(CHAVE, sim ? '1' : '0'); } catch (e) { /* bloqueado */ } };
+    const diag = { leituras: 0, aceitas: 0, erros: 0, ultimoErro: '' };
+    const ultimaPorBeacon = new Map();
 
     let iniciado = false, permissaoNegada = false;
     let querendo = false, ativa = false, pausadaPorSituacao = false;
@@ -71,16 +78,27 @@
     async function ligarBluetooth() { await garantirIniciado(); await plugin.requestEnable(); }
     async function ligarLocalizacao() { await garantirIniciado(); await plugin.openLocationSettings(); }
 
+    // Cada anúncio passa por aqui: tem de ser barato e nunca pode lançar erro de volta para a ponte.
     function aoResultado(r) {
-      if (!aoLer || !r) return;
-      const b = NB.lerIBeacon(r.manufacturerData);
-      if (!b) return;
-      if (typeof b.potencia !== 'number' && typeof r.txPower === 'number' && r.txPower !== 127) b.potencia = r.txPower;
-      aoLer({ ...b, rssi: r.rssi });
+      diag.leituras++;
+      try {
+        if (!aoLer || !r) return;
+        const b = NB.lerIBeacon(r.manufacturerData);
+        if (!b) return;
+        const id = b.uuid + ':' + b.major + ':' + b.minor, t = agora(), antes = ultimaPorBeacon.get(id);
+        if (antes !== undefined && t - antes < INTERVALO_POR_BEACON_MS) return;
+        ultimaPorBeacon.set(id, t);
+        if (typeof b.potencia !== 'number' && typeof r.txPower === 'number' && r.txPower !== 127) b.potencia = r.txPower;
+        diag.aceitas++;
+        aoLer({ ...b, rssi: r.rssi });
+      } catch (e) {
+        diag.erros++;
+        diag.ultimoErro = String((e && e.message) || e).slice(0, 120);
+      }
     }
     async function ligarBusca() {
       if (ativa) return;
-      await plugin.requestLEScan({ allowDuplicates: true, scanMode: SCAN_MODE_LOW_LATENCY, manufacturerData: FILTRO_IBEACON });
+      await plugin.requestLEScan({ allowDuplicates: true, scanMode: SCAN_MODE_BALANCED, manufacturerData: FILTRO_IBEACON });
       ativa = true;
     }
     async function desligarBusca() {
@@ -136,12 +154,16 @@
       guardar(false);
     }
 
-    const lembrado = () => { try { return !!arm && arm.getItem(CHAVE) === '1'; } catch (e) { return false; } };
+    const lerEscolha = () => { try { return arm ? arm.getItem(CHAVE) : null; } catch (e) { return null; } };
+    const lembrado = () => lerEscolha() === '1';
+    const desligadoPelaPessoa = () => lerEscolha() === '0';
 
     return {
       disponivel, situacao, permitir, ligarBluetooth, ligarLocalizacao, comecar, parar,
       procurando: () => querendo,
       lembrado,
+      desligadoPelaPessoa,
+      diagnostico: () => ({ ...diag }),
       aoMudarSituacao: cb => { aoMudar = cb; }
     };
   }

@@ -42,7 +42,7 @@
     const NB = raiz.NaviBeacons, NC = raiz.NaviCategorias;
     const anunciar = o.anunciar || (() => {});
     const rastreador = NB.criarRastreador({ uuid: beacons.uuid, raioPadrao: beacons.raioPadrao, lista: beacons.lista });
-    const st = { aberto: false, situacao: null, negada: false, pausa: null, perto: null, ocupado: false };
+    const st = { aberto: false, situacao: null, negada: false, pausa: null, perto: null, ocupado: false, precisaAtivar: false };
     const lugar = id => o.local.lugar(id);
     const andar = l => (NC ? NC.descricao(l, o.local).split(',')[0] : '');
     const textoPerto = l => `Você está perto de: ${l.nome}${andar(l) ? ` (${andar(l)})` : ''}`;
@@ -103,6 +103,7 @@
     }
 
     /* ---------- Página do Mapa ---------- */
+    const TEXTO_ATIVAR = 'Para mostrar onde você está no mapa, ative o Bluetooth e a localização.';
     function renderMapa() {
       // logo abaixo da barra do topo, seja qual for a altura dela (texto grande, nomes longos)
       const topo = document.getElementById('mapa-topo');
@@ -110,6 +111,10 @@
       if (st.pausa) {
         const p = PAUSA[st.pausa];
         faixa.innerHTML = `${svg('i-aviso')}<p>${esc(p.texto)}</p><button type="button" class="btn" data-acao="${p.acao}">${esc(p.botao)}</button>`;
+        faixa.hidden = false;
+      } else if (st.precisaAtivar) {
+        faixa.innerHTML = `${svg('i-voce')}<p>${esc(st.negada ? 'Sem a permissão, o Navi não mostra onde você está. Para permitir: Configurações → Apps → Navi → Permissões.' : TEXTO_ATIVAR)}</p>
+          <button type="button" class="btn btn-primario" data-acao="ativar">Ativar</button>`;
         faixa.hidden = false;
       } else if (st.perto && lugar(st.perto) && st.perto !== (o.origem && o.origem())) {
         const l = lugar(st.perto);
@@ -135,7 +140,8 @@
         else if (acao === 'localizacao') { await app.ligarLocalizacao().catch(() => { st.negada = true; }); await depoisDeLigar(); }
         else if (acao === 'permitir') { st.negada = !(await app.permitir()); await atualizarSituacao(); }
         else if (acao === 'comecar') { await comecar(true); }
-        else if (acao === 'parar') { await app.parar(); st.perto = null; st.pausa = null; st.aberto = false; render(); anunciar('A busca por beacons foi desligada.'); }
+        else if (acao === 'ativar') { await ativar(); }
+        else if (acao === 'parar') { await app.parar(); mudarPerto(null); st.pausa = null; st.aberto = false; render(); anunciar('A busca por beacons foi desligada.'); }
         else if (acao === 'sair-daqui' && st.perto) { location.href = 'index.html?origem=' + encodeURIComponent(st.perto); }
         else if (acao === 'recalcular' && st.perto && o.destino) {
           location.replace('mapa.html?origem=' + encodeURIComponent(st.perto) + '&destino=' + encodeURIComponent(o.destino()));
@@ -152,7 +158,10 @@
     }
     async function comecar(pedido) {
       try {
-        await app.comecar(leitura => { rastreador.registrar(leitura); verificarPerto(); });
+        // cada leitura só alimenta o rastreador; a tela é conferida pelo relógio, uma vez por segundo,
+        // para muitas leituras seguidas nunca virarem muitas mudanças na tela
+        await app.comecar(leitura => { rastreador.registrar(leitura); });
+        st.precisaAtivar = false;
         render();
         if (pedido) {
           anunciar('Procurando beacons por perto.');
@@ -160,15 +169,38 @@
         }
       } catch (e) {
         st.negada = e && e.message === 'permissao';
+        if (o.pagina === 'mapa') { st.precisaAtivar = true; render(); return; }
         st.aberto = true;
         await atualizarSituacao();
       }
+    }
+    // Página do Mapa (RN72): ao traçar a rota, a busca liga sozinha, salvo se a pessoa desligou.
+    async function autoIniciar() {
+      if (app.procurando() || app.desligadoPelaPessoa()) return;
+      if (!(await app.permitir())) { st.negada = true; st.precisaAtivar = true; render(); return; }
+      st.negada = false;
+      const s = await app.situacao();
+      if (!s.bluetooth || !s.localizacao) { st.precisaAtivar = true; render(); return; }
+      await comecar(false);
+    }
+    // botão "Ativar": resolve o que falta, um pedido do Android de cada vez
+    async function ativar() {
+      if (!(await app.permitir())) { st.negada = true; render(); return; }
+      st.negada = false;
+      let s = await app.situacao();
+      if (!s.bluetooth) { await app.ligarBluetooth().catch(() => {}); s = await app.situacao(); }
+      if (!s.localizacao) { await app.ligarLocalizacao().catch(() => {}); s = await app.situacao(); }
+      if (s.bluetooth && s.localizacao) await comecar(true); else render();
+    }
+    function mudarPerto(novo) {
+      st.perto = novo;
+      if (o.aoMudarPosicao) { try { o.aoMudarPosicao(novo); } catch (e) { /* o mapa nunca derruba a busca */ } }
     }
     function verificarPerto() {
       const a = rastreador.atual();
       const novo = a ? a.lugar : null;
       if (novo === st.perto) return;
-      st.perto = novo;
+      mudarPerto(novo);
       render();
       if (!novo || !lugar(novo)) return;
       if (o.pagina === 'mapa' && novo === (o.origem && o.origem())) return;
@@ -184,12 +216,15 @@
     });
     // volta das configurações do Android: confere de novo o que mudou
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && o.pagina === 'rota' && st.aberto && !app.procurando()) atualizarSituacao();
+      if (document.visibilityState !== 'visible') return;
+      if (o.pagina === 'rota' && st.aberto && !app.procurando()) atualizarSituacao();
+      if (o.pagina === 'mapa' && st.precisaAtivar && !st.negada) autoIniciar(); // voltou das configurações do Android
     });
     const relogio = setInterval(verificarPerto, 1000);
 
     render();
-    if (app.lembrado()) comecar(false);
+    if (o.pagina === 'mapa' && o.automatico) autoIniciar();
+    else if (app.lembrado()) comecar(false);
     return { parar() { clearInterval(relogio); app.parar(); } };
   }
 
