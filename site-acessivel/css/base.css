@@ -373,3 +373,10 @@ html.daltonismo { --marca-fundo: var(--cor-acao); --marca-traco: #FFFFFF; --marc
 .faixa-info > p { flex: 1; min-width: 0; }
 .faixa-info .btn { flex: none; }
 .faixa-info { flex-wrap: wrap; }
+
+/* ---------- gestos do TalkBack (RN76): retângulo verde em volta do item selecionado ---------- */
+.foco-gestos {
+  position: fixed; z-index: 2147483647; pointer-events: none; box-sizing: border-box;
+  border: 3px solid #4CAF50; border-radius: 8px; box-shadow: 0 0 0 1px #fff, inset 0 0 0 1px #fff;
+  margin: 0; padding: 0; background: transparent;
+}
